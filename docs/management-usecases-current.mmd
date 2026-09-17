@@ -1,0 +1,53 @@
+flowchart LR
+    Sources["Quellsysteme\nSpital - EPIC - BridgeLink\nCDA - HL7v2 - eMediplan"] --> Bridge["Mirth / BridgeLink\nOrchestrierung\nRouting - Monitoring - Aufträge"]
+    Bridge --> Middleware["Python FHIR Middleware\nParsing - Mapping - Bundle-Erzeugung"]
+    Middleware --> Repository["HAPI FHIR + PostgreSQL\nZentrale FHIR-Datenbasis\nSource of Truth"]
+    Repository --> Targets["Aktuell: HAPI FHIR\nWeitere Zielsysteme über Mirth\nnoch Ausbau / Planung"]
+
+    subgraph Incoming["Daten verstehen und übernehmen"]
+        CDA["CDA / Clinical Documents\nKonvertieren - Importieren\nCH IPS Composition"]
+        EMed["eMediplan\nText - PDF - Bild - QR\nMedikation + Patient + Verordner"]
+        HL7["HL7v2 ORU^R01\nLaborwerte - Patient\nObservations mit LOINC"]
+        ECHOQR["EchoID QR-Code\nIdentität / SOS-Anfrage\nEingang noch zu spezifizieren"]
+    end
+
+    subgraph Outgoing["Daten bereitstellen und versenden"]
+        EPIC["LAUFFÄHIG\nEPIC CDA\nFHIR -> CDA Export\nMedikationsdokumente"]
+        VACD["TEST / POC\nCH-VACD\nFHIR-Dokument-Konvertierung\nopenEHR-Anbindung: Idee"]
+        UMZH["TEST / POC\nUMZH Connect\nConvert + Sandbox-Test\nProduktiver Versand: offen"]
+    end
+
+    subgraph Quality["Sicherheit, Qualität und Zusatzdienste"]
+        TX["LAUFFÄHIG\nTerminologie\nTX: Lookup - Validierung\nExpand - Translate"]
+        Matrix["LAUFFÄHIG\nMatrix Import Bot\neMedikation / CDA einreichen\nIdentitätsprüfung vor Import"]
+        FHIR["LAUFFÄHIG\nFHIR API & Abfragen\nPatient - Observation\nMedikation - Bundle"]
+        ECHOSOS["IDEE / AUSBAU\nEcho-SOS\nQR-gestützte SOS-Daten\nFachlicher/API-Vertrag offen"]
+    end
+
+    CDA --> Middleware
+    EMed --> Middleware
+    HL7 --> Middleware
+    ECHOQR --> Middleware
+    Middleware --> EPIC
+    Middleware --> VACD
+    Middleware --> UMZH
+    Middleware --> ECHOSOS
+    TX -. externe Prüfung .-> Middleware
+    Matrix -. geschützter Import .-> Middleware
+    FHIR -. API-Zugriff .-> Repository
+
+    Note["LAUFFÄHIG: CDA - eMediplan - HL7v2 - EPIC-CDA - FHIR API - Matrix - TX\nTEST / POC: UMZH und CH-VACD-Konvertierung\nIDEE / AUSBAU: Echo-SOS, produktive UMZH-, openEHR- und weitere Zielsystem-Anbindung über Mirth"]
+    Note -. Zielbild .-> Bridge
+
+    classDef source fill:#e0f2fe,stroke:#0284c7,color:#0f172a
+    classDef orchestrator fill:#fef3c7,stroke:#d97706,color:#0f172a
+    classDef core fill:#dcfce7,stroke:#16a34a,color:#0f172a
+    classDef repository fill:#ede9fe,stroke:#7c3aed,color:#0f172a
+    classDef target fill:#fce7f3,stroke:#db2777,color:#0f172a
+    classDef support fill:#f1f5f9,stroke:#475569,color:#0f172a
+    class Sources,CDA,EMed,HL7 source
+    class Bridge,VACD,Note orchestrator
+    class Middleware,TX core
+    class Repository,FHIR repository
+    class Targets,EPIC target
+    class UMZH,Matrix support

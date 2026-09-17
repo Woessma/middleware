@@ -1,0 +1,238 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 2997 >>
+stream
+BT
+/F2 18 Tf
+48 792 Td
+(TODO: Neuaufbau FHIR-Plattform) Tj
+ET
+BT
+/F1 11 Tf
+48 770 Td
+(Ohne Datenuebernahme | Python-Middleware neu deployen) Tj
+ET
+q
+0.25 0.42 0.58 RG
+1 w
+48 755 m 547 755 l S
+Q
+BT
+/F1 9 Tf
+48 735 Td
+(1. PLANUNG UND VERANTWORTLICHKEITEN) Tj
+0 -13 Td () Tj
+0 -13 Td ([ ] Schriftlich festhalten: Keine Datenmigration, kein Restore und keine Uebernahme von) Tj
+0 -13 Td (    Docker-Volumes, Datenbanken, FHIR-Ressourcen, Dokumenten oder Matrix-Daten.) Tj
+0 -13 Td (Erklaerung: Weiterverwendet wird nur der versionierte Python-Middleware-Quellcode.) Tj
+0 -13 Td (    Zugangsdaten, Zertifikate und Konfigurationen werden fuer die neue Umgebung neu) Tj
+0 -13 Td (    erstellt.) Tj
+0 -13 Td ([ ] Wartungsfenster, verantwortliche Personen und einen Kommunikationskanal festlegen.) Tj
+0 -13 Td (Erklaerung: Waehle ein Zeitfenster mit wenig Verkehr. Vor dem Start muss klar sein, wer) Tj
+0 -13 Td (    DNS aendert, wer die Tests durchfuehrt und wer bei Problemen zurueckschaltet.) Tj
+0 -13 Td ([ ] DNS-TTL fuer fhir.woess.ch mindestens 24 Stunden vorher auf 300 Sekunden) Tj
+0 -13 Td (    reduzieren.) Tj
+0 -13 Td (Erklaerung: Nach der Umschaltung verbreitet sich die neue IP schneller. Den vorherigen) Tj
+0 -13 Td (    TTL-Wert nach erfolgreicher Migration wieder setzen.) Tj
+0 -13 Td ([ ] Rueckfallkriterium und maximale Downtime festlegen.) Tj
+0 -13 Td (Erklaerung: Beispiel: Falls die Abnahmetests nicht innerhalb von 30 Minuten erfolgreich) Tj
+0 -13 Td (    sind, DNS wieder auf die alte VM zuruecksetzen. Die alte VM erst danach stilllegen.) Tj
+0 -13 Td () Tj
+0 -13 Td (2. ZIEL-VM VORBEREITEN) Tj
+0 -13 Td () Tj
+0 -13 Td ([ ] Aktuelles Linux patchen und Docker Engine mit Docker Compose Plugin installieren.) Tj
+0 -13 Td (Erklaerung: Der Betrieb ist Docker-Compose-basiert. Installierte Versionen mit "docker) Tj
+0 -13 Td (    --version" und "docker compose version" dokumentieren.) Tj
+0 -13 Td ([ ] SSH-Zugang absichern und einen separaten administrativen Benutzer verwenden.) Tj
+0 -13 Td (Erklaerung: Passwort-Login deaktivieren, SSH-Keys verwenden und den Root-Login sperren.) Tj
+0 -13 Td (    Der Zugang zur alten VM bleibt bis nach dem Abnahmetest erhalten.) Tj
+0 -13 Td ([ ] Firewall einrichten: nur 22, 80 und 443 von aussen freigeben.) Tj
+0 -13 Td (Erklaerung: PostgreSQL, HAPI, Adminer und Synapse duerfen nicht direkt aus dem Internet) Tj
+0 -13 Td (    erreichbar sein. Sie sind im Compose nur intern oder an 127.0.0.1 gebunden.) Tj
+0 -13 Td ([ ] Speicher, RAM und CPU passend fuer den geplanten Neubetrieb bereitstellen.) Tj
+0 -13 Td (Erklaerung: PostgreSQL startet leer, braucht aber freien Speicher fuer neue Daten, WAL) Tj
+0 -13 Td (    und Backups.) Tj
+0 -13 Td ([ ] Monitoring, Logrotation und automatisierte Off-Host-Backups vorbereiten.) Tj
+0 -13 Td (Erklaerung: Ein Backup auf derselben VM schuetzt nicht gegen VM-Ausfall. Die neue) Tj
+0 -13 Td (    Backup-Kette beginnt ohne Altdaten.) Tj
+0 -13 Td () Tj
+ET
+BT
+/F1 8 Tf
+48 35 Td
+(Stand: 2026-09-09 | Seite 1/3) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 2797 >>
+stream
+BT
+/F2 18 Tf
+48 792 Td
+(TODO: Neuaufbau FHIR-Plattform) Tj
+ET
+BT
+/F1 11 Tf
+48 770 Td
+(Ohne Datenuebernahme | Python-Middleware neu deployen) Tj
+ET
+q
+0.25 0.42 0.58 RG
+1 w
+48 755 m 547 755 l S
+Q
+BT
+/F1 9 Tf
+48 735 Td
+(3. QUELLCODE BEREITSTELLEN UND KONFIGURATION NEU ERSTELLEN) Tj
+0 -13 Td () Tj
+0 -13 Td ([ ] Das Repository auf der Ziel-VM in einer festen Struktur auschecken.) Tj
+0 -13 Td (Erklaerung: Nginx mountet HTML-Testseiten relativ zum FHIR-Server-Verzeichnis. Deshalb) Tj
+0 -13 Td (    muss der gesamte Woess_Fhir-Checkout vorhanden sein, nicht nur ein einzelner) Tj
+0 -13 Td (    Container-Ordner.) Tj
+0 -13 Td ([ ] Neue, nicht versionierte Konfigurationen erstellen.) Tj
+0 -13 Td (Erklaerung: Dazu gehoeren insbesondere fhir-middleware/.env mit REFDATA_API_KEY,) Tj
+0 -13 Td (    Matrix-Konfiguration, fhir-server/htpasswd sowie Cron-Konfigurationen. Keine) Tj
+0 -13 Td (    Secrets aus der alten VM kopieren oder in Git ablegen.) Tj
+0 -13 Td ([ ] Alle Zugangsdaten neu erzeugen und ihre Gueltigkeit pruefen.) Tj
+0 -13 Td (Erklaerung: Datenbankpasswoerter, Basic-Auth-Benutzer, Matrix-Secrets und API-Keys) Tj
+0 -13 Td (    werden fuer die neue Umgebung neu angelegt und sicher gespeichert.) Tj
+0 -13 Td ([ ] Externes Docker-Netz anlegen: "docker network create fhir-server_fhir-net".) Tj
+0 -13 Td (Erklaerung: FHIR-Server, Middleware und optional Matrix-Bot verwenden dieses externe) Tj
+0 -13 Td (    Netz. Ohne das Netz starten die getrennten Compose-Stacks nicht korrekt.) Tj
+0 -13 Td () Tj
+0 -13 Td (4. LEERE PLATTFORM STARTEN: REVERSE PROXY, DNS UND TLS) Tj
+0 -13 Td () Tj
+0 -13 Td ([ ] Nginx-Konfiguration mit "nginx -t" im Container pruefen und die Compose-) Tj
+0 -13 Td (    Konfiguration mit "docker compose config" validieren.) Tj
+0 -13 Td (Erklaerung: Damit werden Syntaxfehler, fehlende Mounts und falsch interpolierte) Tj
+0 -13 Td (    Umgebungsvariablen vor der Umschaltung erkannt.) Tj
+0 -13 Td ([ ] Sicherstellen, dass Port 80 fuer die ACME-Challenge erreichbar ist.) Tj
+0 -13 Td (Erklaerung: Die aktuelle Nginx-Konfiguration bedient /.well-known/acme-challenge/ aus) Tj
+0 -13 Td (    certbot-www. Firewall, DNS und Nginx muessen dazu zusammenpassen.) Tj
+0 -13 Td ([ ] TLS-Zertifikat fuer fhir.woess.ch auf der Ziel-VM neu ausstellen.) Tj
+0 -13 Td (Erklaerung: Private Schluessel und Zertifikate der alten VM werden nicht kopiert. Fuer) Tj
+0 -13 Td (    die ACME-Challenge muss Port 80 auf der neuen VM erreichbar sein.) Tj
+0 -13 Td ([ ] Nach erfolgreicher lokaler Abnahme den DNS-A-Record auf die neue IP umstellen.) Tj
+0 -13 Td (Erklaerung: Alte VM weiterlaufen lassen, bis externe Anfragen nachweislich die neue VM) Tj
+0 -13 Td (    erreichen. Dann den alten TTL-Wert wiederherstellen.) Tj
+0 -13 Td () Tj
+ET
+BT
+/F1 8 Tf
+48 35 Td
+(Stand: 2026-09-09 | Seite 2/3) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 10 0 R >>
+endobj
+10 0 obj
+<< /Length 3109 >>
+stream
+BT
+/F2 18 Tf
+48 792 Td
+(TODO: Neuaufbau FHIR-Plattform) Tj
+ET
+BT
+/F1 11 Tf
+48 770 Td
+(Ohne Datenuebernahme | Python-Middleware neu deployen) Tj
+ET
+q
+0.25 0.42 0.58 RG
+1 w
+48 755 m 547 755 l S
+Q
+BT
+/F1 9 Tf
+48 735 Td
+(5. PYTHON-MIDDLEWARE NEU DEPLOYEN UND ABNEHMEN) Tj
+0 -13 Td () Tj
+0 -13 Td ([ ] FHIR-Server-Container und Healthchecks pruefen: "docker compose ps" sowie "docker) Tj
+0 -13 Td (    compose logs --tail=100".) Tj
+0 -13 Td (Erklaerung: Postgres muss gesund sein, bevor HAPI stabil arbeitet. Die Datenbank muss) Tj
+0 -13 Td (    ein neu angelegtes, leeres Volume verwenden.) Tj
+0 -13 Td ([ ] Im Verzeichnis fhir-middleware die Konfiguration mit "docker compose config") Tj
+0 -13 Td (    pruefen und die Middleware mit "docker compose up -d --build" neu bauen und) Tj
+0 -13 Td (    starten.) Tj
+0 -13 Td (Erklaerung: Der Container muss im Netzwerk fhir-server_fhir-net laufen und den FHIR-) Tj
+0 -13 Td (    Server ueber http://fhir-server:8080/fhir erreichen.) Tj
+0 -13 Td ([ ] Mit gueltiger Basic Auth "https://fhir.woess.ch/fhir/metadata" aufrufen.) Tj
+0 -13 Td (Erklaerung: Der Aufruf prueft DNS, TLS, Nginx, Authentisierung, Docker-Netz und HAPI) Tj
+0 -13 Td (    als durchgehenden Pfad.) Tj
+0 -13 Td ([ ] Einen realistischen Middleware-Test fuer CDA und eMediplan ausfuehren.) Tj
+0 -13 Td (Erklaerung: Ein HTTP-200 allein reicht nicht. Das erzeugte FHIR-Bundle sowie) Tj
+0 -13 Td (    gespeicherte Ressourcen muessen fachlich plausibel sein und bilden die neue) Tj
+0 -13 Td (    Datenbasis.) Tj
+0 -13 Td ([ ] Falls aktiviert: Matrix-Bot mit einem neu angelegten Testkonto und einer neuen) Tj
+0 -13 Td (    Patientenidentitaet testen.) Tj
+0 -13 Td (Erklaerung: Dies prueft die frisch initialisierte Synapse-Instanz, Bot-Zugang,) Tj
+0 -13 Td (    Dateiverarbeitung, das gemeinsame Docker-Netz und den Zugriff auf die Middleware.) Tj
+0 -13 Td ([ ] Backup der neuen, leeren Ausgangsbasis ausloesen und Wiederherstellbarkeit) Tj
+0 -13 Td (    dokumentieren.) Tj
+0 -13 Td (Erklaerung: Damit endet der Neuaufbau erst, wenn der neue Betrieb auch) Tj
+0 -13 Td (    wiederherstellbar ist.) Tj
+0 -13 Td () Tj
+0 -13 Td (6. ABSCHLUSS UND RUECKBAU) Tj
+0 -13 Td () Tj
+0 -13 Td ([ ] Beobachtungsphase von mindestens 24 bis 72 Stunden vereinbaren und Fehlerlogs) Tj
+0 -13 Td (    kontrollieren.) Tj
+0 -13 Td (Erklaerung: Probleme mit DNS-Caches, Zertifikatserneuerung oder externen Partnern) Tj
+0 -13 Td (    treten teils erst nach dem Cutover auf.) Tj
+0 -13 Td ([ ] Alte VM erst nach der Beobachtungsphase abschalten.) Tj
+0 -13 Td (Erklaerung: Bis dahin bleibt sie eine einfache Rueckfalloption. Danach Zugriffe und) Tj
+0 -13 Td (    Daten gemaess Sicherheits- und Aufbewahrungsvorgaben sicher loeschen oder) Tj
+0 -13 Td (    archivieren.) Tj
+0 -13 Td ([ ] Betriebsdokumentation aktualisieren: neue IP, Hostname, Backup-Ort,) Tj
+0 -13 Td (    Verantwortlichkeiten und Zertifikatserneuerung.) Tj
+0 -13 Td (Erklaerung: Diese Angaben verhindern, dass der naechste Eingriff vom Wissen einzelner) Tj
+0 -13 Td (    Personen abhaengt.) Tj
+0 -13 Td () Tj
+ET
+BT
+/F1 8 Tf
+48 35 Td
+(Stand: 2026-09-09 | Seite 3/3) Tj
+ET
+endstream
+endobj
+xref
+0 11
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
+0000000127 00000 n
+0000000197 00000 n
+0000000272 00000 n
+0000000408 00000 n
+0000003457 00000 n
+0000003593 00000 n
+0000006442 00000 n
+0000006579 00000 n
+trailer
+<< /Size 11 /Root 1 0 R >>
+startxref
+9741
+%%EOF

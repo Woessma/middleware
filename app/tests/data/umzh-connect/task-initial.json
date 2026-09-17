@@ -1,0 +1,44 @@
+{
+  "resourceType": "Task",
+  "meta": {
+    "profile": [
+      "http://fhir.ch/ig/ch-umzh-connect/StructureDefinition/ch-umzh-connect-coordinationtask"
+    ]
+  },
+  "identifier": [
+    {
+      "system": "urn:ietf:rfc:3986",
+      "value": "urn:uuid:6f31e58f-d637-4f11-a9ba-d6a19fdca001"
+    }
+  ],
+  "basedOn": [
+    {
+      "reference": "ServiceRequest/REPLACE_WITH_CREATED_SERVICE_REQUEST_ID"
+    }
+  ],
+  "status": "requested",
+  "intent": "order",
+  "priority": "routine",
+  "code": {
+    "coding": [
+      {
+        "system": "http://hl7.org/fhir/CodeSystem/task-code",
+        "code": "fulfill",
+        "display": "Fulfill the focal request"
+      }
+    ]
+  },
+  "focus": {
+    "reference": "ServiceRequest/REPLACE_WITH_CREATED_SERVICE_REQUEST_ID"
+  },
+  "for": {
+    "reference": "Patient/3192"
+  },
+  "authoredOn": "2026-07-27",
+  "requester": {
+    "reference": "Organization/3322"
+  },
+  "owner": {
+    "reference": "Organization/3322"
+  }
+}

@@ -1,0 +1,69 @@
+@startuml
+title <size:21><color:#003366>Bright-link: Authentifizierung und FHIR Use Cases</color></size>
+
+actor "Person" as person
+participant "Identity Provider\n(IdP)" as idp
+participant "Bright-link" as bl #LightYellow
+participant "FHIR Middleware\n(Python)" as mw
+participant "FHIR Server" as fhir
+
+person -> idp: Anmeldung und Einwilligung
+idp --> person: JWT Access Token
+person -> bl: Use Case mit Bearer JWT
+bl -> bl: JWT Signatur, Ablauf und Claims pruefen
+bl -> bl: Berechtigung fuer Patient und Use Case pruefen
+
+alt JWT ungueltig oder Berechtigung fehlt
+    bl --> person: 401 Unauthorized oder 403 Forbidden
+else Lesender Use Case
+    bl -> mw: GET Anfrage mit Kontext und Bearer JWT
+    mw -> fhir: FHIR Suchanfrage
+    fhir --> mw: FHIR Bundle oder Ressource
+    mw --> bl: Aufbereitete FHIR Antwort
+    bl --> person: Ergebnis
+else Pure Convert Use Case
+    bl -> mw: Quelldaten fuer Convert mit Bearer JWT
+    mw -> mw: CDA, VACD, eTOC, HL7v2, eMediplan oder UMZH in FHIR Bundle konvertieren
+    mw --> bl: FHIR Bundle ohne Import
+    bl --> person: Konvertiertes FHIR Bundle
+else FHIR Stabilisierung
+    bl -> mw: FHIR Ressource oder Bundle mit Bearer JWT
+    mw -> mw: Bundle stabilisieren und Transaction Requests ergaenzen
+    mw --> bl: Stabilisiertes FHIR Transaction Bundle
+    bl --> person: Stabilisiertes Bundle zur Pruefung
+else Convert und an FHIR senden
+    bl -> mw: FHIR Ressource oder Bundle mit Bearer JWT
+    mw -> mw: Stabilisieren, deduplizieren und Requests setzen
+    mw -> fhir: Stabilisiertes FHIR Transaction Bundle
+    fhir --> mw: Transaction Response
+    mw --> bl: Import Ergebnis
+    bl --> person: Import Ergebnis
+else CDA Import
+    bl -> mw: CDA Dokument mit Bearer JWT
+    mw -> mw: CDA parsen und FHIR Transaction Bundle erzeugen
+    mw -> fhir: FHIR Transaction Bundle
+    fhir --> mw: Transaction Response
+    mw --> bl: Import Ergebnis
+    bl --> person: Import Ergebnis
+else HL7v2 Laborimport
+    bl -> mw: HL7v2 ORU R01 mit Bearer JWT
+    mw -> mw: ORU R01 parsen und Labor Observations erzeugen
+    mw -> fhir: FHIR Transaction Bundle
+    fhir --> mw: Transaction Response
+    mw --> bl: Import Ergebnis
+    bl --> person: Import Ergebnis
+else eMediplan Import
+    bl -> mw: eMediplan mit Bearer JWT
+    mw -> mw: eMediplan in MedicationStatement transformieren
+    mw -> fhir: FHIR Transaction Bundle
+    fhir --> mw: Transaction Response
+    mw --> bl: Import Ergebnis
+    bl --> person: Import Ergebnis
+else UMZH Connect
+    bl -> mw: UMZH Auftrag mit Bearer JWT
+    mw -> fhir: Task, ServiceRequest und QuestionnaireResponse
+    fhir --> mw: FHIR Response
+    mw --> bl: Auftragsergebnis
+    bl --> person: Auftragsergebnis
+end
+@enduml

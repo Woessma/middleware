@@ -1,0 +1,46 @@
+{
+  "resourceType": "ServiceRequest",
+  "meta": {
+    "profile": [
+      "http://fhir.ch/ig/ch-umzh-connect/StructureDefinition/ch-umzh-connect-servicerequest"
+    ]
+  },
+  "identifier": [
+    {
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "PLAC"
+          }
+        ]
+      },
+      "value": "REF-2026-001"
+    }
+  ],
+  "status": "active",
+  "intent": "order",
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "183545006",
+          "display": "Referral to orthopedic service (procedure)"
+        }
+      ]
+    }
+  ],
+  "subject": {
+    "reference": "Patient/3192"
+  },
+  "authoredOn": "2026-07-27",
+  "requester": {
+    "reference": "PractitionerRole/3193"
+  },
+  "note": [
+    {
+      "text": "Referral for orthopedic consultation."
+    }
+  ]
+}

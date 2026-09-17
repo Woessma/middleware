@@ -1,0 +1,66 @@
+digraph ManagementUseCases {
+  graph [rankdir=LR, bgcolor="#f8fafc", pad="0.25", nodesep="0.3", ranksep="0.65", splines=ortho, fontname="DejaVu Sans", labelloc=t, labeljust=c, label="FHIR Middleware\nAktuelle fachliche Use Cases\nManagement-Übersicht | Stand 09.09.2026", fontsize=22, fontname="DejaVu Sans Bold", fontcolor="#0f172a"];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=11, margin="0.16,0.11", color="#334155", penwidth=1.2];
+  edge [fontname="DejaVu Sans", fontsize=9, color="#64748b", arrowsize=0.75, penwidth=1.3];
+
+  sources [label="Quellsysteme\nSpital | EPIC | BridgeLink\nCDA | HL7v2 | eMediplan", fillcolor="#e0f2fe", color="#0284c7", fontsize=12];
+  bridge [label="Mirth / BridgeLink\nOrchestrierung\nRouting | Monitoring | Aufträge", fillcolor="#fef3c7", color="#d97706", fontsize=13, penwidth=2];
+  middleware [label="Python FHIR Middleware\nParsing | Mapping | Bundle-Erzeugung", fillcolor="#dcfce7", color="#16a34a", fontsize=13, penwidth=2];
+  repository [label="HAPI FHIR + PostgreSQL\nZentrale FHIR-Datenbasis\nSource of Truth", fillcolor="#ede9fe", color="#7c3aed", fontsize=13, penwidth=2];
+  targets [label="Aktuell: HAPI FHIR\nWeitere Zielsysteme über Mirth\nnoch Ausbau / Planung", fillcolor="#fce7f3", color="#db2777", fontsize=12];
+
+  subgraph cluster_in {
+    label="Daten verstehen und übernehmen";
+    color="#0ea5e9";
+    style="rounded,dashed";
+    fontname="DejaVu Sans Bold";
+    fontsize=13;
+    cda [label="CDA / Clinical Documents\nKonvertieren | Importieren\nCH IPS Composition", fillcolor="#e0f2fe", color="#0284c7"];
+    emed [label="eMediplan\nText | PDF | Bild | QR\nMedikation + Patient + Verordner", fillcolor="#dbeafe", color="#2563eb"];
+    hl7 [label="HL7v2 ORU^R01\nLaborwerte | Patient\nObservations mit LOINC", fillcolor="#cffafe", color="#0891b2"];
+    echo_qr [label="EchoID QR-Code\nIdentität / SOS-Anfrage\nEingang noch zu spezifizieren", fillcolor="#e0f2fe", color="#0284c7"];
+  }
+
+  subgraph cluster_out {
+    label="Daten bereitstellen und versenden";
+    color="#db2777";
+    style="rounded,dashed";
+    fontname="DejaVu Sans Bold";
+    fontsize=13;
+    epic [label="LAUFFÄHIG\nEPIC CDA\nFHIR -> CDA Export\nMedikationsdokumente", fillcolor="#dcfce7", color="#16a34a"];
+    vacd [label="TEST / POC\nCH-VACD\nFHIR-Dokument-Konvertierung\nopenEHR-Anbindung: Idee", fillcolor="#fef3c7", color="#d97706"];
+    umzh [label="TEST / POC\nUMZH Connect\nConvert + Sandbox-Test\nProduktiver Versand: offen", fillcolor="#fef3c7", color="#d97706"];
+  }
+
+  subgraph cluster_services {
+    label="Sicherheit, Qualität und Zusatzdienste";
+    color="#16a34a";
+    style="rounded,dashed";
+    fontname="DejaVu Sans Bold";
+    fontsize=13;
+    tx [label="LAUFFÄHIG\nTerminologie\nTX: Lookup | Validierung\nExpand | Translate", fillcolor="#dcfce7", color="#16a34a"];
+    matrix [label="LAUFFÄHIG\nMatrix Import Bot\neMedikation / CDA einreichen\nIdentitätsprüfung vor Import", fillcolor="#dcfce7", color="#16a34a"];
+    fhir [label="LAUFFÄHIG\nFHIR API & Abfragen\nPatient | Observation\nMedikation | Bundle", fillcolor="#dcfce7", color="#16a34a"];
+    echo_sos [label="IDEE / AUSBAU\nEcho-SOS\nQR-gestützte SOS-Daten\nFachlicher/API-Vertrag offen", fillcolor="#fef3c7", color="#d97706"];
+  }
+
+  sources -> bridge [label=" Eingang"];
+  bridge -> middleware [label=" Verarbeitung"];
+  middleware -> repository [label=" speichern / lesen"];
+  repository -> targets [label=" über Mirth im Ausbau"];
+
+  cda -> middleware;
+  emed -> middleware;
+  hl7 -> middleware;
+  echo_qr -> middleware [label=" QR / SOS-Anfrage"];
+  middleware -> epic;
+  middleware -> vacd;
+  middleware -> umzh;
+  middleware -> echo_sos [label=" sichere SOS-Bereitstellung"];
+  tx -> middleware [style=dashed, label=" externe Prüfung"];
+  matrix -> middleware [style=dashed, label=" geschützter Import"];
+  fhir -> repository [style=dashed, label=" API-Zugriff"];
+
+  note [label="LAUFFÄHIG: CDA | eMediplan | HL7v2 | EPIC-CDA | FHIR API | Matrix | TX\nTEST / POC: UMZH und CH-VACD-Konvertierung\nIDEE / AUSBAU: Echo-SOS, produktive UMZH-, openEHR- und weitere Zielsystem-Anbindung über Mirth", shape=note, fillcolor="#fff7ed", color="#ea580c", fontsize=11];
+  note -> bridge [style=dashed, color="#ea580c", label=" Zielbild"];
+}

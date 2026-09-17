@@ -1,0 +1,4491 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ClinicalDocument xmlns="urn:hl7-org:v3">
+ <realmCode code="CH" />
+ <typeId extension="POCD_HD000040" root="2.16.840.1.113883.1.3" />
+ <templateId root="1.2.840.114350.1.72.1.51693" />
+ <templateId root="2.16.840.1.113883.10.20.22.1.1" />
+ <templateId root="2.16.840.1.113883.10.20.22.1.1" extension="2015-08-01" />
+ <templateId root="2.16.840.1.113883.10.20.22.1.1" extension="2023-05-01" />
+ <templateId root="2.16.840.1.113883.10.20.22.1.2" />
+ <templateId root="2.16.840.1.113883.10.20.22.1.2" extension="2015-08-01" />
+ <id assigningAuthorityName="EPC" root="1.2.840.114350.1.13.521.3.7.8.688883.2015" />
+ <code code="34133-9" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Summarization of Episode Note" />
+ <title>Klinische Zusammenfassung</title>
+ <effectiveTime value="20260105124055+0100" />
+ <confidentialityCode code="N" codeSystem="2.16.840.1.113883.5.25" displayName="Normal" />
+ <languageCode code="de-CH" />
+ <setId assigningAuthorityName="EPC" extension="00000000-0019-da9a-226e-e45f77ddd12e" root="1.2.840.114350.1.13.521.3.7.1.1" />
+ <versionNumber value="41" />
+ <recordTarget>
+  <patientRole>
+   <id root="2.16.756.5.32" extension="7560528012402"/>
+   <id root="1.2.840.114350.1.13.521.3.7.3.688884.100" extension="LUTLF9V92B76VNP" />
+   <addr use="HP">
+    <streetAddressLine>Testhausenstrasse 5</streetAddressLine>
+    <postalCode>3000</postalCode>
+    <city>Bern</city>
+    <state>BE</state>
+    <country>CHE</country>
+    <useablePeriod xsi:type="IVL_TS" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+     <low value="20230414" />
+     <high nullFlavor="NA" />
+    </useablePeriod>
+   </addr>
+   <telecom use="MC" value="tel:+41769999999999" />
+   <telecom value="mailto:696test.user@axsana.ch" />
+   <patient>
+    <name use="L">
+     <prefix qualifier="TITLE">Herr </prefix>
+     <given>MAXIMIN STEPHANE CYPRIEN</given>
+     <family>JOOS-ENGMAN</family>
+     <validTime>
+      <low nullFlavor="NA" />
+      <high nullFlavor="NA" />
+     </validTime>
+    </name>
+    <administrativeGenderCode code="M" codeSystem="2.16.840.1.113883.5.1" codeSystemName="AdministrativeGenderCode" displayName="Männlich" />
+    <birthTime value="19751115" />
+    <ep2:deceasedInd value="false" xmlns:ep2="urn:hl7-org:sdtc" />
+    <maritalStatusCode code="S" codeSystem="2.16.840.1.113883.5.2" codeSystemName="MaritalStatusCode" displayName="ledig" />
+    <raceCode nullFlavor="UNK" />
+    <ethnicGroupCode nullFlavor="UNK" />
+    <languageCommunication>
+     <languageCode nullFlavor="UNK" />
+    </languageCommunication>
+   </patient>
+   <providerOrganization>
+    <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+    <name>Luzerner Kantonsspital (LUKS) - TST</name>
+    <telecom use="WP" value="tel:+41-41-205-77-01" />
+    <addr use="WP">
+     <streetAddressLine nullFlavor="UNK" />
+     <postalCode>6000</postalCode>
+     <city nullFlavor="UNK" />
+     <country>CHE</country>
+    </addr>
+   </providerOrganization>
+  </patientRole>
+ </recordTarget>
+ <author>
+  <time value="20260105124055+0100" />
+  <assignedAuthor>
+   <id root="1.2.840.114350.1.1" extension="11.5" />
+   <addr nullFlavor="NA" />
+   <telecom nullFlavor="NA" />
+   <assignedAuthoringDevice>
+    <manufacturerModelName>Epic - Version 11.5</manufacturerModelName>
+    <softwareName>Epic - Version 11.5</softwareName>
+   </assignedAuthoringDevice>
+   <representedOrganization>
+    <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+    <name>Luzerner Kantonsspital (LUKS) - TST</name>
+    <telecom use="WP" value="tel:+41-41-205-77-01" />
+    <addr use="WP">
+     <streetAddressLine nullFlavor="UNK" />
+     <postalCode>6000</postalCode>
+     <city nullFlavor="UNK" />
+     <country>CHE</country>
+    </addr>
+   </representedOrganization>
+  </assignedAuthor>
+ </author>
+ <custodian>
+  <assignedCustodian>
+   <representedCustodianOrganization>
+    <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+    <name>Luzerner Kantonsspital (LUKS) - TST</name>
+    <telecom use="WP" value="tel:+41-41-205-77-01" />
+    <addr use="WP">
+     <streetAddressLine nullFlavor="UNK" />
+     <postalCode>6000</postalCode>
+     <city nullFlavor="UNK" />
+     <country>CHE</country>
+    </addr>
+   </representedCustodianOrganization>
+  </assignedCustodian>
+ </custodian>
+ <legalAuthenticator>
+  <time value="20260105124055+0100" />
+  <signatureCode code="S" />
+  <assignedEntity>
+   <id nullFlavor="UNK" />
+   <code nullFlavor="UNK" />
+   <addr nullFlavor="UNK" />
+   <telecom nullFlavor="UNK" />
+   <assignedPerson>
+    <name nullFlavor="UNK" />
+   </assignedPerson>
+  </assignedEntity>
+ </legalAuthenticator>
+ <participant typeCode="IND">
+  <templateId root="2.16.840.1.113883.10.20.22.5.8" extension="2023-05-01" />
+  <time value="20230414" />
+  <associatedEntity classCode="PRS">
+   <id root="1.2.840.114350.1.13.521.3.7.2.827665" extension="6610" />
+   <code codeSystem="2.16.840.1.113883.5.111" codeSystemName="RoleCode" nullFlavor="UNK" />
+   <addr nullFlavor="UNK" />
+   <telecom nullFlavor="UNK" />
+   <associatedPerson>
+    <name>Bernd Brot</name>
+   </associatedPerson>
+  </associatedEntity>
+ </participant>
+ <documentationOf typeCode="DOC">
+  <serviceEvent classCode="PCPR">
+   <effectiveTime>
+    <low value="19780308" />
+    <high value="20260105" />
+   </effectiveTime>
+   <performer typeCode="PRF">
+    <functionCode code="PCP" codeSystem="2.16.840.1.113883.5.88" codeSystemName="ParticipationFunction" displayName="Primary Care Provider">
+     <originalText>Allgemein</originalText>
+    </functionCode>
+    <time>
+     <low value="20251120" />
+     <high nullFlavor="NI" />
+    </time>
+    <assignedEntity>
+     <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17395" />
+     <code nullFlavor="OTH">
+      <originalText>Fachgebiete (allg.)</originalText>
+      <translation code="312" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Fachgebiete (allg.)" />
+     </code>
+     <addr use="WP">
+      <streetAddressLine>Heimweg 12</streetAddressLine>
+      <postalCode>7000</postalCode>
+      <city>Heimhausen</city>
+      <country>CHE</country>
+     </addr>
+     <telecom use="WP" value="tel:+41-41-340-67-77" />
+     <telecom value="fax:+41-41-340-59-77" />
+     <assignedPerson>
+      <name use="L">
+       <given>Arzt</given>
+       <family>Lukslink</family>
+      </name>
+     </assignedPerson>
+     <representedOrganization classCode="ORG">
+      <name>Luzerner Kantonsspital (LUKS) - TST</name>
+      <telecom use="WP" value="tel:+41-41-205-77-01" />
+      <addr use="WP">
+       <streetAddressLine nullFlavor="UNK" />
+       <postalCode>6000</postalCode>
+       <city nullFlavor="UNK" />
+       <country>CHE</country>
+      </addr>
+     </representedOrganization>
+    </assignedEntity>
+   </performer>
+  </serviceEvent>
+ </documentationOf>
+ <relatedDocument typeCode="RPLC">
+  <parentDocument>
+   <id assigningAuthorityName="EPC" root="1.2.840.114350.1.13.521.3.7.8.688883.1855" />
+   <setId assigningAuthorityName="EPC" extension="00000000-0019-da9a-226e-e45f77ddd12e" root="1.2.840.114350.1.13.521.3.7.1.1" />
+   <versionNumber value="40" />
+  </parentDocument>
+ </relatedDocument>
+ <component>
+  <structuredBody>
+   <component>
+    <section>
+     <code code="X-DOCCMT" codeSystem="1.2.840.114350.1.72.2" displayName="Document Comments" />
+     <title>Quellkommentare</title>
+     <text>
+      <content styleCode="Bold">Die Resultate auf dieser Seite können in einer Mischung aus US-amerikanischen und internationalen Formaten angezeigt werden.</content>
+      <br />
+      <br />Bitte überprüfen Sie die Daten der Problemliste direkt mit dem Patienten.<footnote>Luzerner Kantonsspital (LUKS) - TST</footnote></text>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.6" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.6" extension="2015-08-01" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.6.1" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.6.1" extension="2015-08-01" />
+     <id root="659DC6F0-EA2B-11F0-9B3B-005056830D44" />
+     <code code="48765-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Allergies and adverse reactions Document" />
+     <title>Allergien</title>
+     <text>
+      <table>
+       <colgroup>
+        <col span="2" width="25%" />
+        <col width="13%" />
+        <col width="12%" />
+        <col width="25%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Aktive Allergie</th>
+         <th>Reaktionen</th>
+         <th>Kritikalität</th>
+         <th>Vermerkt-Datum</th>
+         <th>Kommentare</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr ID="allergy3">
+         <td ID="allergy3allergen">Kakao</td>
+         <td ID="allergy3reaction">
+          <content ID="allergy3reaction1">Angstzustände</content>, <content ID="allergy3reaction2">Schwindel</content></td>
+         <td ID="allergy3severity">Hoch</td>
+         <td>06.02.2023</td>
+         <td ID="allergy3comments" />
+        </tr>
+       </tbody>
+      </table>
+     </text>
+     <entry>
+      <act classCode="ACT" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.30" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.30" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="1176-concern" />
+       <code code="CONC" codeSystem="2.16.840.1.113883.5.6" />
+       <text>
+        <reference value="#allergy3" />
+       </text>
+       <statusCode code="active" />
+       <effectiveTime>
+        <low value="20230206" />
+       </effectiveTime>
+       <entryRelationship inversionInd="false" typeCode="SUBJ">
+        <observation classCode="OBS" moodCode="EVN" negationInd="false">
+         <templateId root="2.16.840.1.113883.10.20.22.4.7" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.7" extension="2014-06-09" />
+         <templateId root="2.16.840.1.113883.10.20.24.3.90" />
+         <templateId root="2.16.840.1.113883.10.20.24.3.90" extension="2014-06-09" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="1176" />
+         <code code="ASSERTION" codeSystem="2.16.840.1.113883.5.4" />
+         <text>
+          <reference value="#allergy3" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime>
+          <low value="20230206" />
+         </effectiveTime>
+         <value code="416098002" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Drug Allergy" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20230523" />
+          <assignedAuthor>
+           <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221131530" />
+           <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="16638" />
+           <code nullFlavor="OTH">
+            <originalText>Hämatologie</originalText>
+            <translation code="27" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Hämatologie" />
+            <translation code="14" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Hämatologie" />
+           </code>
+           <addr use="WP">
+            <streetAddressLine>Stutzrain 60</streetAddressLine>
+            <postalCode>6005</postalCode>
+            <city>St. Niklausen</city>
+            <state>LU</state>
+            <country>CHE</country>
+           </addr>
+           <telecom use="WP" value="tel:+41-41-360-72-64" />
+           <assignedPerson>
+            <name use="L">
+             <given>Test</given>
+             <family>Wöss</family>
+            </name>
+           </assignedPerson>
+           <representedOrganization>
+            <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+            <telecom use="WP" value="tel:+41-41-205-77-01" />
+            <addr use="WP">
+             <streetAddressLine nullFlavor="UNK" />
+             <postalCode>6000</postalCode>
+             <city nullFlavor="UNK" />
+             <country>CHE</country>
+            </addr>
+           </representedOrganization>
+          </assignedAuthor>
+         </author>
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20230414110500+0200" />
+          <assignedAuthor>
+           <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="219559042" />
+           <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="10690" />
+           <addr nullFlavor="UNK" />
+           <telecom nullFlavor="UNK" />
+           <assignedPerson>
+            <name use="L">
+             <given nullFlavor="NI" />
+             <family>Claus</family>
+            </name>
+           </assignedPerson>
+           <representedOrganization>
+            <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+            <telecom use="WP" value="tel:+41-41-205-77-01" />
+            <addr use="WP">
+             <streetAddressLine nullFlavor="UNK" />
+             <postalCode>6000</postalCode>
+             <city nullFlavor="UNK" />
+             <country>CHE</country>
+            </addr>
+           </representedOrganization>
+          </assignedAuthor>
+         </author>
+         <participant typeCode="CSM">
+          <participantRole classCode="MANU">
+           <playingEntity classCode="MMAT">
+            <code nullFlavor="OTH">
+             <originalText>
+              <reference value="#allergy3allergen" />
+             </originalText>
+            </code>
+            <name>KAKAO</name>
+           </playingEntity>
+          </participantRole>
+         </participant>
+         <entryRelationship inversionInd="true" typeCode="SUBJ">
+          <observation classCode="OBS" moodCode="EVN">
+           <templateId root="2.16.840.1.113883.10.20.22.4.28" />
+           <templateId root="2.16.840.1.113883.10.20.22.4.28" extension="2019-06-20" />
+           <code code="33999-4" codeSystem="2.16.840.1.113883.6.1" displayName="Status" />
+           <statusCode code="completed" />
+           <value code="55561003" codeSystem="2.16.840.1.113883.6.96" displayName="Active" xsi:type="CE" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+          </observation>
+         </entryRelationship>
+         <entryRelationship inversionInd="true" typeCode="MFST">
+          <observation classCode="OBS" moodCode="EVN">
+           <templateId root="2.16.840.1.113883.10.20.22.4.9" />
+           <templateId root="2.16.840.1.113883.10.20.22.4.9" extension="2014-06-09" />
+           <id root="1.2.840.114350.1.13.521.3.7.6.768076.3008" extension="1176.1" />
+           <code code="ASSERTION" codeSystem="2.16.840.1.113883.5.4" />
+           <text>
+            <reference value="#allergy3reaction1" />
+           </text>
+           <statusCode code="completed" />
+           <effectiveTime>
+            <low value="20230206" />
+           </effectiveTime>
+           <value code="48694002" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Angstzustände" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <originalText>
+             <reference value="#allergy3reaction1" />
+            </originalText>
+           </value>
+          </observation>
+         </entryRelationship>
+         <entryRelationship inversionInd="true" typeCode="MFST">
+          <observation classCode="OBS" moodCode="EVN">
+           <templateId root="2.16.840.1.113883.10.20.22.4.9" />
+           <templateId root="2.16.840.1.113883.10.20.22.4.9" extension="2014-06-09" />
+           <id root="1.2.840.114350.1.13.521.3.7.6.768076.3008" extension="1176.2" />
+           <code code="ASSERTION" codeSystem="2.16.840.1.113883.5.4" />
+           <text>
+            <reference value="#allergy3reaction2" />
+           </text>
+           <statusCode code="completed" />
+           <effectiveTime>
+            <low value="20230206" />
+           </effectiveTime>
+           <value codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Schwindel" xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <originalText>
+             <reference value="#allergy3reaction2" />
+            </originalText>
+           </value>
+          </observation>
+         </entryRelationship>
+         <entryRelationship inversionInd="true" typeCode="SUBJ">
+          <observation classCode="OBS" moodCode="EVN">
+           <templateId root="2.16.840.1.113883.10.20.22.4.145" />
+           <code code="82606-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Criticality" />
+           <text>
+            <reference value="#allergy3severity" />
+           </text>
+           <statusCode code="completed" />
+           <value code="CRITH" codeSystem="2.16.840.1.113883.5.1063" displayName="high criticality" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <translation code="3" codeSystem="1.2.840.114350.1.72.1.7.7.10.696784.7150" codeSystemName="X-CRITICALITY" />
+           </value>
+          </observation>
+         </entryRelationship>
+        </observation>
+       </entryRelationship>
+      </act>
+     </entry>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.1" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.1" extension="2014-06-09" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.1.1" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.1.1" extension="2014-06-09" />
+     <id root="65D9FF29-EA2B-11F0-9B3B-005056830D44" />
+     <code code="10160-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of Medication use Narrative" />
+     <title>Medikationen</title>
+     <text>
+      <table>
+       <colgroup>
+        <col span="2" width="25%" />
+        <col width="9%" />
+        <col width="4%" />
+        <col width="12%" />
+        <col span="2" width="8%" />
+        <col width="9%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Medikation</th>
+         <th>Anwendungshinweis</th>
+         <th>Abgabemenge</th>
+         <th>Wiederholte Bezüge</th>
+         <th>Letzter Bezug</th>
+         <th>Beginndatum</th>
+         <th>Enddatum</th>
+         <th>Status</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr ID="currx5" styleCode="xRowNormal">
+         <td>
+          <paragraph ID="med5">Ramipril (TRIATEC) 1.25 mg Tablette</paragraph>
+         </td>
+         <td ID="sig5">Einnahme: 1 Tablette (1.25 mg) 1 mal täglich morgens [1-0-0-0]</td>
+         <td />
+         <td>0</td>
+         <td />
+         <td>01.05.2025</td>
+         <td />
+         <td>Aktiv</td>
+        </tr>
+        <tr ID="currx6" styleCode="xRowAlt">
+         <td>
+          <paragraph ID="med6">Ramipril (TRIATEC) 1.25 mg Tablette</paragraph>
+         </td>
+         <td ID="sig6">Einnahme: 1 Tablette (1.25 mg) 1 mal täglich morgens [1-0-0-0]</td>
+         <td />
+         <td />
+         <td />
+         <td />
+         <td />
+         <td>Aktiv</td>
+        </tr>
+       </tbody>
+      </table>
+     </text>
+     <entry>
+      <substanceAdministration classCode="SBADM" moodCode="INT">
+       <templateId root="2.16.840.1.113883.10.20.22.4.16" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.798268" extension="176916" />
+       <text>
+        <reference value="#sig5" />
+       </text>
+       <statusCode code="active" />
+       <effectiveTime xsi:type="IVL_TS" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <low value="20250501" />
+       </effectiveTime>
+       <doseQuantity unit="mg" value="1.25" />
+       <consumable typeCode="CSM">
+        <manufacturedProduct classCode="MANU">
+         <templateId root="2.16.840.1.113883.10.20.22.4.23" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09" />
+         <manufacturedMaterial>
+          <code codeSystem="2.16.840.1.113883.6.88" nullFlavor="UNK">
+           <originalText>
+            <reference value="#med5" />
+           </originalText>
+           <translation code="410942007" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Drug or medicament (substance)" />
+          </code>
+         </manufacturedMaterial>
+        </manufacturedProduct>
+       </consumable>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20251222234501+0100" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="536523941" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="8289" />
+         <code code="208D00000X" codeSystem="2.16.840.1.113883.6.101" displayName="General Practice Physician" />
+         <addr use="WP">
+          <streetAddressLine>Alexanderstrasse 14</streetAddressLine>
+          <postalCode>7000</postalCode>
+          <city>Chur</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-81-253-54-30" />
+         <assignedPerson>
+          <name use="L">
+           <given>Peter</given>
+           <family>Ehrler</family>
+          </name>
+         </assignedPerson>
+         <representedOrganization>
+          <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedAuthor>
+       </author>
+       <entryRelationship inversionInd="true" typeCode="SUBJ">
+        <act classCode="ACT" moodCode="INT">
+         <templateId root="2.16.840.1.113883.10.20.22.4.20" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.20" extension="2014-06-09" />
+         <code code="311401005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" />
+         <text>
+          <reference value="#sig5" />
+         </text>
+         <statusCode code="completed" />
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20251222234501+0100" />
+          <assignedAuthor>
+           <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="536523941" />
+           <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="8289" />
+          </assignedAuthor>
+         </author>
+        </act>
+       </entryRelationship>
+       <entryRelationship typeCode="REFR">
+        <supply classCode="SPLY" moodCode="INT">
+         <templateId root="2.16.840.1.113883.10.20.22.4.17" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.17" extension="2014-06-09" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.798268" extension="176916" />
+         <statusCode code="completed" />
+         <repeatNumber value="1" />
+         <product>
+          <manufacturedProduct classCode="MANU">
+           <templateId root="2.16.840.1.113883.10.20.22.4.23" />
+           <templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09" />
+           <manufacturedMaterial>
+            <code codeSystem="2.16.840.1.113883.6.88" nullFlavor="UNK">
+             <originalText>
+              <reference value="#med5" />
+             </originalText>
+             <translation code="410942007" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Drug or medicament (substance)" />
+            </code>
+           </manufacturedMaterial>
+          </manufacturedProduct>
+         </product>
+        </supply>
+       </entryRelationship>
+       <entryRelationship typeCode="REFR">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.1.47" />
+         <code code="33999-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Status" />
+         <statusCode code="completed" />
+         <value code="55561003" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Active" xsi:type="CE" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="COMP">
+        <substanceAdministration classCode="SBADM" moodCode="INT">
+         <templateId root="2.16.840.1.113883.10.20.22.4.147" />
+         <code code="76662-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Medication Instructions" />
+         <text>
+          <reference value="#sig5" />
+         </text>
+         <consumable>
+          <manufacturedProduct>
+           <manufacturedLabeledDrug nullFlavor="NA" />
+          </manufacturedProduct>
+         </consumable>
+        </substanceAdministration>
+       </entryRelationship>
+       <entryRelationship inversionInd="true" typeCode="SUBJ">
+        <observation classCode="OBS" moodCode="EVN">
+         <code code="82777-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Frequency prescribed Medication" />
+         <value xsi:type="ST" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">1x täglich morgens nach Zeitplan</value>
+        </observation>
+       </entryRelationship>
+      </substanceAdministration>
+     </entry>
+     <entry>
+      <substanceAdministration classCode="SBADM" moodCode="INT">
+       <templateId root="2.16.840.1.113883.10.20.22.4.16" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.798268" extension="182479" />
+       <text>
+        <reference value="#sig6" />
+       </text>
+       <statusCode code="active" />
+       <effectiveTime xsi:type="IVL_TS" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <low nullFlavor="UNK" />
+       </effectiveTime>
+       <doseQuantity unit="mg" value="1.25" />
+       <consumable typeCode="CSM">
+        <manufacturedProduct classCode="MANU">
+         <templateId root="2.16.840.1.113883.10.20.22.4.23" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09" />
+         <manufacturedMaterial>
+          <code codeSystem="2.16.840.1.113883.6.88" nullFlavor="UNK">
+           <originalText>
+            <reference value="#med6" />
+           </originalText>
+           <translation code="410942007" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Drug or medicament (substance)" />
+          </code>
+         </manufacturedMaterial>
+        </manufacturedProduct>
+       </consumable>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20251222234501+0100" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="555340420" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="E1012" />
+         <code code="208D00000X" codeSystem="2.16.840.1.113883.11.19465" displayName="General Practice Physician">
+          <originalText>Labormedizin</originalText>
+          <translation code="50" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Labormedizin" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>123 Anywhere Street</streetAddressLine>
+          <postalCode>53711</postalCode>
+          <county>DANE</county>
+          <city>MADISON</city>
+          <state>WI</state>
+          <country>USA</country>
+         </addr>
+         <telecom use="WP" value="tel:555-555-5555" />
+         <assignedPerson>
+          <name use="L">
+           <given>Anderer</given>
+           <family>Leistungserbringer</family>
+          </name>
+         </assignedPerson>
+         <representedOrganization>
+          <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedAuthor>
+       </author>
+       <entryRelationship inversionInd="true" typeCode="SUBJ">
+        <act classCode="ACT" moodCode="INT">
+         <templateId root="2.16.840.1.113883.10.20.22.4.20" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.20" extension="2014-06-09" />
+         <code code="311401005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" />
+         <text>
+          <reference value="#sig6" />
+         </text>
+         <statusCode code="completed" />
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20251222234501+0100" />
+          <assignedAuthor>
+           <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="555340420" />
+           <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="E1012" />
+          </assignedAuthor>
+         </author>
+        </act>
+       </entryRelationship>
+       <entryRelationship typeCode="REFR">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.1.47" />
+         <code code="33999-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Status" />
+         <statusCode code="completed" />
+         <value code="55561003" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Active" xsi:type="CE" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="COMP">
+        <substanceAdministration classCode="SBADM" moodCode="INT">
+         <templateId root="2.16.840.1.113883.10.20.22.4.147" />
+         <code code="76662-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Medication Instructions" />
+         <text>
+          <reference value="#sig6" />
+         </text>
+         <consumable>
+          <manufacturedProduct>
+           <manufacturedLabeledDrug nullFlavor="NA" />
+          </manufacturedProduct>
+         </consumable>
+        </substanceAdministration>
+       </entryRelationship>
+       <entryRelationship inversionInd="true" typeCode="SUBJ">
+        <observation classCode="OBS" moodCode="EVN">
+         <code code="82777-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Frequency prescribed Medication" />
+         <value xsi:type="ST" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">1x täglich morgens nach Zeitplan</value>
+        </observation>
+       </entryRelationship>
+      </substanceAdministration>
+     </entry>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.5" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.5" extension="2015-08-01" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.5.1" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.5.1" extension="2015-08-01" />
+     <id root="65E0961F-EA2B-11F0-9B3B-005056830D44" />
+     <code code="11450-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Problem list - Reported" />
+     <title>Aktive Probleme</title>
+     <text>
+      <table>
+       <colgroup>
+        <col width="60%" />
+        <col width="15%" />
+        <col width="25%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Problem</th>
+         <th>Vermerkt-Datum</th>
+         <th>Diagnosedatum</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr ID="problem11" styleCode="xRowNormal">
+         <td ID="problem11name">Knie rechts: geschlossene anteriore tibiofemorale Knieluxation (AO 40A(5a))</td>
+         <td>24.04.2024</td>
+         <td />
+        </tr>
+        <tr ID="problem10" styleCode="xRowAlt">
+         <td ID="problem10name">Rheumatoide Arthritis</td>
+         <td>24.10.2023</td>
+         <td />
+        </tr>
+        <tr ID="problem8" styleCode="xRowNormal">
+         <td ID="problem8name">Adipositas, multifaktoriell, Grad II BMI von 35 bis unter 40</td>
+         <td>14.04.2023</td>
+         <td />
+        </tr>
+        <tr ID="problem9" styleCode="xRowAlt">
+         <td ID="problem9name">Hufeisenniere links</td>
+         <td>14.04.2023</td>
+         <td />
+        </tr>
+        <tr ID="problem12" styleCode="xRowNormal">
+         <td ID="problem12name">Kniebeschwerden beidseitig</td>
+         <td>02.11.2022</td>
+         <td />
+        </tr>
+       </tbody>
+      </table>
+     </text>
+     <entry>
+      <act classCode="ACT" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.3" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="1180-concern" />
+       <code code="CONC" codeSystem="2.16.840.1.113883.5.6" codeSystemName="HL7ActClass" displayName="Concern" />
+       <text>
+        <reference value="#problem8" />
+       </text>
+       <statusCode code="active" />
+       <effectiveTime>
+        <low value="20250807" />
+       </effectiveTime>
+       <entryRelationship inversionInd="false" typeCode="SUBJ">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2022-06-01" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="1180" />
+         <code code="64572001" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT">
+          <translation code="75323-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+         </code>
+         <text>
+          <reference value="#problem8name" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime>
+          <low value="20230414" />
+         </effectiveTime>
+         <value xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <originalText>
+           <reference value="#problem8name" />
+          </originalText>
+         </value>
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20250807173147+0200" />
+          <assignedAuthor>
+           <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381380" />
+           <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+           <code nullFlavor="OTH">
+            <originalText>Dermatologie</originalText>
+            <translation code="15" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Dermatologie" />
+            <translation code="6" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Dermatologie" />
+           </code>
+           <addr use="WP">
+            <streetAddressLine nullFlavor="UNK" />
+            <postalCode>6000</postalCode>
+            <county>LUZERNE</county>
+            <city>LUZERN</city>
+            <state>LU</state>
+            <country>CHE</country>
+           </addr>
+           <telecom use="WP" value="tel:+41-41-205-11-11" />
+           <assignedPerson>
+            <name use="L">
+             <given>Family</given>
+             <given>Medicine</given>
+             <family>Physician</family>
+             <suffix qualifier="AC"> Arzt</suffix>
+            </name>
+           </assignedPerson>
+           <representedOrganization>
+            <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+            <telecom use="WP" value="tel:+41-41-205-77-01" />
+            <addr use="WP">
+             <streetAddressLine nullFlavor="UNK" />
+             <postalCode>6000</postalCode>
+             <city nullFlavor="UNK" />
+             <country>CHE</country>
+            </addr>
+           </representedOrganization>
+          </assignedAuthor>
+         </author>
+         <entryRelationship typeCode="REFR">
+          <observation classCode="OBS" moodCode="EVN">
+           <templateId root="2.16.840.1.113883.10.20.22.4.6" />
+           <templateId root="2.16.840.1.113883.10.20.22.4.6" extension="2019-06-20" />
+           <code code="33999-4" codeSystem="2.16.840.1.113883.6.1" displayName="Status" />
+           <statusCode code="completed" />
+           <effectiveTime>
+            <low value="20230414" />
+           </effectiveTime>
+           <value code="55561003" codeSystem="2.16.840.1.113883.6.96" displayName="Active" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+          </observation>
+         </entryRelationship>
+        </observation>
+       </entryRelationship>
+      </act>
+     </entry>
+     <entry>
+      <act classCode="ACT" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.3" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="1181-concern" />
+       <code code="CONC" codeSystem="2.16.840.1.113883.5.6" codeSystemName="HL7ActClass" displayName="Concern" />
+       <text>
+        <reference value="#problem9" />
+       </text>
+       <statusCode code="active" />
+       <effectiveTime>
+        <low value="20230414" />
+       </effectiveTime>
+       <entryRelationship inversionInd="false" typeCode="SUBJ">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2022-06-01" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="1181" />
+         <code code="64572001" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT">
+          <translation code="75323-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+         </code>
+         <text>
+          <reference value="#problem9name" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime>
+          <low value="20230414" />
+         </effectiveTime>
+         <value code="41729002" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <originalText>
+           <reference value="#problem9name" />
+          </originalText>
+         </value>
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20230414113105+0200" />
+          <assignedAuthor>
+           <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381380" />
+           <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+          </assignedAuthor>
+         </author>
+         <entryRelationship typeCode="REFR">
+          <observation classCode="OBS" moodCode="EVN">
+           <templateId root="2.16.840.1.113883.10.20.22.4.6" />
+           <templateId root="2.16.840.1.113883.10.20.22.4.6" extension="2019-06-20" />
+           <code code="33999-4" codeSystem="2.16.840.1.113883.6.1" displayName="Status" />
+           <statusCode code="completed" />
+           <effectiveTime>
+            <low value="20230414" />
+           </effectiveTime>
+           <value code="55561003" codeSystem="2.16.840.1.113883.6.96" displayName="Active" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+          </observation>
+         </entryRelationship>
+        </observation>
+       </entryRelationship>
+      </act>
+     </entry>
+     <entry>
+      <act classCode="ACT" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.3" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="2011-concern" />
+       <code code="CONC" codeSystem="2.16.840.1.113883.5.6" codeSystemName="HL7ActClass" displayName="Concern" />
+       <text>
+        <reference value="#problem10" />
+       </text>
+       <statusCode code="active" />
+       <effectiveTime>
+        <low value="20231024" />
+       </effectiveTime>
+       <entryRelationship inversionInd="false" typeCode="SUBJ">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2022-06-01" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="2011" />
+         <code code="64572001" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT">
+          <translation code="75323-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+         </code>
+         <text>
+          <reference value="#problem10name" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime>
+          <low value="20231024" />
+         </effectiveTime>
+         <value xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <originalText>
+           <reference value="#problem10name" />
+          </originalText>
+         </value>
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20231024125626+0200" />
+          <assignedAuthor>
+           <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381380" />
+           <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+          </assignedAuthor>
+         </author>
+         <entryRelationship typeCode="REFR">
+          <observation classCode="OBS" moodCode="EVN">
+           <templateId root="2.16.840.1.113883.10.20.22.4.6" />
+           <templateId root="2.16.840.1.113883.10.20.22.4.6" extension="2019-06-20" />
+           <code code="33999-4" codeSystem="2.16.840.1.113883.6.1" displayName="Status" />
+           <statusCode code="completed" />
+           <effectiveTime>
+            <low value="20231024" />
+           </effectiveTime>
+           <value code="55561003" codeSystem="2.16.840.1.113883.6.96" displayName="Active" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+          </observation>
+         </entryRelationship>
+        </observation>
+       </entryRelationship>
+      </act>
+     </entry>
+     <entry>
+      <act classCode="ACT" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.3" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="2640-concern" />
+       <code code="CONC" codeSystem="2.16.840.1.113883.5.6" codeSystemName="HL7ActClass" displayName="Concern" />
+       <text>
+        <reference value="#problem11" />
+       </text>
+       <statusCode code="active" />
+       <effectiveTime>
+        <low value="20240424" />
+       </effectiveTime>
+       <entryRelationship inversionInd="false" typeCode="SUBJ">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2022-06-01" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="2640" />
+         <code code="64572001" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT">
+          <translation code="75323-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+         </code>
+         <text>
+          <reference value="#problem11name" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime>
+          <low value="20240424" />
+         </effectiveTime>
+         <value xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <originalText>
+           <reference value="#problem11name" />
+          </originalText>
+         </value>
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20250806103120+0200" />
+          <assignedAuthor>
+           <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381380" />
+           <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+          </assignedAuthor>
+         </author>
+         <entryRelationship typeCode="REFR">
+          <observation classCode="OBS" moodCode="EVN">
+           <templateId root="2.16.840.1.113883.10.20.22.4.6" />
+           <templateId root="2.16.840.1.113883.10.20.22.4.6" extension="2019-06-20" />
+           <code code="33999-4" codeSystem="2.16.840.1.113883.6.1" displayName="Status" />
+           <statusCode code="completed" />
+           <effectiveTime>
+            <low value="20240424" />
+           </effectiveTime>
+           <value code="55561003" codeSystem="2.16.840.1.113883.6.96" displayName="Active" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+          </observation>
+         </entryRelationship>
+        </observation>
+       </entryRelationship>
+      </act>
+     </entry>
+     <entry>
+      <act classCode="ACT" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.3" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="3157-concern" />
+       <code code="CONC" codeSystem="2.16.840.1.113883.5.6" codeSystemName="HL7ActClass" displayName="Concern" />
+       <text>
+        <reference value="#problem12" />
+       </text>
+       <statusCode code="active" />
+       <effectiveTime>
+        <low value="20250325" />
+       </effectiveTime>
+       <entryRelationship inversionInd="false" typeCode="SUBJ">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2022-06-01" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="3157" />
+         <code code="64572001" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT">
+          <translation code="75323-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+         </code>
+         <text>
+          <reference value="#problem12name" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime>
+          <low value="20221102" />
+         </effectiveTime>
+         <value xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <originalText>
+           <reference value="#problem12name" />
+          </originalText>
+         </value>
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20250325102303+0100" />
+          <assignedAuthor>
+           <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381380" />
+           <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+          </assignedAuthor>
+         </author>
+         <entryRelationship typeCode="REFR">
+          <observation classCode="OBS" moodCode="EVN">
+           <templateId root="2.16.840.1.113883.10.20.22.4.6" />
+           <templateId root="2.16.840.1.113883.10.20.22.4.6" extension="2019-06-20" />
+           <code code="33999-4" codeSystem="2.16.840.1.113883.6.1" displayName="Status" />
+           <statusCode code="completed" />
+           <effectiveTime>
+            <low value="20221102" />
+           </effectiveTime>
+           <value code="55561003" codeSystem="2.16.840.1.113883.6.96" displayName="Active" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+          </observation>
+         </entryRelationship>
+        </observation>
+       </entryRelationship>
+      </act>
+     </entry>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.20" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.20" extension="2015-08-01" />
+     <id root="65E297D4-EA2B-11F0-9B3B-005056830D44" />
+     <code code="11348-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="HISTORY OF PAST ILLNESS" />
+     <title>Gelöste Probleme</title>
+     <text>
+      <table>
+       <colgroup>
+        <col width="60%" />
+        <col span="2" width="15%" />
+        <col width="10%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Problem</th>
+         <th>Vermerkt-Datum</th>
+         <th>Diagnosedatum</th>
+         <th>Lösungsdatum</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr ID="problem15" styleCode="xRowNormal">
+         <td ID="problem15name">Knieluxation (AO 40(5))</td>
+         <td>22.04.2024</td>
+         <td />
+         <td>24.04.2024</td>
+        </tr>
+        <tr ID="problem14" styleCode="xRowAlt">
+         <td ID="problem14name">Kniedistorsion</td>
+         <td>08.02.2024</td>
+         <td />
+         <td>22.04.2024</td>
+        </tr>
+       </tbody>
+      </table>
+     </text>
+     <entry>
+      <observation classCode="OBS" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.4" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2022-06-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="2466" />
+       <code code="64572001" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT">
+        <translation code="75323-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+       </code>
+       <text>
+        <reference value="#problem14name" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime>
+        <low value="20240208" />
+        <high value="20240422" />
+       </effectiveTime>
+       <value code="54888009" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <originalText>
+         <reference value="#problem14name" />
+        </originalText>
+       </value>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20240422132457+0200" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381380" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+        </assignedAuthor>
+       </author>
+       <entryRelationship typeCode="REFR">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.6" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.6" extension="2019-06-20" />
+         <code code="33999-4" codeSystem="2.16.840.1.113883.6.1" displayName="Status" />
+         <statusCode code="completed" />
+         <effectiveTime>
+          <low value="20240208" />
+          <high value="20240422" />
+         </effectiveTime>
+         <value code="413322009" codeSystem="2.16.840.1.113883.6.96" displayName="Resolved" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </observation>
+       </entryRelationship>
+      </observation>
+     </entry>
+     <entry>
+      <observation classCode="OBS" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.4" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2022-06-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="2636" />
+       <code code="64572001" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT">
+        <translation code="75323-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+       </code>
+       <text>
+        <reference value="#problem15name" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime>
+        <low value="20240422" />
+        <high value="20240424" />
+       </effectiveTime>
+       <value xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <originalText>
+         <reference value="#problem15name" />
+        </originalText>
+       </value>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20240424133914+0200" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381380" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+        </assignedAuthor>
+       </author>
+       <entryRelationship typeCode="REFR">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.6" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.6" extension="2019-06-20" />
+         <code code="33999-4" codeSystem="2.16.840.1.113883.6.1" displayName="Status" />
+         <statusCode code="completed" />
+         <effectiveTime>
+          <low value="20240422" />
+          <high value="20240424" />
+         </effectiveTime>
+         <value code="413322009" codeSystem="2.16.840.1.113883.6.96" displayName="Resolved" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </observation>
+       </entryRelationship>
+      </observation>
+     </entry>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.22" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.22" extension="2015-08-01" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.22.1" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.22.1" extension="2015-08-01" />
+     <code code="46240-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of Hospitalizations+Outpatient visits Narrative" />
+     <title>Kontakte</title>
+     <text>
+      <table>
+       <colgroup>
+        <col width="10%" />
+        <col width="15%" />
+        <col span="3" width="25%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Datum</th>
+         <th>Typ</th>
+         <th>Abteilung</th>
+         <th>Behandlungsteam</th>
+         <th>Beschreibung</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr ID="encounter17" styleCode="xRowNormal">
+         <td>18.12.2025 09:00 MEZ - 18.12.2025 23:59 MEZ</td>
+         <td ID="encounter17type">Spitalkontakt</td>
+         <td>
+          <paragraph>Klinik für Orthopädie und Unfallchirurgie</paragraph>
+          <paragraph>Spitalstrasse</paragraph>
+          <paragraph>6000 Luzern 16</paragraph>
+          <paragraph>041 205 47 70</paragraph>
+         </td>
+         <td>
+          <paragraph>Abel, Johannes, Oberarzt</paragraph>
+         </td>
+         <td>Aufenthalt nach Austritt: andere</td>
+        </tr>
+        <tr ID="encounter19" styleCode="xRowAlt">
+         <td>20.11.2025</td>
+         <td ID="encounter19type">Community-Verordnungen</td>
+         <td>
+          <paragraph>LUKSLink</paragraph>
+         </td>
+         <td>
+          <paragraph>Arzt, Test</paragraph>
+         </td>
+         <td />
+        </tr>
+        <tr ID="encounter20" styleCode="xRowNormal">
+         <td>07.11.2025 17:25 MEZ - 07.11.2025 18:45 MEZ</td>
+         <td ID="encounter20type">Chirurgie</td>
+         <td>
+          <paragraph>Kinderspital</paragraph>
+          <paragraph>Spitalstrasse</paragraph>
+          <paragraph>6000 Luzern 16</paragraph>
+          <paragraph>041 205 12 60</paragraph>
+         </td>
+         <td>
+          <paragraph>Frunz, Simone</paragraph>
+         </td>
+         <td>
+          <content ID="encounter20desc">Osteosynthese Hand Scaphoid</content>
+         </td>
+        </tr>
+        <tr ID="encounter21" styleCode="xRowAlt">
+         <td>07.11.2025 12:30 MEZ</td>
+         <td ID="encounter21type">Spitalkontakt</td>
+         <td>
+          <paragraph>KI 1 BS West</paragraph>
+          <paragraph>Spitalstrasse</paragraph>
+          <paragraph>6000 Luzern 16</paragraph>
+          <paragraph>041 205 32 32</paragraph>
+         </td>
+         <td>
+          <paragraph>Frunz, Simone</paragraph>
+         </td>
+         <td />
+        </tr>
+        <tr ID="encounter22" styleCode="xRowNormal">
+         <td>30.10.2025 13:40 MEZ</td>
+         <td ID="encounter22type">Anästhesieereignis</td>
+         <td>
+          <paragraph>LU ZENTRAL OPS</paragraph>
+          <paragraph>Spitalstrasse</paragraph>
+          <paragraph>6000 Luzern 16</paragraph>
+          <paragraph>041 205 80 99</paragraph>
+         </td>
+         <td>
+          <paragraph>Anästhesist</paragraph>
+         </td>
+         <td />
+        </tr>
+        <tr ID="encounter18" styleCode="xRowAlt">
+         <td>24.09.2025 07:50 MESZ - 23.11.2025 01:00 MEZ</td>
+         <td ID="encounter18type">Spitalkontakt</td>
+         <td>
+          <paragraph>LU ZENTRAL OPS</paragraph>
+          <paragraph>Spitalstrasse</paragraph>
+          <paragraph>6000 Luzern 16</paragraph>
+          <paragraph>041 205 80 99</paragraph>
+         </td>
+         <td>
+          <paragraph>Frunz, Simone</paragraph>
+         </td>
+         <td>Aufenthalt nach Austritt: andere</td>
+        </tr>
+       </tbody>
+      </table>
+      <footnote ID="subTitle16" styleCode="xSectionSubTitle">ab den letzten 3 Monaten</footnote>
+     </text>
+     <entry>
+      <encounter classCode="ENC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.49" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.49" extension="2015-08-01" />
+       <id assigningAuthorityName="EPIC" root="1.2.840.114350.1.13.521.3.7.3.698084.8" extension="20029455" />
+       <id assigningAuthorityName="EPIC" root="1.2.840.114350.1.72.75210" extension="20029455" />
+       <code code="AMB" codeSystem="2.16.840.1.113883.5.4">
+        <originalText>
+         <reference value="#encounter17type" />
+        </originalText>
+        <translation code="3" codeSystem="1.2.840.114350.1.13.521.3.7.4.698084.30" codeSystemName="Epic.EncounterType" />
+        <translation code="3" codeSystem="1.2.840.114350.1.72.1.30" />
+        <translation code="2" codeSystem="1.2.840.114350.1.72.1.30.1" />
+       </code>
+       <text>
+        <reference value="#encounter17" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime>
+        <low value="20251218090000+0100" />
+        <high value="20251218235900+0100" />
+       </effectiveTime>
+       <ep2:dischargeDispositionCode code="4" codeSystem="2.16.840.1.113883.12.112" codeSystemName="Discharge Disposition (HL7)" displayName="Discharged/transferred to a facility that provides custodial or supportive care" xmlns:ep2="urn:hl7-org:sdtc">
+        <originalText>andere</originalText>
+       </ep2:dischargeDispositionCode>
+       <performer typeCode="PRF">
+        <time>
+         <low nullFlavor="UNK" />
+         <high nullFlavor="UNK" />
+        </time>
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="54" />
+         <code nullFlavor="OTH">
+          <originalText>Unfallchirurgie</originalText>
+          <translation code="21" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Allgemeine Chirurgie" />
+          <translation code="117" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-60-08" />
+         <assignedPerson>
+          <name>
+           <given>Johannes</given>
+           <family>Abel</family>
+           <suffix qualifier="AC">Oberarzt</suffix>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20260101023111+0100" />
+        <assignedAuthor>
+         <id nullFlavor="UNK" />
+         <addr nullFlavor="UNK" />
+         <telecom nullFlavor="UNK" />
+         <representedOrganization>
+          <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedAuthor>
+       </author>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.686980" extension="101004056" />
+         <code nullFlavor="UNK">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4150" codeSystemName="Epic.DepartmentSpecialty" displayName="Orthopädische Chirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <playingEntity classCode="PLC">
+          <name>Klinik für Orthopädie und Unfallchirurgie</name>
+          <desc>Orthopädie und Unfallchirurgie</desc>
+         </playingEntity>
+        </participantRole>
+       </participant>
+      </encounter>
+     </entry>
+     <entry>
+      <encounter classCode="ENC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.49" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.49" extension="2015-08-01" />
+       <id assigningAuthorityName="EPIC" root="1.2.840.114350.1.13.521.3.7.3.698084.8" extension="20028529" />
+       <id assigningAuthorityName="EPIC" root="1.2.840.114350.1.72.75210" extension="20028529" />
+       <code code="AMB" codeSystem="2.16.840.1.113883.5.4">
+        <originalText>
+         <reference value="#encounter19type" />
+        </originalText>
+        <translation code="96" codeSystem="1.2.840.114350.1.13.521.3.7.4.698084.30" codeSystemName="Epic.EncounterType" />
+        <translation code="96" codeSystem="1.2.840.114350.1.72.1.30" />
+        <translation code="0" codeSystem="1.2.840.114350.1.72.1.30.1" />
+       </code>
+       <text>
+        <reference value="#encounter19" />
+       </text>
+       <statusCode code="normal" />
+       <effectiveTime>
+        <low value="20251120" />
+       </effectiveTime>
+       <performer typeCode="PRF">
+        <time>
+         <low nullFlavor="UNK" />
+         <high nullFlavor="UNK" />
+        </time>
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="4480" />
+         <code code="208D00000X" codeSystem="2.16.840.1.113883.6.101" displayName="General Practice Physician" />
+         <addr use="WP">
+          <streetAddressLine>Floraweg</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <city>Luzern</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-47-48" />
+         <telecom value="fax:+41-41-205-47-48" />
+         <assignedPerson>
+          <name>
+           <given>Test</given>
+           <family>Arzt</family>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20251120182702+0100" />
+        <assignedAuthor>
+         <id nullFlavor="UNK" />
+         <addr nullFlavor="UNK" />
+         <telecom nullFlavor="UNK" />
+         <representedOrganization>
+          <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedAuthor>
+       </author>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.686980" extension="318" />
+         <code nullFlavor="UNK">
+          <originalText>LUKSLink</originalText>
+         </code>
+         <addr nullFlavor="UNK" />
+         <playingEntity classCode="PLC">
+          <name>LUKSLink</name>
+          <desc>LUKSLink</desc>
+         </playingEntity>
+        </participantRole>
+       </participant>
+      </encounter>
+     </entry>
+     <entry>
+      <encounter classCode="ENC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.49" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.49" extension="2015-08-01" />
+       <id assigningAuthorityName="EPIC" root="1.2.840.114350.1.13.521.3.7.3.698084.8" extension="20025885" />
+       <code code="IMP" codeSystem="2.16.840.1.113883.5.4">
+        <originalText>
+         <reference value="#encounter20type" />
+        </originalText>
+        <translation code="51" codeSystem="1.2.840.114350.1.13.521.3.7.4.698084.30" codeSystemName="Epic.EncounterType" />
+        <translation code="51" codeSystem="1.2.840.114350.1.72.1.30" />
+        <translation code="0" codeSystem="1.2.840.114350.1.72.1.30.1" />
+       </code>
+       <text>
+        <reference value="#encounter20" />
+       </text>
+       <statusCode code="normal" />
+       <effectiveTime>
+        <low value="20251107172500+0100" />
+        <high value="20251107184500+0100" />
+       </effectiveTime>
+       <performer typeCode="PRF">
+        <time>
+         <low nullFlavor="UNK" />
+         <high nullFlavor="UNK" />
+        </time>
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="15501" />
+         <code nullFlavor="OTH">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Orthopädische Chirurgie" />
+          <translation code="21" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Orthopädie und Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-55-71" />
+         <assignedPerson>
+          <name>
+           <given>Simone</given>
+           <family>Frunz</family>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20250911133719+0200" />
+        <assignedAuthor>
+         <id nullFlavor="UNK" />
+         <addr nullFlavor="UNK" />
+         <telecom nullFlavor="UNK" />
+         <representedOrganization>
+          <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedAuthor>
+       </author>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.686980" extension="101003018" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <playingEntity classCode="PLC">
+          <name>Kinderspital</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+       <entryRelationship typeCode="COMP">
+        <act classCode="ACT" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.64" />
+         <code code="48767-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+         <text>
+          <reference value="#encounter20desc" />
+         </text>
+         <statusCode code="completed" />
+        </act>
+       </entryRelationship>
+      </encounter>
+     </entry>
+     <entry>
+      <encounter classCode="ENC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.49" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.49" extension="2015-08-01" />
+       <id assigningAuthorityName="EPIC" root="1.2.840.114350.1.13.521.3.7.3.698084.8" extension="20025887" />
+       <code code="IMP" codeSystem="2.16.840.1.113883.5.4">
+        <originalText>
+         <reference value="#encounter21type" />
+        </originalText>
+        <translation code="3" codeSystem="1.2.840.114350.1.13.521.3.7.4.698084.30" codeSystemName="Epic.EncounterType" />
+        <translation code="3" codeSystem="1.2.840.114350.1.72.1.30" />
+        <translation code="0" codeSystem="1.2.840.114350.1.72.1.30.1" />
+       </code>
+       <text>
+        <reference value="#encounter21" />
+       </text>
+       <statusCode code="normal" />
+       <effectiveTime>
+        <low value="20251107123000+0100" />
+       </effectiveTime>
+       <performer typeCode="PRF">
+        <time>
+         <low nullFlavor="UNK" />
+         <high nullFlavor="UNK" />
+        </time>
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="15501" />
+         <code nullFlavor="OTH">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Orthopädische Chirurgie" />
+          <translation code="21" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Orthopädie und Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-55-71" />
+         <assignedPerson>
+          <name>
+           <given>Simone</given>
+           <family>Frunz</family>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20250911133807+0200" />
+        <assignedAuthor>
+         <id nullFlavor="UNK" />
+         <addr nullFlavor="UNK" />
+         <telecom nullFlavor="UNK" />
+         <representedOrganization>
+          <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedAuthor>
+       </author>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.686980" extension="101003002" />
+         <code code="1086-8" codeSystem="2.16.840.1.113883.6.259" displayName="Pediatric Surgical Ward">
+          <originalText>Kinderchirurgie</originalText>
+          <translation code="80" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4150" codeSystemName="Epic.DepartmentSpecialty" displayName="Kinderchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <playingEntity classCode="PLC">
+          <name>KI 1 BS West</name>
+          <desc>Kinderchirurgie</desc>
+         </playingEntity>
+        </participantRole>
+       </participant>
+      </encounter>
+     </entry>
+     <entry>
+      <encounter classCode="ENC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.49" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.49" extension="2015-08-01" />
+       <id assigningAuthorityName="EPIC" root="1.2.840.114350.1.13.521.3.7.3.698084.8" extension="20027267" />
+       <id assigningAuthorityName="EPIC" root="1.2.840.114350.1.72.75210" extension="20027267" />
+       <code code="AMB" codeSystem="2.16.840.1.113883.5.4">
+        <originalText>
+         <reference value="#encounter22type" />
+        </originalText>
+        <translation code="53" codeSystem="1.2.840.114350.1.13.521.3.7.4.698084.30" codeSystemName="Epic.EncounterType" />
+        <translation code="53" codeSystem="1.2.840.114350.1.72.1.30" />
+        <translation code="0" codeSystem="1.2.840.114350.1.72.1.30.1" />
+       </code>
+       <text>
+        <reference value="#encounter22" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime>
+        <low value="20251030134041+0100" />
+        <high value="20251030134041+0100" />
+       </effectiveTime>
+       <performer typeCode="PRF">
+        <time>
+         <low nullFlavor="UNK" />
+         <high nullFlavor="UNK" />
+        </time>
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17391" />
+         <code code="207L00000X" codeSystem="2.16.840.1.113883.11.19465" displayName="Anesthesiology Physician">
+          <originalText>Anästhesie</originalText>
+          <translation code="5" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Anästhesiologie" />
+          <translation code="2" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Anästhesie" />
+         </code>
+         <addr nullFlavor="UNK" />
+         <telecom nullFlavor="UNK" />
+         <assignedPerson>
+          <name>
+           <family>Anästhesist</family>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20251104010149+0100" />
+        <assignedAuthor>
+         <id nullFlavor="UNK" />
+         <addr nullFlavor="UNK" />
+         <telecom nullFlavor="UNK" />
+         <representedOrganization>
+          <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedAuthor>
+       </author>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.686980" extension="101004084" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <playingEntity classCode="PLC">
+          <name>LU ZENTRAL OPS</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+      </encounter>
+     </entry>
+     <entry>
+      <encounter classCode="ENC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.49" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.49" extension="2015-08-01" />
+       <id assigningAuthorityName="EPIC" root="1.2.840.114350.1.13.521.3.7.3.698084.8" extension="20026268" />
+       <id assigningAuthorityName="EPIC" root="1.2.840.114350.1.72.75210" extension="20026268" />
+       <code code="IMP" codeSystem="2.16.840.1.113883.5.4">
+        <originalText>
+         <reference value="#encounter18type" />
+        </originalText>
+        <translation code="3" codeSystem="1.2.840.114350.1.13.521.3.7.4.698084.30" codeSystemName="Epic.EncounterType" />
+        <translation code="3" codeSystem="1.2.840.114350.1.72.1.30" />
+        <translation code="1" codeSystem="1.2.840.114350.1.72.1.30.1" />
+       </code>
+       <text>
+        <reference value="#encounter18" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime>
+        <low value="20250924075000+0200" />
+        <high value="20251123010000+0100" />
+       </effectiveTime>
+       <ep2:dischargeDispositionCode code="4" codeSystem="2.16.840.1.113883.12.112" codeSystemName="Discharge Disposition (HL7)" displayName="Discharged/transferred to a facility that provides custodial or supportive care" xmlns:ep2="urn:hl7-org:sdtc">
+        <originalText>andere</originalText>
+       </ep2:dischargeDispositionCode>
+       <performer typeCode="PRF">
+        <time>
+         <low nullFlavor="UNK" />
+         <high nullFlavor="UNK" />
+        </time>
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="15501" />
+         <code nullFlavor="OTH">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Orthopädische Chirurgie" />
+          <translation code="21" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Orthopädie und Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-55-71" />
+         <assignedPerson>
+          <name>
+           <given>Simone</given>
+           <family>Frunz</family>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20250924074700+0200" />
+        <assignedAuthor>
+         <id nullFlavor="UNK" />
+         <addr nullFlavor="UNK" />
+         <telecom nullFlavor="UNK" />
+         <representedOrganization>
+          <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedAuthor>
+       </author>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.686980" extension="101004084" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <playingEntity classCode="PLC">
+          <name>LU ZENTRAL OPS</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+      </encounter>
+     </entry>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.2" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.2" extension="2015-08-01" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.2.1" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.2.1" extension="2015-08-01" />
+     <id root="65ED7189-EA2B-11F0-9B3B-005056830D44" />
+     <code code="11369-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of Immunization Narrative" />
+     <title>Impfungen</title>
+     <text>
+      <table>
+       <colgroup>
+        <col width="25%" />
+        <col width="50%" />
+        <col width="25%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Impfung</th>
+         <th>Verabreichungsdaten</th>
+         <th>Nächste Fälligkeit</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr ID="immunization24">
+         <td ID="immunization24Name">Diphtherie, Tetanus</td>
+         <td>
+          <content>01.01.2019</content>
+         </td>
+         <td />
+        </tr>
+        <tr ID="immunization25">
+         <td ID="immunization25Name">Pfizer Covid-19 Impfung</td>
+         <td>
+          <content>18.06.2021</content>, <content>11.05.2021</content></td>
+         <td />
+        </tr>
+       </tbody>
+      </table>
+     </text>
+     <entry>
+      <substanceAdministration classCode="SBADM" moodCode="EVN" negationInd="false">
+       <templateId root="2.16.840.1.113883.10.20.22.4.52" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.52" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="1177" />
+       <code code="IMMUNIZ" codeSystem="2.16.840.1.113883.5.4" codeSystemName="ActCode" />
+       <text>
+        <reference value="#immunization24" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime value="20190101" />
+       <consumable typeCode="CSM">
+        <manufacturedProduct classCode="MANU">
+         <templateId root="2.16.840.1.113883.10.20.22.4.54" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.54" extension="2014-06-09" />
+         <manufacturedMaterial>
+          <code code="167" codeSystem="2.16.840.1.113883.12.292" codeSystemName="CVX">
+           <originalText>
+            <reference value="#immunization24Name" />
+           </originalText>
+          </code>
+          <lotNumberText>26262626</lotNumberText>
+         </manufacturedMaterial>
+        </manufacturedProduct>
+       </consumable>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20230414111233+0200" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="219559042" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="10690" />
+        </assignedAuthor>
+       </author>
+      </substanceAdministration>
+     </entry>
+     <entry>
+      <substanceAdministration classCode="SBADM" moodCode="EVN" negationInd="false">
+       <templateId root="2.16.840.1.113883.10.20.22.4.52" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.52" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="1178" />
+       <code code="IMMUNIZ" codeSystem="2.16.840.1.113883.5.4" codeSystemName="ActCode" />
+       <text>
+        <reference value="#immunization25" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime value="20210511" />
+       <consumable typeCode="CSM">
+        <manufacturedProduct classCode="MANU">
+         <templateId root="2.16.840.1.113883.10.20.22.4.54" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.54" extension="2014-06-09" />
+         <manufacturedMaterial>
+          <code nullFlavor="OTH">
+           <originalText>
+            <reference value="#immunization25Name" />
+           </originalText>
+          </code>
+          <lotNumberText>45325</lotNumberText>
+         </manufacturedMaterial>
+        </manufacturedProduct>
+       </consumable>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20230414111233+0200" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="219559042" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="10690" />
+        </assignedAuthor>
+       </author>
+      </substanceAdministration>
+     </entry>
+     <entry>
+      <substanceAdministration classCode="SBADM" moodCode="EVN" negationInd="false">
+       <templateId root="2.16.840.1.113883.10.20.22.4.52" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.52" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.768076" extension="1902" />
+       <code code="IMMUNIZ" codeSystem="2.16.840.1.113883.5.4" codeSystemName="ActCode" />
+       <text>
+        <reference value="#immunization25" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime value="20210618" />
+       <consumable typeCode="CSM">
+        <manufacturedProduct classCode="MANU">
+         <templateId root="2.16.840.1.113883.10.20.22.4.54" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.54" extension="2014-06-09" />
+         <manufacturedMaterial>
+          <code nullFlavor="OTH">
+           <originalText>
+            <reference value="#immunization25Name" />
+           </originalText>
+          </code>
+          <lotNumberText>RT54724</lotNumberText>
+         </manufacturedMaterial>
+         <manufacturerOrganization>
+          <name>Pfizer AG</name>
+         </manufacturerOrganization>
+        </manufacturedProduct>
+       </consumable>
+       <performer typeCode="PRF">
+        <assignedEntity classCode="ASSIGNED">
+         <id nullFlavor="UNK" />
+         <representedOrganization classCode="ORG">
+          <name>luzern</name>
+          <addr nullFlavor="UNK" />
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20230913095952+0200" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221131530" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="16638" />
+        </assignedAuthor>
+       </author>
+      </substanceAdministration>
+     </entry>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="1.2.840.114350.1.72.2.1039" />
+     <code code="10167-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="HISTORY OF SURGICAL PROCEDURES" />
+     <title>Chirurgische Anamnese</title>
+     <text>
+      <table>
+       <colgroup>
+        <col width="25%" />
+        <col width="10%" />
+        <col width="15%" />
+        <col width="50%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Chirurgie</th>
+         <th>Datum</th>
+         <th>Stelle/Seitigkeit</th>
+         <th>Kommentare</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td>KNIEARTHROSKOPIE</td>
+         <td>21.04.2023</td>
+         <td>
+          <content>Knie/Links</content>
+         </td>
+         <td>
+          <paragraph ID="Surg28">Kniearthroskopie durchgeführt von Jonas Mühlebach, Oberarzt mbF um LU OP-PLATTFORM</paragraph>
+         </td>
+        </tr>
+        <tr>
+         <td>DIAGNOSTISCHE LAPAROSKOPIE</td>
+         <td />
+         <td />
+         <td>
+          <paragraph ID="Surg29" />
+         </td>
+        </tr>
+        <tr>
+         <td>TUMOREXZISION + SCHNELLSCHNITT</td>
+         <td>12.11.2023</td>
+         <td>
+          <content>Auge/Links</content>
+         </td>
+         <td>
+          <paragraph ID="Surg30">Tumorexzision + Schnellschnitt (Ophtalmochirurgie) durchgeführt von Family Medicine Physician, Arzt um AK OPS</paragraph>
+         </td>
+        </tr>
+        <tr>
+         <td>KNIEARTHROSKOPIE</td>
+         <td>09.01.2024</td>
+         <td>
+          <content>Knie/Links</content>
+         </td>
+         <td>
+          <paragraph ID="Surg31">Kniearthroskopie durchgeführt von Jonas Mühlebach, Oberarzt mbF um LU OP-PLATTFORM</paragraph>
+         </td>
+        </tr>
+        <tr>
+         <td>KNIEARTHROSKOPIE</td>
+         <td>05.02.2024</td>
+         <td>
+          <content>Knie/Rechts</content>
+         </td>
+         <td>
+          <paragraph ID="Surg32">Kniearthroskopie durchgeführt von Jonas Mühlebach, Oberarzt mbF um LU OP-PLATTFORM</paragraph>
+         </td>
+        </tr>
+        <tr>
+         <td>KNIEARTHROSKOPIE</td>
+         <td>07.02.2024</td>
+         <td>
+          <content>Knie/Links</content>
+         </td>
+         <td>
+          <paragraph ID="Surg33">Kniearthroskopie durchgeführt von Family Medicine Physician, Arzt um LU OP-PLATTFORM</paragraph>
+         </td>
+        </tr>
+        <tr>
+         <td>KNIEARTHROSKOPIE</td>
+         <td>23.04.2024</td>
+         <td>
+          <content>Knie/Rechts</content>
+         </td>
+         <td>
+          <paragraph ID="Surg34">Kniearthroskopie durchgeführt von Family Medicine Physician, Arzt um LU OP-PLATTFORM</paragraph>
+         </td>
+        </tr>
+        <tr>
+         <td>OFFENE APPENDEKTOMIE</td>
+         <td>11.12.2024</td>
+         <td>
+          <content>Abdomen/Links</content>
+         </td>
+         <td>
+          <paragraph ID="Surg35">Offene Appendektomie durchgeführt von Jonas Mühlebach, Oberarzt mbF um LU OP-PLATTFORM</paragraph>
+         </td>
+        </tr>
+        <tr>
+         <td>OSTEOSYNTHESE SCAPHOID</td>
+         <td>24.09.2025</td>
+         <td>
+          <content>Becken/Links</content>
+         </td>
+         <td>
+          <paragraph ID="Surg36">Osteosynthese Hand Scaphoid durchgeführt von Simone Frunz um LU OP-PLATTFORM</paragraph>
+         </td>
+        </tr>
+       </tbody>
+      </table>
+     </text>
+     <entry>
+      <procedure classCode="PROC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1039" extension="00000000000004f03b813b8f0708322b" />
+       <code code="150016" codeSystem="1.2.840.114350.1.13.521.3.7.2.696580" codeSystemName="Epic.EAP.ID">
+        <originalText>KNIEARTHROSKOPIE</originalText>
+       </code>
+       <statusCode code="completed" />
+       <targetSiteCode nullFlavor="UNK">
+        <qualifier>
+         <name code="272741003" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="laterality" />
+         <value code="7771000" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="left" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </qualifier>
+       </targetSiteCode>
+       <performer typeCode="PRF">
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="558" />
+         <code nullFlavor="OTH">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Orthopädische Chirurgie" />
+          <translation code="21" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Orthopädie und Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-45-13" />
+         <assignedPerson>
+          <name use="L">
+           <given>Jonas</given>
+           <family>Mühlebach</family>
+           <suffix qualifier="AC"> Leitender Arzt</suffix>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time nullFlavor="UNK" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="195871091" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="558" />
+         <code nullFlavor="OTH">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Orthopädische Chirurgie" />
+          <translation code="21" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Orthopädie und Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-45-13" />
+         <assignedPerson>
+          <name use="L">
+           <given>Jonas</given>
+           <family>Mühlebach</family>
+           <suffix qualifier="AC"> Leitender Arzt</suffix>
+          </name>
+         </assignedPerson>
+         <representedOrganization>
+          <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedAuthor>
+       </author>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <city>Luzern</city>
+          <state nullFlavor="UNK" />
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <playingEntity classCode="PLC" determinerCode="INSTANCE">
+          <name>LUKS Luzern</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+       <entryRelationship typeCode="COMP">
+        <observation classCode="OBS" moodCode="EVN">
+         <code code="67723-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Date of health-related event" />
+         <effectiveTime>
+          <low value="20230421" />
+          <high value="20230421" />
+         </effectiveTime>
+         <value xsi:type="ST" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">21.04.2023</value>
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="COMP">
+        <act classCode="ACT" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.64" />
+         <code code="48767-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Annotation comment" />
+         <text>
+          <reference value="#Surg28" />
+         </text>
+         <statusCode code="completed" />
+        </act>
+       </entryRelationship>
+      </procedure>
+     </entry>
+     <entry>
+      <procedure classCode="PROC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1039" extension="00000000000004f13b813b8f0708322b" />
+       <code code="127998" codeSystem="1.2.840.114350.1.13.521.3.7.2.696580" codeSystemName="Epic.EAP.ID">
+        <originalText>DIAGNOSTISCHE LAPAROSKOPIE</originalText>
+       </code>
+       <statusCode code="completed" />
+       <targetSiteCode nullFlavor="UNK">
+        <qualifier>
+         <name code="272741003" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="laterality" />
+         <value xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </qualifier>
+       </targetSiteCode>
+       <entryRelationship typeCode="COMP">
+        <act classCode="ACT" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.64" />
+         <code code="48767-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Annotation comment" />
+         <text>
+          <reference value="#Surg29" />
+         </text>
+         <statusCode code="completed" />
+        </act>
+       </entryRelationship>
+      </procedure>
+     </entry>
+     <entry>
+      <procedure classCode="PROC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1039" extension="00000000000004f23b813b8f0708322b" />
+       <code code="152341" codeSystem="1.2.840.114350.1.13.521.3.7.2.696580" codeSystemName="Epic.EAP.ID">
+        <originalText>TUMOREXZISION + SCHNELLSCHNITT</originalText>
+       </code>
+       <statusCode code="completed" />
+       <targetSiteCode nullFlavor="UNK">
+        <qualifier>
+         <name code="272741003" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="laterality" />
+         <value code="7771000" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="left" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </qualifier>
+       </targetSiteCode>
+       <performer typeCode="PRF">
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+         <code nullFlavor="OTH">
+          <originalText>Dermatologie</originalText>
+          <translation code="15" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Dermatologie" />
+          <translation code="6" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Dermatologie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>LUZERN</city>
+          <state>LU</state>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <assignedPerson>
+          <name use="L">
+           <given>Family</given>
+           <given>Medicine</given>
+           <family>Physician</family>
+           <suffix qualifier="AC"> Arzt</suffix>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <city>Luzern</city>
+          <state nullFlavor="UNK" />
+         </addr>
+         <playingEntity classCode="PLC" determinerCode="INSTANCE">
+          <name>Augenklinik</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+       <entryRelationship typeCode="COMP">
+        <observation classCode="OBS" moodCode="EVN">
+         <code code="67723-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Date of health-related event" />
+         <effectiveTime>
+          <low value="20231112" />
+          <high value="20231112" />
+         </effectiveTime>
+         <value xsi:type="ST" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">12.11.2023</value>
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="COMP">
+        <act classCode="ACT" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.64" />
+         <code code="48767-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Annotation comment" />
+         <text>
+          <reference value="#Surg30" />
+         </text>
+         <statusCode code="completed" />
+        </act>
+       </entryRelationship>
+      </procedure>
+     </entry>
+     <entry>
+      <procedure classCode="PROC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1039" extension="00000000000004f33b813b8f0708322b" />
+       <code code="150016" codeSystem="1.2.840.114350.1.13.521.3.7.2.696580" codeSystemName="Epic.EAP.ID">
+        <originalText>KNIEARTHROSKOPIE</originalText>
+       </code>
+       <statusCode code="completed" />
+       <targetSiteCode nullFlavor="UNK">
+        <qualifier>
+         <name code="272741003" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="laterality" />
+         <value code="7771000" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="left" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </qualifier>
+       </targetSiteCode>
+       <performer typeCode="PRF">
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="558" />
+         <code nullFlavor="OTH">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Orthopädische Chirurgie" />
+          <translation code="21" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Orthopädie und Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-45-13" />
+         <assignedPerson>
+          <name use="L">
+           <given>Jonas</given>
+           <family>Mühlebach</family>
+           <suffix qualifier="AC"> Leitender Arzt</suffix>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <city>Luzern</city>
+          <state nullFlavor="UNK" />
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <playingEntity classCode="PLC" determinerCode="INSTANCE">
+          <name>LUKS Luzern</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+       <entryRelationship typeCode="COMP">
+        <observation classCode="OBS" moodCode="EVN">
+         <code code="67723-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Date of health-related event" />
+         <effectiveTime>
+          <low value="20240109" />
+          <high value="20240109" />
+         </effectiveTime>
+         <value xsi:type="ST" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">09.01.2024</value>
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="COMP">
+        <act classCode="ACT" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.64" />
+         <code code="48767-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Annotation comment" />
+         <text>
+          <reference value="#Surg31" />
+         </text>
+         <statusCode code="completed" />
+        </act>
+       </entryRelationship>
+      </procedure>
+     </entry>
+     <entry>
+      <procedure classCode="PROC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1039" extension="00000000000004f43b813b8f0708322b" />
+       <code code="150016" codeSystem="1.2.840.114350.1.13.521.3.7.2.696580" codeSystemName="Epic.EAP.ID">
+        <originalText>KNIEARTHROSKOPIE</originalText>
+       </code>
+       <statusCode code="completed" />
+       <targetSiteCode nullFlavor="UNK">
+        <qualifier>
+         <name code="272741003" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="laterality" />
+         <value code="24028007" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="right" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </qualifier>
+       </targetSiteCode>
+       <performer typeCode="PRF">
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="558" />
+         <code nullFlavor="OTH">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Orthopädische Chirurgie" />
+          <translation code="21" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Orthopädie und Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-45-13" />
+         <assignedPerson>
+          <name use="L">
+           <given>Jonas</given>
+           <family>Mühlebach</family>
+           <suffix qualifier="AC"> Leitender Arzt</suffix>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time nullFlavor="UNK" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381380" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+        </assignedAuthor>
+       </author>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <city>Luzern</city>
+          <state nullFlavor="UNK" />
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <playingEntity classCode="PLC" determinerCode="INSTANCE">
+          <name>LUKS Luzern</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+       <entryRelationship typeCode="COMP">
+        <observation classCode="OBS" moodCode="EVN">
+         <code code="67723-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Date of health-related event" />
+         <effectiveTime>
+          <low value="20240205" />
+          <high value="20240205" />
+         </effectiveTime>
+         <value xsi:type="ST" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">05.02.2024</value>
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="COMP">
+        <act classCode="ACT" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.64" />
+         <code code="48767-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Annotation comment" />
+         <text>
+          <reference value="#Surg32" />
+         </text>
+         <statusCode code="completed" />
+        </act>
+       </entryRelationship>
+      </procedure>
+     </entry>
+     <entry>
+      <procedure classCode="PROC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1039" extension="00000000000004f53b813b8f0708322b" />
+       <code code="150016" codeSystem="1.2.840.114350.1.13.521.3.7.2.696580" codeSystemName="Epic.EAP.ID">
+        <originalText>KNIEARTHROSKOPIE</originalText>
+       </code>
+       <statusCode code="completed" />
+       <targetSiteCode nullFlavor="UNK">
+        <qualifier>
+         <name code="272741003" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="laterality" />
+         <value code="7771000" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="left" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </qualifier>
+       </targetSiteCode>
+       <performer typeCode="PRF">
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+         <code nullFlavor="OTH">
+          <originalText>Dermatologie</originalText>
+          <translation code="15" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Dermatologie" />
+          <translation code="6" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Dermatologie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>LUZERN</city>
+          <state>LU</state>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <assignedPerson>
+          <name use="L">
+           <given>Family</given>
+           <given>Medicine</given>
+           <family>Physician</family>
+           <suffix qualifier="AC"> Arzt</suffix>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time nullFlavor="UNK" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381380" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+        </assignedAuthor>
+       </author>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <city>Luzern</city>
+          <state nullFlavor="UNK" />
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <playingEntity classCode="PLC" determinerCode="INSTANCE">
+          <name>LUKS Luzern</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+       <entryRelationship typeCode="COMP">
+        <observation classCode="OBS" moodCode="EVN">
+         <code code="67723-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Date of health-related event" />
+         <effectiveTime>
+          <low value="20240207" />
+          <high value="20240207" />
+         </effectiveTime>
+         <value xsi:type="ST" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">07.02.2024</value>
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="COMP">
+        <act classCode="ACT" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.64" />
+         <code code="48767-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Annotation comment" />
+         <text>
+          <reference value="#Surg33" />
+         </text>
+         <statusCode code="completed" />
+        </act>
+       </entryRelationship>
+      </procedure>
+     </entry>
+     <entry>
+      <procedure classCode="PROC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1039" extension="00000000000004f63b813b8f0708322b" />
+       <code code="150016" codeSystem="1.2.840.114350.1.13.521.3.7.2.696580" codeSystemName="Epic.EAP.ID">
+        <originalText>KNIEARTHROSKOPIE</originalText>
+       </code>
+       <statusCode code="completed" />
+       <targetSiteCode nullFlavor="UNK">
+        <qualifier>
+         <name code="272741003" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="laterality" />
+         <value code="24028007" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="right" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </qualifier>
+       </targetSiteCode>
+       <performer typeCode="PRF">
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+         <code nullFlavor="OTH">
+          <originalText>Dermatologie</originalText>
+          <translation code="15" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Dermatologie" />
+          <translation code="6" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Dermatologie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>LUZERN</city>
+          <state>LU</state>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <assignedPerson>
+          <name use="L">
+           <given>Family</given>
+           <given>Medicine</given>
+           <family>Physician</family>
+           <suffix qualifier="AC"> Arzt</suffix>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time nullFlavor="UNK" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381380" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17332" />
+        </assignedAuthor>
+       </author>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <city>Luzern</city>
+          <state nullFlavor="UNK" />
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <playingEntity classCode="PLC" determinerCode="INSTANCE">
+          <name>LUKS Luzern</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+       <entryRelationship typeCode="COMP">
+        <observation classCode="OBS" moodCode="EVN">
+         <code code="67723-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Date of health-related event" />
+         <effectiveTime>
+          <low value="20240423" />
+          <high value="20240423" />
+         </effectiveTime>
+         <value xsi:type="ST" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">23.04.2024</value>
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="COMP">
+        <act classCode="ACT" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.64" />
+         <code code="48767-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Annotation comment" />
+         <text>
+          <reference value="#Surg34" />
+         </text>
+         <statusCode code="completed" />
+        </act>
+       </entryRelationship>
+      </procedure>
+     </entry>
+     <entry>
+      <procedure classCode="PROC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1039" extension="00000000000004f73b813b8f0708322b" />
+       <code code="128157" codeSystem="1.2.840.114350.1.13.521.3.7.2.696580" codeSystemName="Epic.EAP.ID">
+        <originalText>OFFENE APPENDEKTOMIE</originalText>
+       </code>
+       <statusCode code="completed" />
+       <targetSiteCode nullFlavor="UNK">
+        <qualifier>
+         <name code="272741003" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="laterality" />
+         <value code="7771000" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="left" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </qualifier>
+       </targetSiteCode>
+       <performer typeCode="PRF">
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="558" />
+         <code nullFlavor="OTH">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Orthopädische Chirurgie" />
+          <translation code="21" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Orthopädie und Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-45-13" />
+         <assignedPerson>
+          <name use="L">
+           <given>Jonas</given>
+           <family>Mühlebach</family>
+           <suffix qualifier="AC"> Leitender Arzt</suffix>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <city>Luzern</city>
+          <state nullFlavor="UNK" />
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <playingEntity classCode="PLC" determinerCode="INSTANCE">
+          <name>LUKS Luzern</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+       <entryRelationship typeCode="COMP">
+        <observation classCode="OBS" moodCode="EVN">
+         <code code="67723-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Date of health-related event" />
+         <effectiveTime>
+          <low value="20241211" />
+          <high value="20241211" />
+         </effectiveTime>
+         <value xsi:type="ST" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">11.12.2024</value>
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="COMP">
+        <act classCode="ACT" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.64" />
+         <code code="48767-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Annotation comment" />
+         <text>
+          <reference value="#Surg35" />
+         </text>
+         <statusCode code="completed" />
+        </act>
+       </entryRelationship>
+      </procedure>
+     </entry>
+     <entry>
+      <procedure classCode="PROC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1039" extension="00000000000004f83b813b8f0708322b" />
+       <code code="131417" codeSystem="1.2.840.114350.1.13.521.3.7.2.696580" codeSystemName="Epic.EAP.ID">
+        <originalText>OSTEOSYNTHESE SCAPHOID</originalText>
+       </code>
+       <statusCode code="completed" />
+       <targetSiteCode nullFlavor="UNK">
+        <qualifier>
+         <name code="272741003" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="laterality" />
+         <value code="7771000" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="left" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </qualifier>
+       </targetSiteCode>
+       <performer typeCode="PRF">
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="15501" />
+         <code nullFlavor="OTH">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Orthopädische Chirurgie" />
+          <translation code="21" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Orthopädie und Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-55-71" />
+         <assignedPerson>
+          <name use="L">
+           <given>Simone</given>
+           <family>Frunz</family>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <city>Luzern</city>
+          <state nullFlavor="UNK" />
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <playingEntity classCode="PLC" determinerCode="INSTANCE">
+          <name>LUKS Luzern</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+       <entryRelationship typeCode="COMP">
+        <observation classCode="OBS" moodCode="EVN">
+         <code code="67723-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Date of health-related event" />
+         <effectiveTime>
+          <low value="20250924" />
+          <high value="20250924" />
+         </effectiveTime>
+         <value xsi:type="ST" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">24.09.2025</value>
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="COMP">
+        <act classCode="ACT" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.64" />
+         <code code="48767-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Annotation comment" />
+         <text>
+          <reference value="#Surg36" />
+         </text>
+         <statusCode code="completed" />
+        </act>
+       </entryRelationship>
+      </procedure>
+     </entry>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.17" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.17" extension="2015-08-01" />
+     <code code="29762-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Social history Narrative" />
+     <title>Soziale Anamnese</title>
+     <text>
+      <table ID="sochist40">
+       <colgroup>
+        <col span="2" width="25%" />
+        <col width="13%" />
+        <col width="12%" />
+        <col width="25%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Tabakkonsum</th>
+         <th>Typen</th>
+         <th>Packungen/Tag</th>
+         <th>Jahre des Konsums</th>
+         <th>Datum</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr>
+         <td>Rauchtabak: Nie erfragt</td>
+         <td />
+         <td ID="sochist40packsperday" />
+         <td />
+         <td />
+        </tr>
+       </tbody>
+      </table>
+      <table>
+       <colgroup>
+        <col width="50%" />
+        <col span="2" width="25%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Geschlechtsinformationen</th>
+         <th>Wert</th>
+         <th>Erfasstes Datum</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr ID="BirthSex43">
+         <td>Geschlecht im Geburtenregister</td>
+         <td ID="BirthSex43Value">Nicht vorhanden</td>
+         <td />
+        </tr>
+        <tr ID="LegalSex44">
+         <td>Geschlecht</td>
+         <td ID="LegalSex44Value">Männlich</td>
+         <td>14.04.2023 10:29 MESZ</td>
+        </tr>
+        <tr ID="GenderIdentity41">
+         <td>Geschlechtsidentität</td>
+         <td ID="GenderIdentity41Value">Nicht vorhanden</td>
+         <td />
+        </tr>
+        <tr ID="SexualOrientation42">
+         <td>Sexuelle Orientierung</td>
+         <td ID="SexualOrientation42Value">Nicht vorhanden</td>
+         <td />
+        </tr>
+       </tbody>
+      </table>
+     </text>
+     <entry>
+      <observation classCode="OBS" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.78" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.78" extension="2014-06-09" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1040.1" extension="Z1459^^72166-2" />
+       <code code="72166-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Tobacco smoking status NHIS" />
+       <text>
+        <reference value="#sochist40" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime nullFlavor="UNK" />
+       <value code="266927001" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Tobacco smoking consumption unknown" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+      </observation>
+     </entry>
+     <entry>
+      <observation classCode="OBS" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.200" extension="2016-06-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1040.20" extension="Z1459" />
+       <code code="76689-9" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Sex assigned at birth" />
+       <text>
+        <reference value="#BirthSex43" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime value="19780308" />
+       <value codeSystem="2.16.840.1.113883.5.1" codeSystemName="HL7 Gender" xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <originalText>
+         <reference value="#BirthSex43Value" />
+        </originalText>
+       </value>
+      </observation>
+     </entry>
+     <entry>
+      <observation classCode="OBS" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.38" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2022-06-01" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.507" extension="2023-06-28" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1040.23" extension="Z1459^66578^46098-0" />
+       <code code="46098-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Sex" />
+       <text>
+        <reference value="#LegalSex44" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime value="20230414102925+0200" />
+       <value code="248153007" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMEDCT" displayName="Male (finding)" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <originalText>
+         <reference value="#LegalSex44Value" />
+        </originalText>
+       </value>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20230414102925+0200" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="586686727" />
+         <addr nullFlavor="UNK" />
+         <telecom nullFlavor="UNK" />
+         <representedOrganization>
+          <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedAuthor>
+       </author>
+      </observation>
+     </entry>
+     <entry>
+      <observation classCode="OBS" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.34.3.45" extension="2022-06-01" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.38" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1040.46" extension="Z1459" />
+       <code code="76691-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Gender identity" />
+       <text>
+        <reference value="#GenderIdentity41" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime>
+        <low nullFlavor="UNK" />
+       </effectiveTime>
+       <value xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <originalText>
+         <reference value="#GenderIdentity41Value" />
+        </originalText>
+       </value>
+      </observation>
+     </entry>
+     <entry>
+      <observation classCode="OBS" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.501" extension="2022-06-01" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.38" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.1040.45" extension="Z1459.1" />
+       <code code="76690-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Sexual orientation" />
+       <text>
+        <reference value="#SexualOrientation42" />
+       </text>
+       <statusCode code="completed" />
+       <effectiveTime>
+        <low nullFlavor="UNK" />
+       </effectiveTime>
+       <value xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <originalText>
+         <reference value="#SexualOrientation42Value" />
+        </originalText>
+       </value>
+      </observation>
+     </entry>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.4" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.4" extension="2015-08-01" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.4.1" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.4.1" extension="2015-08-01" />
+     <code code="8716-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Vital signs" />
+     <title>Letzte dokumentierte Vitalparameter</title>
+     <text>
+      <table>
+       <colgroup>
+        <col span="4" width="25%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Vitalparameter</th>
+         <th>Messwerte</th>
+         <th>Erfassungszeit</th>
+         <th>Kommentare</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr styleCode="xRowNormal">
+         <td styleCode="xcellHeader">Blutdruck</td>
+         <td>
+          <content ID="sysBP_5829713040">120</content>/<content ID="diaBP_5829713040">80</content></td>
+         <td>25.09.2025 14:44 MESZ</td>
+         <td />
+        </tr>
+        <tr ID="pulse_5829713040" styleCode="xRowAlt">
+         <td styleCode="xcellHeader">Puls</td>
+         <td>68</td>
+         <td>25.09.2025 14:44 MESZ</td>
+         <td />
+        </tr>
+        <tr ID="temp_5829713040" styleCode="xRowNormal">
+         <td styleCode="xcellHeader">Temperatur</td>
+         <td>36.5 °C</td>
+         <td>25.09.2025 14:44 MESZ</td>
+         <td />
+        </tr>
+        <tr ID="resp_" styleCode="xRowAlt">
+         <td styleCode="xcellHeader">Atemfrequenz</td>
+         <td>-</td>
+         <td>-</td>
+         <td />
+        </tr>
+        <tr ID="SpO2_" styleCode="xRowNormal">
+         <td styleCode="xcellHeader">Sauerstoffsättigung</td>
+         <td>-</td>
+         <td>-</td>
+         <td />
+        </tr>
+        <tr ID="inhaled_" styleCode="xRowAlt">
+         <td styleCode="xcellHeader">Inhalierte Sauerstoffkonzentration</td>
+         <td>-</td>
+         <td>-</td>
+         <td />
+        </tr>
+        <tr ID="weight_5829712920" styleCode="xRowNormal">
+         <td styleCode="xcellHeader">Gewicht</td>
+         <td>55 kg</td>
+         <td>25.09.2025 14:42 MESZ</td>
+         <td />
+        </tr>
+        <tr ID="height_5829712920" styleCode="xRowAlt">
+         <td styleCode="xcellHeader">Grösse</td>
+         <td>185 cm</td>
+         <td>25.09.2025 14:42 MESZ</td>
+         <td />
+        </tr>
+        <tr ID="bmi_5829712920" styleCode="xRowNormal">
+         <td styleCode="xcellHeader">Body-Mass-Index</td>
+         <td>16.07</td>
+         <td>25.09.2025 14:42 MESZ</td>
+         <td />
+        </tr>
+       </tbody>
+      </table>
+     </text>
+     <entry typeCode="DRIV">
+      <organizer classCode="CLUSTER" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.26" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.26" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.2109" extension="5829712920-Z1459" />
+       <code code="46680005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Vital signs">
+        <translation code="74728-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Vital signs, weight, height, head circumference, oximetry, BMI, and BSA panel - HL7.CCDAr1.1" />
+       </code>
+       <statusCode code="completed" />
+       <effectiveTime value="20250925124200+0000" />
+       <component>
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2014-06-09" />
+         <id root="1.2.840.114350.1.13.521.3.7.1.2109.1" extension="5829712920-heightC83-Z1459" />
+         <code code="8302-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+          <originalText>Body height</originalText>
+         </code>
+         <text>
+          <reference value="#height_5829712920" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime value="20250925124200+0000" />
+         <value xsi:type="PQ" unit="cm" value="185" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20250925144852+0200" />
+          <assignedAuthor>
+           <id nullFlavor="UNK" />
+           <addr nullFlavor="UNK" />
+           <telecom nullFlavor="UNK" />
+           <representedOrganization>
+            <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+            <telecom use="WP" value="tel:+41-41-205-77-01" />
+            <addr use="WP">
+             <streetAddressLine nullFlavor="UNK" />
+             <postalCode>6000</postalCode>
+             <city nullFlavor="UNK" />
+             <country>CHE</country>
+            </addr>
+           </representedOrganization>
+          </assignedAuthor>
+         </author>
+        </observation>
+       </component>
+       <component>
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2014-06-09" />
+         <id root="1.2.840.114350.1.13.521.3.7.1.2109.1" extension="5829712920-weightC83-Z1459" />
+         <code code="29463-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+          <originalText>Body weight</originalText>
+         </code>
+         <text>
+          <reference value="#weight_5829712920" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime value="20250925124200+0000" />
+         <value xsi:type="PQ" unit="kg" value="55" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20250925144852+0200" />
+          <assignedAuthor>
+           <id nullFlavor="UNK" />
+           <addr nullFlavor="UNK" />
+           <telecom nullFlavor="UNK" />
+           <representedOrganization>
+            <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+            <telecom use="WP" value="tel:+41-41-205-77-01" />
+            <addr use="WP">
+             <streetAddressLine nullFlavor="UNK" />
+             <postalCode>6000</postalCode>
+             <city nullFlavor="UNK" />
+             <country>CHE</country>
+            </addr>
+           </representedOrganization>
+          </assignedAuthor>
+         </author>
+        </observation>
+       </component>
+       <component>
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2014-06-09" />
+         <id root="1.2.840.114350.1.13.521.3.7.1.2109.1" extension="5829712920-bmi-Z1459" />
+         <code code="39156-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+          <originalText>BMI</originalText>
+         </code>
+         <text>
+          <reference value="#bmi_5829712920" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime value="20250925124200+0000" />
+         <value xsi:type="PQ" unit="kg/m2" value="16.07" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20250925144852+0200" />
+          <assignedAuthor>
+           <id nullFlavor="UNK" />
+           <addr nullFlavor="UNK" />
+           <telecom nullFlavor="UNK" />
+           <representedOrganization>
+            <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+            <telecom use="WP" value="tel:+41-41-205-77-01" />
+            <addr use="WP">
+             <streetAddressLine nullFlavor="UNK" />
+             <postalCode>6000</postalCode>
+             <city nullFlavor="UNK" />
+             <country>CHE</country>
+            </addr>
+           </representedOrganization>
+          </assignedAuthor>
+         </author>
+        </observation>
+       </component>
+      </organizer>
+     </entry>
+     <entry typeCode="DRIV">
+      <organizer classCode="CLUSTER" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.26" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.26" extension="2015-08-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.1.2109" extension="5829713040-Z1459" />
+       <code code="46680005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Vital signs">
+        <translation code="74728-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Vital signs, weight, height, head circumference, oximetry, BMI, and BSA panel - HL7.CCDAr1.1" />
+       </code>
+       <statusCode code="completed" />
+       <effectiveTime value="20250925124400+0000" />
+       <component>
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2014-06-09" />
+         <id root="1.2.840.114350.1.13.521.3.7.1.2109.1" extension="5829713040-sysBP-Z1459" />
+         <code code="8480-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+          <originalText>Systolic blood pressure</originalText>
+         </code>
+         <text>
+          <reference value="#sysBP_5829713040" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime value="20250925124400+0000" />
+         <value xsi:type="PQ" unit="mm[Hg]" value="120" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20250925144750+0200" />
+          <assignedAuthor>
+           <id nullFlavor="UNK" />
+           <addr nullFlavor="UNK" />
+           <telecom nullFlavor="UNK" />
+           <representedOrganization>
+            <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+            <telecom use="WP" value="tel:+41-41-205-77-01" />
+            <addr use="WP">
+             <streetAddressLine nullFlavor="UNK" />
+             <postalCode>6000</postalCode>
+             <city nullFlavor="UNK" />
+             <country>CHE</country>
+            </addr>
+           </representedOrganization>
+          </assignedAuthor>
+         </author>
+        </observation>
+       </component>
+       <component>
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2014-06-09" />
+         <id root="1.2.840.114350.1.13.521.3.7.1.2109.1" extension="5829713040-diaBP-Z1459" />
+         <code code="8462-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+          <originalText>Diastolic blood pressure</originalText>
+         </code>
+         <text>
+          <reference value="#diaBP_5829713040" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime value="20250925124400+0000" />
+         <value xsi:type="PQ" unit="mm[Hg]" value="80" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20250925144750+0200" />
+          <assignedAuthor>
+           <id nullFlavor="UNK" />
+           <addr nullFlavor="UNK" />
+           <telecom nullFlavor="UNK" />
+           <representedOrganization>
+            <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+            <telecom use="WP" value="tel:+41-41-205-77-01" />
+            <addr use="WP">
+             <streetAddressLine nullFlavor="UNK" />
+             <postalCode>6000</postalCode>
+             <city nullFlavor="UNK" />
+             <country>CHE</country>
+            </addr>
+           </representedOrganization>
+          </assignedAuthor>
+         </author>
+        </observation>
+       </component>
+       <component>
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2014-06-09" />
+         <id root="1.2.840.114350.1.13.521.3.7.1.2109.1" extension="5829713040-pulse-Z1459" />
+         <code code="8867-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+          <originalText>Heart rate</originalText>
+         </code>
+         <text>
+          <reference value="#pulse_5829713040" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime value="20250925124400+0000" />
+         <value xsi:type="PQ" unit="/min" value="68" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20250925144750+0200" />
+          <assignedAuthor>
+           <id nullFlavor="UNK" />
+           <addr nullFlavor="UNK" />
+           <telecom nullFlavor="UNK" />
+           <representedOrganization>
+            <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+            <telecom use="WP" value="tel:+41-41-205-77-01" />
+            <addr use="WP">
+             <streetAddressLine nullFlavor="UNK" />
+             <postalCode>6000</postalCode>
+             <city nullFlavor="UNK" />
+             <country>CHE</country>
+            </addr>
+           </representedOrganization>
+          </assignedAuthor>
+         </author>
+        </observation>
+       </component>
+       <component>
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2014-06-09" />
+         <id root="1.2.840.114350.1.13.521.3.7.1.2109.1" extension="5829713040-tempC83-Z1459" />
+         <code code="8310-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+          <originalText>Body temperature</originalText>
+         </code>
+         <text>
+          <reference value="#temp_5829713040" />
+         </text>
+         <statusCode code="completed" />
+         <effectiveTime value="20250925124400+0000" />
+         <value xsi:type="PQ" unit="Cel" value="36.5" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+         <author>
+          <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+          <time value="20250925144750+0200" />
+          <assignedAuthor>
+           <id nullFlavor="UNK" />
+           <addr nullFlavor="UNK" />
+           <telecom nullFlavor="UNK" />
+           <representedOrganization>
+            <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+            <telecom use="WP" value="tel:+41-41-205-77-01" />
+            <addr use="WP">
+             <streetAddressLine nullFlavor="UNK" />
+             <postalCode>6000</postalCode>
+             <city nullFlavor="UNK" />
+             <country>CHE</country>
+            </addr>
+           </representedOrganization>
+          </assignedAuthor>
+         </author>
+        </observation>
+       </component>
+      </organizer>
+     </entry>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.10" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.10" extension="2014-06-09" />
+     <code code="18776-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Plan of care note" />
+     <title>Behandlungsplan</title>
+     <text>
+      <paragraph>Nicht vorhanden</paragraph>
+     </text>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.60" />
+     <code code="61146-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Goals" />
+     <title>Ziele</title>
+     <text>
+      <table>
+       <colgroup>
+        <col width="30%" />
+        <col width="10%" />
+        <col width="15%" />
+        <col width="20%" />
+        <col width="12%" />
+        <col width="13%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Ziel</th>
+         <th>Patientenziel</th>
+         <th>Verknüpfte Probleme</th>
+         <th>Neue Fortschritte</th>
+         <th>Vom Patienten genannt?</th>
+         <th>Autor</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr styleCode="xRowNormal">
+         <td>
+          <paragraph ID="goal1">Diastolischer Blutdruck (unterer Wert) &lt;= 80</paragraph>
+         </td>
+         <td>Allgemein</td>
+         <td />
+         <td>
+          <content ID="goal1val">98</content>
+          <content> (11.06.2024 10:22 MESZ)</content>
+         </td>
+         <td>Nein</td>
+         <td>Claus</td>
+        </tr>
+        <tr styleCode="xRowAlt">
+         <td>
+          <paragraph ID="goal2">Body Mass Index &lt;= 24</paragraph>
+         </td>
+         <td>Allgemein</td>
+         <td />
+         <td>
+          <content ID="goal2val">38</content>
+          <content> (10.04.2024 08:00 MESZ)</content>
+         </td>
+         <td>Nein</td>
+         <td>Claus</td>
+        </tr>
+       </tbody>
+      </table>
+     </text>
+     <entry>
+      <observation classCode="OBS" moodCode="GOL">
+       <templateId root="2.16.840.1.113883.10.20.22.4.121" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.121" extension="2022-06-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.737179" extension="529" />
+       <code code="87528-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Personal health goal" />
+       <statusCode code="active" />
+       <value xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <originalText>
+         <reference value="#goal1" />
+        </originalText>
+       </value>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20240417110650+0200" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="219559042" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="10690" />
+        </assignedAuthor>
+       </author>
+       <entryRelationship typeCode="REFR">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.2" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.2" extension="2015-08-01" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.737179" extension="529" />
+         <code nullFlavor="UNK">
+          <originalText>
+           <reference value="#goal1val" />
+          </originalText>
+         </code>
+         <statusCode code="completed" />
+         <effectiveTime value="20240611102200+0200" />
+         <value xsi:type="INT" value="98" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="REFR">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="1.2.840.114350.1.72.6.1" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.737179" extension="529" />
+         <code nullFlavor="UNK">
+          <originalText>
+           <reference value="#goal1val" />
+          </originalText>
+         </code>
+         <statusCode code="completed" />
+         <effectiveTime value="20240611102200+0200" />
+         <value code="8" codeSystem="1.2.840.114350.1.72.1.9" codeSystemName="X-GOAL" displayName="Allgemein" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="REFR">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="1.2.840.114350.1.72.6.2" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.737179" extension="529" />
+         <code nullFlavor="UNK">
+          <originalText>
+           <reference value="#goal1val" />
+          </originalText>
+         </code>
+         <statusCode code="completed" />
+         <effectiveTime value="20240611102200+0200" />
+         <value xsi:type="BL" value="false" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </observation>
+       </entryRelationship>
+      </observation>
+     </entry>
+     <entry>
+      <observation classCode="OBS" moodCode="GOL">
+       <templateId root="2.16.840.1.113883.10.20.22.4.121" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.121" extension="2022-06-01" />
+       <id root="1.2.840.114350.1.13.521.3.7.2.737179" extension="530" />
+       <code code="87528-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Personal health goal" />
+       <statusCode code="active" />
+       <value xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <originalText>
+         <reference value="#goal2" />
+        </originalText>
+       </value>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20240417111842+0200" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="219559042" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="10690" />
+        </assignedAuthor>
+       </author>
+       <entryRelationship typeCode="REFR">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.2" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.2" extension="2015-08-01" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.737179" extension="530" />
+         <code nullFlavor="UNK">
+          <originalText>
+           <reference value="#goal2val" />
+          </originalText>
+         </code>
+         <statusCode code="completed" />
+         <effectiveTime value="20240410080000+0200" />
+         <value xsi:type="INT" value="38" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="REFR">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="1.2.840.114350.1.72.6.1" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.737179" extension="530" />
+         <code nullFlavor="UNK">
+          <originalText>
+           <reference value="#goal2val" />
+          </originalText>
+         </code>
+         <statusCode code="completed" />
+         <effectiveTime value="20240410080000+0200" />
+         <value code="8" codeSystem="1.2.840.114350.1.72.1.9" codeSystemName="X-GOAL" displayName="Allgemein" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </observation>
+       </entryRelationship>
+       <entryRelationship typeCode="REFR">
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="1.2.840.114350.1.72.6.2" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.737179" extension="530" />
+         <code nullFlavor="UNK">
+          <originalText>
+           <reference value="#goal2val" />
+          </originalText>
+         </code>
+         <statusCode code="completed" />
+         <effectiveTime value="20240410080000+0200" />
+         <value xsi:type="BL" value="false" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        </observation>
+       </entryRelationship>
+      </observation>
+     </entry>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.23" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.23" extension="2014-06-09" />
+     <code code="46264-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of medical device use" />
+     <title>Medizinische Geräte</title>
+     <text>
+      <table>
+       <colgroup>
+        <col width="35%" />
+        <col span="2" width="10%" />
+        <col width="15%" />
+        <col span="3" width="10%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Implantiert</th>
+         <th>Typ</th>
+         <th>Bereich</th>
+         <th>Hersteller</th>
+         <th>Geräte-Identifikator</th>
+         <th>Ablaufdatum</th>
+         <th>Modell / Seriennummer / Charge</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr styleCode="xRowNormal">
+         <td>
+          <content ID="implant3">Icd Ellipse Dr Df-1 (St) - Log95</content>
+          <br />
+          <content styleCode="xcellHeader">Implantiert: </content>Menge: 1 am 19.05.2023 von Mühlebach, Jonas, Leitender Arzt in LUKS Luzern</td>
+         <td>Defibrillator (Implantat)</td>
+         <td />
+         <td />
+         <td />
+         <td />
+         <td styleCode="xnoIndent">MCC05-0050 /<br /> /<br /></td>
+        </tr>
+        <tr styleCode="xRowAlt">
+         <td>
+          <content ID="implant1">Nasenplatte Ti Transversal (St) - Log95</content>
+          <br />
+          <content styleCode="xcellHeader">Implantiert: </content>Menge: 1 am 19.05.2023 von Mühlebach, Jonas, Leitender Arzt in LUKS Luzern</td>
+         <td>Minifragment-Platte</td>
+         <td />
+         <td />
+         <td />
+         <td />
+         <td />
+        </tr>
+        <tr styleCode="xRowNormal">
+         <td>
+          <content ID="implant2">Fixationsplatte 2.0/2.3 5x2 Trapez Ti (St) - Log95</content>
+          <br />
+          <content styleCode="xcellHeader">Implantiert: </content>Menge: 1 am 19.05.2023 von Mühlebach, Jonas, Leitender Arzt in LUKS Luzern</td>
+         <td>Minifragment-Platte</td>
+         <td />
+         <td />
+         <td />
+         <td />
+         <td />
+        </tr>
+        <tr styleCode="xRowAlt">
+         <td>
+          <content ID="implant4">Stent</content>
+         </td>
+         <td>Stent</td>
+         <td>Aorta</td>
+         <td />
+         <td />
+         <td />
+         <td />
+        </tr>
+       </tbody>
+      </table>
+     </text>
+     <entry>
+      <procedure classCode="PROC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09" />
+       <id nullFlavor="UNK" />
+       <code nullFlavor="UNK" />
+       <statusCode code="completed" />
+       <effectiveTime>
+        <low value="20230519" />
+        <high nullFlavor="UNK" />
+       </effectiveTime>
+       <targetSiteCode nullFlavor="OTH" />
+       <performer typeCode="PRF">
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="558" />
+         <code nullFlavor="OTH">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Orthopädische Chirurgie" />
+          <translation code="21" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Orthopädie und Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-45-13" />
+         <assignedPerson>
+          <name use="L">
+           <given>Jonas</given>
+           <family>Mühlebach</family>
+           <suffix qualifier="AC"> Leitender Arzt</suffix>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20230519092941+0200" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381769" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17397" />
+         <addr nullFlavor="UNK" />
+         <telecom nullFlavor="UNK" />
+         <assignedPerson>
+          <name use="L">
+           <given nullFlavor="NI" />
+           <family>Ops-Technik</family>
+          </name>
+         </assignedPerson>
+         <representedOrganization>
+          <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedAuthor>
+       </author>
+       <participant typeCode="DEV">
+        <participantRole classCode="MANU">
+         <templateId root="2.16.840.1.113883.10.20.22.4.37" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.737780" extension="7_imp" />
+         <playingDevice>
+          <code nullFlavor="UNK">
+           <originalText>
+            <reference value="#implant3" />
+           </originalText>
+          </code>
+         </playingDevice>
+         <scopingEntity>
+          <id root="2.16.840.1.113883.3.3719" />
+         </scopingEntity>
+        </participantRole>
+       </participant>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <city>Luzern</city>
+          <state nullFlavor="UNK" />
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <playingEntity classCode="PLC" determinerCode="INSTANCE">
+          <name>LUKS Luzern</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+      </procedure>
+     </entry>
+     <entry>
+      <procedure classCode="PROC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09" />
+       <id nullFlavor="UNK" />
+       <code nullFlavor="UNK" />
+       <statusCode code="completed" />
+       <effectiveTime>
+        <low value="20230519" />
+        <high nullFlavor="UNK" />
+       </effectiveTime>
+       <targetSiteCode nullFlavor="OTH" />
+       <performer typeCode="PRF">
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="558" />
+         <code nullFlavor="OTH">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Orthopädische Chirurgie" />
+          <translation code="21" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Orthopädie und Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-45-13" />
+         <assignedPerson>
+          <name use="L">
+           <given>Jonas</given>
+           <family>Mühlebach</family>
+           <suffix qualifier="AC"> Leitender Arzt</suffix>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20230519092918+0200" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381769" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17397" />
+        </assignedAuthor>
+       </author>
+       <participant typeCode="DEV">
+        <participantRole classCode="MANU">
+         <templateId root="2.16.840.1.113883.10.20.22.4.37" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.737780" extension="6_imp" />
+         <playingDevice>
+          <code nullFlavor="UNK">
+           <originalText>
+            <reference value="#implant1" />
+           </originalText>
+          </code>
+         </playingDevice>
+         <scopingEntity>
+          <id root="2.16.840.1.113883.3.3719" />
+         </scopingEntity>
+        </participantRole>
+       </participant>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <city>Luzern</city>
+          <state nullFlavor="UNK" />
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <playingEntity classCode="PLC" determinerCode="INSTANCE">
+          <name>LUKS Luzern</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+      </procedure>
+     </entry>
+     <entry>
+      <procedure classCode="PROC" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.14" extension="2014-06-09" />
+       <id nullFlavor="UNK" />
+       <code nullFlavor="UNK" />
+       <statusCode code="completed" />
+       <effectiveTime>
+        <low value="20230519" />
+        <high nullFlavor="UNK" />
+       </effectiveTime>
+       <targetSiteCode nullFlavor="OTH" />
+       <performer typeCode="PRF">
+        <assignedEntity classCode="ASSIGNED">
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="558" />
+         <code nullFlavor="OTH">
+          <originalText>Orthopädie und Unfallchirurgie</originalText>
+          <translation code="49" codeSystem="1.2.840.114350.1.72.1.7.7.10.688867.4160" codeSystemName="Epic.DXC.StandardProviderSpecialtyType" displayName="Orthopädische Chirurgie" />
+          <translation code="21" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Orthopädie und Unfallchirurgie" />
+         </code>
+         <addr use="WP">
+          <streetAddressLine>Spitalstrasse 2</streetAddressLine>
+          <postalCode>6000</postalCode>
+          <county>LUZERNE</county>
+          <city>Luzern 16</city>
+          <country>CHE</country>
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-45-13" />
+         <assignedPerson>
+          <name use="L">
+           <given>Jonas</given>
+           <family>Mühlebach</family>
+           <suffix qualifier="AC"> Leitender Arzt</suffix>
+          </name>
+         </assignedPerson>
+         <representedOrganization classCode="ORG">
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedEntity>
+       </performer>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20230519093022+0200" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="221381769" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17397" />
+        </assignedAuthor>
+       </author>
+       <participant typeCode="DEV">
+        <participantRole classCode="MANU">
+         <templateId root="2.16.840.1.113883.10.20.22.4.37" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.737780" extension="8_imp" />
+         <playingDevice>
+          <code nullFlavor="UNK">
+           <originalText>
+            <reference value="#implant2" />
+           </originalText>
+          </code>
+         </playingDevice>
+         <scopingEntity>
+          <id root="2.16.840.1.113883.3.3719" />
+         </scopingEntity>
+        </participantRole>
+       </participant>
+       <participant typeCode="LOC">
+        <participantRole classCode="SDLOC">
+         <templateId root="2.16.840.1.113883.10.20.22.4.32" />
+         <code nullFlavor="UNK" />
+         <addr use="WP">
+          <streetAddressLine nullFlavor="UNK" />
+          <postalCode>6000</postalCode>
+          <city>Luzern</city>
+          <state nullFlavor="UNK" />
+         </addr>
+         <telecom use="WP" value="tel:+41-41-205-11-11" />
+         <playingEntity classCode="PLC" determinerCode="INSTANCE">
+          <name>LUKS Luzern</name>
+         </playingEntity>
+        </participantRole>
+       </participant>
+      </procedure>
+     </entry>
+    </section>
+   </component>
+   <component>
+    <section nullFlavor="NI">
+     <templateId root="2.16.840.1.113883.10.20.22.2.3" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.3" extension="2015-08-01" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.3.1" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.3.1" extension="2015-08-01" />
+     <templateId root="1.2.840.114350.1.72.3.2" />
+     <templateId root="1.2.840.114350.1.72.3.2" extension="2017-04-01" />
+     <id root="6604C976-EA2B-11F0-9B3B-005056830D44" />
+     <code code="30954-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Relevant diagnostic tests/laboratory data Narrative" />
+     <title>Resultate</title>
+     <text>
+      <content ID="nof56">Nicht vorhanden</content>
+      <footnote ID="subTitle55" styleCode="xSectionSubTitle">ab den letzten 3 Monaten</footnote>
+     </text>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.21" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.21" extension="2015-08-01" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.21.1" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.21.1" extension="2015-08-01" />
+     <code code="42348-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Advance directives" />
+     <title>Patientenverfügungen</title>
+     <text ID="adir60">
+      <paragraph>Für weitere Informationen wenden Sie sich bitte an: 041 205 77 01 (08:00 - 17:00 Europe/Berlin, Montag, Mittwoch-Freitag, Dienstag)</paragraph>
+      <paragraph />
+      <list>
+       <item>
+        <paragraph />
+        <paragraph styleCode="Bold">Reanimation ja (Letzter REA-Status dokumentiert)</paragraph>
+        <table ID="cs1">
+         <colgroup>
+          <col span="2" width="25%" />
+          <col width="50%" />
+         </colgroup>
+         <thead>
+          <tr>
+           <th>Datum aktiviert</th>
+           <th>Datum deaktiviert</th>
+           <th>Kommentare</th>
+          </tr>
+         </thead>
+         <tbody>
+          <tr>
+           <td>25.08.2025 06:04</td>
+           <td>04.09.2025 16:13</td>
+           <td ID="cs1cmt" />
+          </tr>
+         </tbody>
+        </table>
+       </item>
+       <item>
+        <paragraph />
+        <paragraph styleCode="Bold">Reanimation ja</paragraph>
+        <table ID="cs2">
+         <colgroup>
+          <col span="2" width="25%" />
+          <col width="50%" />
+         </colgroup>
+         <thead>
+          <tr>
+           <th>Datum aktiviert</th>
+           <th>Datum deaktiviert</th>
+           <th>Kommentare</th>
+          </tr>
+         </thead>
+         <tbody>
+          <tr>
+           <td>05.02.2024 07:18</td>
+           <td>05.02.2024 12:48</td>
+           <td ID="cs2cmt" />
+          </tr>
+         </tbody>
+        </table>
+       </item>
+       <item>
+        <paragraph />
+        <paragraph styleCode="Bold">Reanimation ja</paragraph>
+        <table ID="cs3">
+         <colgroup>
+          <col span="2" width="25%" />
+          <col width="50%" />
+         </colgroup>
+         <thead>
+          <tr>
+           <th>Datum aktiviert</th>
+           <th>Datum deaktiviert</th>
+           <th>Kommentare</th>
+          </tr>
+         </thead>
+         <tbody>
+          <tr>
+           <td>24.01.2024 16:29</td>
+           <td>01.02.2024 14:23</td>
+           <td ID="cs3cmt" />
+          </tr>
+         </tbody>
+        </table>
+       </item>
+      </list>
+     </text>
+     <entry>
+      <organizer classCode="CLUSTER" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.108" extension="2015-08-01" />
+       <id nullFlavor="UNK" />
+       <code code="45473-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Advance directive/living will completed">
+        <translation code="1" codeSystem="1.2.840.114350.1.72.1.16" displayName="Code Status" />
+       </code>
+       <statusCode code="completed" />
+       <component>
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.48" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.48" extension="2015-08-01" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.796783" extension="563" />
+         <code code="71388002" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Procedure">
+          <translation code="75320-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Advance directive" />
+         </code>
+         <statusCode code="completed" />
+         <effectiveTime>
+          <low value="20250825040428+0200" />
+          <high value="20250904141310+0200" />
+         </effectiveTime>
+         <value code="101" codeSystem="1.2.840.114350.1.13.521.3.7.10.796783.100" displayName="Reanimation ja" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+         <participant typeCode="CST">
+          <participantRole classCode="AGNT">
+           <addr use="WP">
+            <streetAddressLine nullFlavor="UNK" />
+            <postalCode>6000</postalCode>
+            <city nullFlavor="UNK" />
+            <country>CHE</country>
+           </addr>
+           <telecom use="WP" value="041 205 77 01" />
+           <playingEntity>
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+           </playingEntity>
+          </participantRole>
+         </participant>
+         <participant typeCode="VRF">
+          <templateId root="2.16.840.1.113883.10.20.1.58" />
+          <participantRole classCode="PROV">
+           <playingEntity classCode="PSN">
+            <name use="L">
+             <given>Inpatient</given>
+             <family>Physician</family>
+             <suffix qualifier="AC"> Arzt</suffix>
+            </name>
+           </playingEntity>
+          </participantRole>
+         </participant>
+        </observation>
+       </component>
+       <component>
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.48" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.48" extension="2015-08-01" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.796783" extension="351" />
+         <code code="71388002" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Procedure">
+          <translation code="75320-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Advance directive" />
+         </code>
+         <statusCode code="completed" />
+         <effectiveTime>
+          <low value="20240205061832+0100" />
+          <high value="20240205114824+0100" />
+         </effectiveTime>
+         <value code="101" codeSystem="1.2.840.114350.1.13.521.3.7.10.796783.100" displayName="Reanimation ja" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+         <participant typeCode="CST">
+          <participantRole classCode="AGNT">
+           <addr use="WP">
+            <streetAddressLine nullFlavor="UNK" />
+            <postalCode>6000</postalCode>
+            <city nullFlavor="UNK" />
+            <country>CHE</country>
+           </addr>
+           <telecom use="WP" value="041 205 77 01" />
+           <playingEntity>
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+           </playingEntity>
+          </participantRole>
+         </participant>
+         <participant typeCode="VRF">
+          <templateId root="2.16.840.1.113883.10.20.1.58" />
+          <participantRole classCode="PROV">
+           <playingEntity classCode="PSN">
+            <name use="L">
+             <given>Family</given>
+             <given>Medicine</given>
+             <family>Physician</family>
+             <suffix qualifier="AC"> Arzt</suffix>
+            </name>
+           </playingEntity>
+          </participantRole>
+         </participant>
+        </observation>
+       </component>
+       <component>
+        <observation classCode="OBS" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.48" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.48" extension="2015-08-01" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.796783" extension="347" />
+         <code code="71388002" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Procedure">
+          <translation code="75320-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Advance directive" />
+         </code>
+         <statusCode code="completed" />
+         <effectiveTime>
+          <low value="20240124152924+0100" />
+          <high value="20240201132338+0100" />
+         </effectiveTime>
+         <value code="101" codeSystem="1.2.840.114350.1.13.521.3.7.10.796783.100" displayName="Reanimation ja" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+         <participant typeCode="CST">
+          <participantRole classCode="AGNT">
+           <addr use="WP">
+            <streetAddressLine nullFlavor="UNK" />
+            <postalCode>6000</postalCode>
+            <city nullFlavor="UNK" />
+            <country>CHE</country>
+           </addr>
+           <telecom use="WP" value="041 205 77 01" />
+           <playingEntity>
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+           </playingEntity>
+          </participantRole>
+         </participant>
+         <participant typeCode="VRF">
+          <templateId root="2.16.840.1.113883.10.20.1.58" />
+          <participantRole classCode="PROV">
+           <playingEntity classCode="PSN">
+            <name use="L">
+             <given>Family</given>
+             <given>Medicine</given>
+             <family>Physician</family>
+             <suffix qualifier="AC"> Arzt</suffix>
+            </name>
+           </playingEntity>
+          </participantRole>
+         </participant>
+        </observation>
+       </component>
+      </organizer>
+     </entry>
+    </section>
+   </component>
+   <component>
+    <section>
+     <templateId root="2.16.840.1.113883.10.20.22.2.500" extension="2022-06-01" />
+     <templateId root="2.16.840.1.113883.10.20.22.2.500" extension="2019-07-01" />
+     <code code="85847-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Patient Care team information" />
+     <title>Betreuungsteams</title>
+     <text>
+      <table ID="ct62">
+       <colgroup>
+        <col span="3" width="25%" />
+        <col width="13%" />
+        <col width="12%" />
+       </colgroup>
+       <thead>
+        <tr>
+         <th>Teammitglied</th>
+         <th>Beziehung</th>
+         <th>Fachgebiet</th>
+         <th>Beginndatum</th>
+         <th>Enddatum</th>
+        </tr>
+       </thead>
+       <tbody>
+        <tr styleCode="xRowNormal">
+         <td>
+          <paragraph styleCode="Bold">Lukslink, Arzt</paragraph>
+          <paragraph>Heimweg 12</paragraph>
+          <paragraph>7000 Heimhausen</paragraph>
+          <paragraph>41-41-340-67-77 (Geschäft)</paragraph>
+          <paragraph>41-41-340-59-77 (Fax)</paragraph>
+         </td>
+         <td>Hausarzt – Allgemein</td>
+         <td>Fachgebiete (allg.)</td>
+         <td>20.11.2025</td>
+         <td />
+        </tr>
+       </tbody>
+      </table>
+     </text>
+     <entry>
+      <organizer classCode="CLUSTER" moodCode="EVN">
+       <templateId root="2.16.840.1.113883.10.20.22.4.500" extension="2022-06-01" />
+       <templateId root="2.16.840.1.113883.10.20.22.4.500" extension="2019-07-01" />
+       <id nullFlavor="NI" />
+       <code code="86744-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Care Team">
+        <originalText>
+         <reference value="#ct62" />
+        </originalText>
+       </code>
+       <statusCode code="active" />
+       <effectiveTime>
+        <low value="20251120" />
+       </effectiveTime>
+       <author>
+        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+        <time value="20251120160400+0100" />
+        <assignedAuthor>
+         <id root="1.2.840.114350.1.13.521.3.7.1.1133" extension="716217688" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.697780" extension="A511587" />
+         <addr nullFlavor="UNK" />
+         <telecom nullFlavor="UNK" />
+         <assignedPerson>
+          <name use="L">
+           <given>Anja</given>
+           <family>Tschuor</family>
+          </name>
+         </assignedPerson>
+         <representedOrganization>
+          <id root="1.2.840.114350.1.13.521.3.7.2.688879" extension="139400" />
+          <name>Luzerner Kantonsspital (LUKS) - TST</name>
+          <telecom use="WP" value="tel:+41-41-205-77-01" />
+          <addr use="WP">
+           <streetAddressLine nullFlavor="UNK" />
+           <postalCode>6000</postalCode>
+           <city nullFlavor="UNK" />
+           <country>CHE</country>
+          </addr>
+         </representedOrganization>
+        </assignedAuthor>
+       </author>
+       <participant typeCode="PPRF">
+        <ep2:functionCode code="PCP" codeSystem="2.16.840.1.113883.5.88" codeSystemName="ParticipationFunction" displayName="Primary Care Provider" xmlns:ep2="urn:hl7-org:sdtc">
+         <originalText>Allgemein</originalText>
+        </ep2:functionCode>
+        <participantRole>
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17395" />
+        </participantRole>
+       </participant>
+       <component>
+        <act classCode="PCPR" moodCode="EVN">
+         <templateId root="2.16.840.1.113883.10.20.22.4.500.1" extension="2022-06-01" />
+         <templateId root="2.16.840.1.113883.10.20.22.4.500.1" extension="2019-07-01" />
+         <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17395" />
+         <code code="85847-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Care Team Information" />
+         <statusCode code="active" />
+         <effectiveTime>
+          <low value="20251120" />
+         </effectiveTime>
+         <performer typeCode="PRF">
+          <ep2:functionCode code="PCP" codeSystem="2.16.840.1.113883.5.88" codeSystemName="ParticipationFunction" displayName="Primary Care Provider" xmlns:ep2="urn:hl7-org:sdtc">
+           <originalText>Allgemein</originalText>
+          </ep2:functionCode>
+          <assignedEntity>
+           <id root="1.2.840.114350.1.13.521.3.7.2.836982" extension="17395" />
+           <code nullFlavor="OTH">
+            <originalText>Fachgebiete (allg.)</originalText>
+            <translation code="312" codeSystem="1.2.840.114350.1.13.521.3.7.10.836982.1050" codeSystemName="Epic.SER.ProviderSpecialty" displayName="Fachgebiete (allg.)" />
+           </code>
+           <addr use="WP">
+            <streetAddressLine>Heimweg 12</streetAddressLine>
+            <postalCode>7000</postalCode>
+            <city>Heimhausen</city>
+            <country>CHE</country>
+           </addr>
+           <telecom use="WP" value="tel:+41-41-340-67-77" />
+           <telecom value="fax:+41-41-340-59-77" />
+           <assignedPerson>
+            <name use="L">
+             <given>Arzt</given>
+             <family>Lukslink</family>
+            </name>
+           </assignedPerson>
+           <representedOrganization>
+            <name>Luzerner Kantonsspital (LUKS) - TST</name>
+            <telecom use="WP" value="tel:+41-41-205-77-01" />
+            <addr use="WP">
+             <streetAddressLine nullFlavor="UNK" />
+             <postalCode>6000</postalCode>
+             <city nullFlavor="UNK" />
+             <country>CHE</country>
+            </addr>
+           </representedOrganization>
+          </assignedEntity>
+         </performer>
+        </act>
+       </component>
+      </organizer>
+     </entry>
+    </section>
+   </component>
+  </structuredBody>
+ </component>
+</ClinicalDocument>
