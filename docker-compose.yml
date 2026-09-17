@@ -4,6 +4,7 @@ services:
     build: .
     environment:
       - DEBUG_MODE=true
+      - FHIR_BASE=http://hapi-fhir:8080/fhir
       - TERMINOLOGY_BASE_URL=https://tx.fhir.ch/r4
       - REFDATA_API_KEY=${REFDATA_API_KEY:-}
     container_name: fhir-middleware
