@@ -18,7 +18,7 @@ Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt n
 Beispiel mit cURL:
 
 ```bash
-curl -X POST "https://fhir.woess.ch/middleware/cda/vacd/convert" \
+curl -X POST "https://fhir.omnilink.ch/middleware/cda/vacd/convert" \
   -H "Accept: application/fhir+json" \
   -F "file=@app/tests/data/CDA-EPIC.xml"
 ```

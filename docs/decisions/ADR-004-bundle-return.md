@@ -13,7 +13,7 @@ FHIR Bundles werden an BridgeLink zurückgegeben.
 ## Kontext
 
 Die Middleware erstellt FHIR Bundles aus Quellsystem-Daten und übergibt diese
-zur weiteren Verarbeitung an BridgeLink oder direkt an HAPI FHIR.
+zur weiteren Verarbeitung an BridgeLink. BridgeLink uebernimmt danach den Write an HAPI FHIR.
 
 ## Konsequenzen
 

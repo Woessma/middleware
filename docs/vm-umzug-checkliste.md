@@ -12,7 +12,7 @@ Diese Checkliste beschreibt den Neuaufbau von HAPI FHIR, Nginx und optional Matr
 [ ] Wartungsfenster, verantwortliche Personen und einen Kommunikationskanal festlegen.
     Erklaerung: Waehle ein Zeitfenster mit wenig Verkehr. Vor dem Start muss klar sein, wer DNS aendert, wer die Tests durchfuehrt und wer bei Problemen zurueckschaltet.
 
-[ ] DNS-TTL fuer fhir.woess.ch mindestens 24 Stunden vorher auf 300 Sekunden reduzieren.
+[ ] DNS-TTL fuer fhir.omnilink.ch mindestens 24 Stunden vorher auf 300 Sekunden reduzieren.
     Erklaerung: Nach der Umschaltung verbreitet sich die neue IP schneller. Den vorherigen TTL-Wert nach erfolgreicher Migration wieder setzen.
 
 [ ] Rueckfallkriterium und maximale Downtime festlegen.
@@ -46,7 +46,7 @@ Diese Checkliste beschreibt den Neuaufbau von HAPI FHIR, Nginx und optional Matr
 [ ] Alle Zugangsdaten neu erzeugen und ihre Gueltigkeit pruefen.
     Erklaerung: Datenbankpasswoerter, Basic-Auth-Benutzer, Matrix-Secrets und API-Keys werden fuer die neue Umgebung neu angelegt und sicher gespeichert.
 
-[ ] Externes Docker-Netz anlegen: "docker network create fhir-server_fhir-net".
+[ ] Vorhandenes externes Docker-Netzwerk `proxy` verwenden.
     Erklaerung: FHIR-Server, Middleware und optional Matrix-Bot verwenden dieses externe Netz. Ohne das Netz starten die getrennten Compose-Stacks nicht korrekt.
 
 ## 4. Leere Plattform starten: Reverse Proxy, DNS und TLS
@@ -57,7 +57,7 @@ Diese Checkliste beschreibt den Neuaufbau von HAPI FHIR, Nginx und optional Matr
 [ ] Sicherstellen, dass Port 80 fuer die ACME-Challenge erreichbar ist.
     Erklaerung: Die aktuelle Nginx-Konfiguration bedient /.well-known/acme-challenge/ aus certbot-www. Firewall, DNS und Nginx muessen dazu zusammenpassen.
 
-[ ] TLS-Zertifikat fuer fhir.woess.ch auf der Ziel-VM neu ausstellen.
+[ ] Cloudflare-/Caddy-TLS fuer fhir.omnilink.ch auf der Ziel-VM pruefen.
     Erklaerung: Private Schluessel und Zertifikate der alten VM werden nicht kopiert. Fuer die ACME-Challenge muss Port 80 auf der neuen VM erreichbar sein.
 
 [ ] Nach erfolgreicher lokaler Abnahme den DNS-A-Record auf die neue IP umstellen.
@@ -69,9 +69,9 @@ Diese Checkliste beschreibt den Neuaufbau von HAPI FHIR, Nginx und optional Matr
     Erklaerung: Postgres muss gesund sein, bevor HAPI stabil arbeitet. Die Datenbank muss ein neu angelegtes, leeres Volume verwenden.
 
 [ ] Im Verzeichnis fhir-middleware die Konfiguration mit "docker compose config" pruefen und die Middleware mit "docker compose up -d --build" neu bauen und starten.
-    Erklaerung: Der Container muss im Netzwerk fhir-server_fhir-net laufen und den FHIR-Server ueber http://fhir-server:8080/fhir erreichen.
+    Erklaerung: Der Container muss im Netzwerk proxy laufen und HAPI ueber http://hapi-fhir:8080/fhir erreichen.
 
-[ ] Mit gueltiger Basic Auth "https://fhir.woess.ch/fhir/metadata" aufrufen.
+[ ] "https://fhir.omnilink.ch/fhir/metadata" ueber BridgeLink aufrufen.
     Erklaerung: Der Aufruf prueft DNS, TLS, Nginx, Authentisierung, Docker-Netz und HAPI als durchgehenden Pfad.
 
 [ ] Einen realistischen Middleware-Test fuer CDA und eMediplan ausfuehren.

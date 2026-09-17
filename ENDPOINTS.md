@@ -2,25 +2,25 @@
 
 ## Basis-URLs
 
-- FHIR Server: https://fhir.woess.ch/fhir/
-- Middleware: https://fhir.woess.ch/middleware/
+- BridgeLink FHIR Route: https://fhir.omnilink.ch/fhir/
+- BridgeLink Middleware Route: https://fhir.omnilink.ch/middleware/
 
 ## Beobachtung aus dem Live-System
 
-Ohne gültige Basic-Auth-Anmeldung antworten beide Endpunkte mit:
+Ohne gueltige BridgeLink-Authentifizierung antworten geschuetzte Endpunkte mit:
 
 - HTTP Status: 401 Unauthorized
-- Header: `WWW-Authenticate: Basic realm="FHIR Protected"` bzw. `WWW-Authenticate: Basic realm="FHIR Middleware Protected"`
+- Fehlerantwort von BridgeLink mit `401 Unauthorized` oder `403 Forbidden`
 
 Das bedeutet: Die Root-URLs selbst sind nicht öffentlich erreichbar und müssen mit gültigen Zugangsdaten aufgerufen werden.
 
 ---
 
-## 1) FHIR-Server: https://fhir.woess.ch/fhir/
+## 1) FHIR ueber BridgeLink: https://fhir.omnilink.ch/fhir/
 
 Dieser Basis-Endpunkt ist der FHIR REST-API-Basispfad. Erwartet wird:
 
-- Authentifizierung mit Basic-Auth
+- Authentifizierung und Berechtigung durch BridgeLink
 - FHIR-typische REST-Aufrufe wie z. B.:
   - `GET /fhir/Patient/...`
   - `GET /fhir/Observation/...`
@@ -39,8 +39,8 @@ Dieser Basis-Endpunkt ist der FHIR REST-API-Basispfad. Erwartet wird:
 ### Beispiel
 
 ```http
-GET https://fhir.woess.ch/fhir/Patient
-Authorization: Basic <credentials>
+GET https://fhir.omnilink.ch/fhir/Patient
+Authorization: Bearer <JWT>
 Accept: application/fhir+json
 ```
 
@@ -51,14 +51,14 @@ Erwartung:
 
 ---
 
-## 2) Middleware: https://fhir.woess.ch/middleware/
+## 2) Middleware ueber BridgeLink: https://fhir.omnilink.ch/middleware/
 
 Dieser Endpunkt ist der API-Basispfad der Middleware, nicht der FHIR-Server selbst. Die Middleware verarbeitet CDA-/FHIR-Umwandlungen und Imports.
 
 ### Erwartetes Verhalten
 
-- Ohne Credentials: `401 Unauthorized`
-- Mit gültiger Authentifizierung: Zugriff auf die FastAPI-Endpunkte der Middleware
+- Ohne gueltige BridgeLink-Authentifizierung: `401 Unauthorized`
+- Mit gueltigem JWT und Berechtigung: Zugriff auf die freigegebenen Middleware-Endpunkte
 
 ### Aktueller Standardfluss
 
@@ -160,7 +160,7 @@ Beispiel Raw-Body:
 curl -X POST \
   -H "Content-Type: text/plain" \
   --data-binary @message.hl7 \
-  https://fhir.woess.ch/middleware/hl7v2/convert
+  https://fhir.omnilink.ch/middleware/hl7v2/convert
 ```
 
 Beispiel Datei-Upload:
@@ -168,7 +168,7 @@ Beispiel Datei-Upload:
 ```bash
 curl -X POST \
   -F "file=@message.hl7" \
-  https://fhir.woess.ch/middleware/hl7v2/convert
+  https://fhir.omnilink.ch/middleware/hl7v2/convert
 ```
 
 ### Terminologie-Service
@@ -376,7 +376,7 @@ Diese Eingabe wird intern zu einem Transaction-Entry mit `PUT Patient/p1`.
 curl -u "USERNAME:PASSWORD" \
   -H "Content-Type: application/fhir+json" \
   -H "Accept: application/fhir+json" \
-  -X POST "https://fhir.woess.ch/fhir" \
+  -X POST "https://fhir.omnilink.ch/fhir" \
   --data @bundle.json
 ```
 
@@ -410,8 +410,8 @@ Beispiel-JSON:
 ### Beispiel für den Middleware-Weg
 
 ```http
-POST https://fhir.woess.ch/middleware/cda/import
-Authorization: Basic <credentials>
+POST https://fhir.omnilink.ch/middleware/cda/import
+Authorization: Bearer <JWT>
 Content-Type: multipart/form-data
 ```
 
@@ -433,7 +433,7 @@ Erwartung:
 
 ## Kurzfassung
 
-- `https://fhir.woess.ch/fhir/` = FHIR-Server-Basis, REST-API, benötigt Authentifizierung
-- `https://fhir.woess.ch/middleware/` = Middleware-Basis, konvertiert/importiert Daten, ebenfalls Auth-geschützt
+- `https://fhir.omnilink.ch/fhir/` = FHIR-Route ueber BridgeLink, Read und FHIR-Write
+- `https://fhir.omnilink.ch/middleware/` = Middleware-Route ueber BridgeLink fuer Convert und Bundle-Erzeugung
 
 Wenn du möchtest, kann ich daraus auch noch eine sauberere Version mit Swagger-ähnlicher Tabellenstruktur oder eine Version für externe Stakeholder im Projekt-Style machen.

@@ -4,7 +4,7 @@ Stand: 2026-07-30
 ## Infrastrukturbedarf
 
 - Ein Kubernetes-Cluster, idealerweise managed: AKS, EKS oder GKE. Fuer PROD realistisch mindestens 3 Worker Nodes verteilt ueber 2 bis 3 Zonen.
-- Ein externer Load Balancer plus Ingress Controller fuer fhir.woess.ch und spaetere weitere Endpunkte.
+- Ein externer Load Balancer plus Ingress Controller fuer fhir.omnilink.ch und spaetere weitere Endpunkte.
 - Eine Container Registry fuer versionierte Images mit Scan und Retention.
 - Eine PostgreSQL-Plattform.
 - Bevorzugt Managed PostgreSQL mit Backups, Failover und Patching.

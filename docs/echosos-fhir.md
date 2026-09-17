@@ -79,7 +79,7 @@ LOINC- oder SNOMED-Codes gegen TX validiert.
 
 ```bash
 curl -H "Accept: application/fhir+json" \
-  "https://fhir.woess.ch/fhir/Patient/{id}/$everything?_count=500"
+  "https://fhir.omnilink.ch/fhir/Patient/{id}/$everything?_count=500"
 ```
 
 Die Antwort enthält Patient, `RelatedPerson`, `CareTeam`, `Practitioner`,

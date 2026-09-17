@@ -1,9 +1,9 @@
 # Middleware intern: Verarbeitung und FHIR-Transaktion (TX)
 
 Dieses Diagramm zoomt in die FHIR Middleware hinein und zeigt, welche internen
-Komponenten bei einem Import-Use-Case (CDA, HL7v2, eMediplan, UMZH, ...)
-zusammenarbeiten und wie die Middleware die FHIR-Transaktion (TX) gegen den
-FHIR-Server ausfuehrt. Es ergaenzt [SEQUENZDIAGRAMM-BRIGHT-LINK.md](SEQUENZDIAGRAMM-BRIGHT-LINK.md),
+Komponenten bei einem Convert- oder Import-Use-Case (CDA, HL7v2, eMediplan, UMZH, ...)
+zusammenarbeiten. Die Middleware erzeugt und validiert das Transaction-Bundle;
+BridgeLink fuehrt den Write gegen den FHIR-Server aus. Es ergaenzt [SEQUENZDIAGRAMM-BRIGHT-LINK.md](SEQUENZDIAGRAMM-BRIGHT-LINK.md),
 das die Aussensicht von Bright-link auf die Middleware beschreibt.
 
 ```mermaid
@@ -33,12 +33,15 @@ sequenceDiagram
     FHIR-->>Duplicate: Treffer
     Duplicate-->>Middleware: Duplikate markiert / entfernt
 
-    Middleware->>FHIR: TX: FHIR Transaction Bundle (POST /fhir)
-    FHIR-->>Middleware: Transaction Response (Ergebnis je Entry)
+    Middleware-->>BrightLink: FHIR Transaction Bundle
+    BrightLink->>FHIR: TX: FHIR Transaction Bundle (POST /fhir)
+    FHIR-->>BrightLink: Transaction Response (Ergebnis je Entry)
 
     alt Transaction erfolgreich
-        Middleware-->>BrightLink: Import Ergebnis (angelegte/aktualisierte IDs)
+        BrightLink-->>Middleware: Import Ergebnis (angelegte/aktualisierte IDs)
+        Middleware-->>BrightLink: Import Ergebnis
     else Transaction fehlgeschlagen
+        BrightLink-->>Middleware: Fehlerdetails je Bundle-Entry
         Middleware-->>BrightLink: Fehlerdetails je Bundle-Entry
     end
 ```
@@ -47,14 +50,15 @@ sequenceDiagram
 
 | Komponente | Aufgabe |
 | --- | --- |
-| Bright-link | Ruft die Middleware mit Bearer JWT und Rohdaten bzw. FHIR-Ressourcen auf. |
+| Bright-link | Ruft die Middleware mit Bearer JWT auf, schreibt deren Transaction-Bundle nach HAPI und liefert das Ergebnis zurueck. |
 | Parser | Wandelt CDA/HL7v2/eMediplan/UMZH-Rohdaten in Domain-Objekte (`app/parser`, `app/domain`). |
 | Terminology Service | Loest Codes gegen LOINC, SNOMED, CVX, CH-Term und OID auf (`app/terminology`). |
 | Mapper / Builder | Erzeugt CH-Core-konforme FHIR-Ressourcen aus Domain-Objekten (`app/mappers`, `app/builders`). |
 | Duplicate Service | Prueft vor dem Import bestehende FHIR-Ressourcen auf fachliche Duplikate (`fhir_duplicate_service.py`). |
-| FHIR Server | Fuehrt die Transaktion (TX) aus und persistiert die Ressourcen. |
+| FHIR Server | Fuehrt die von BridgeLink gestartete Transaktion (TX) aus und persistiert die Ressourcen. |
 
 TX bezeichnet hier das FHIR Transaction Bundle (`Bundle.type = transaction`), das
-die Middleware nach Stabilisierung und Duplikatpruefung per `POST` an den
-FHIR-Server sendet; der FHIR-Server beantwortet jeden Bundle-Entry einzeln.
+die Middleware nach Stabilisierung und Duplikatpruefung an BridgeLink zur
+Weiterleitung an den FHIR-Server zurueckgibt; der FHIR-Server beantwortet jeden
+Bundle-Entry einzeln.
 </content>

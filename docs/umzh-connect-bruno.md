@@ -18,7 +18,7 @@ Diese Vorlagen erzeugen einen minimalen CH UMZH Connect Ablauf:
 
 ### 1) ServiceRequest erzeugen
 - Methode: POST
-- URL: http://fhir.woess.ch/fhir/ServiceRequest
+- URL: https://fhir.omnilink.ch/fhir/ServiceRequest
 - Header: Content-Type: application/fhir+json
 - Body: app/tests/data/umzh-connect/servicerequest.json
 
@@ -31,7 +31,7 @@ Erwartung: 201 Created mit Location wie ServiceRequest/{id}/_history/1
   auf ServiceRequest/{id} aus Schritt 1.
 
 - Methode: POST
-- URL: http://fhir.woess.ch/fhir/Task
+- URL: https://fhir.omnilink.ch/fhir/Task
 - Header: Content-Type: application/fhir+json
 - Body: app/tests/data/umzh-connect/task-initial.json
 
@@ -40,12 +40,12 @@ Erwartung: 201 Created
 ## cURL Alternative
 
 ### ServiceRequest
-curl -X POST "http://fhir.woess.ch/fhir/ServiceRequest" \
+curl -X POST "https://fhir.omnilink.ch/fhir/ServiceRequest" \
   -H "Content-Type: application/fhir+json" \
   --data-binary @app/tests/data/umzh-connect/servicerequest.json
 
 ### Task
-curl -X POST "http://fhir.woess.ch/fhir/Task" \
+curl -X POST "https://fhir.omnilink.ch/fhir/Task" \
   -H "Content-Type: application/fhir+json" \
   --data-binary @app/tests/data/umzh-connect/task-initial.json
 
@@ -69,9 +69,9 @@ Dieser erzeugt aus einer CDA-Datei ein UMZH-Convert-Bundle passend zum Referral-
 ### Bruno Beispiel
 
 1. URL:
-  `https://fhir.woess.ch/middleware/cda/umzh/convert?workflow_stage=initial`
+  `https://fhir.omnilink.ch/middleware/cda/umzh/convert?workflow_stage=initial`
 2. Methode: `POST`
-3. Auth: Basic Auth wie bei `/middleware`
+3. Auth: Bearer-JWT ueber BridgeLink
 4. Body: `multipart/form-data` mit `file=@<deine-cda>.xml`
 
 Fuer die weiteren Stages einfach den Query-Parameter wechseln:
@@ -104,7 +104,7 @@ Query Parameter:
 
 Beispiel:
 
-`https://fhir.woess.ch/middleware/cda/umzh/send?workflow_stage=initial&target=sandbox-placer&destination_base_url=http://localhost:8080/fhir`
+`https://fhir.omnilink.ch/middleware/cda/umzh/send?workflow_stage=initial&target=sandbox-placer&destination_base_url=http://localhost:8080/fhir`
 
 Body:
 
@@ -149,15 +149,15 @@ von Ressourcentyp und ID (`PUT` bei vorhandener ID, sonst `POST`).
 
 ### Bruno-Aufruf
 
-1. URL: `https://fhir.woess.ch/middleware/cda/vacd/convert`
+1. URL: `https://fhir.omnilink.ch/middleware/cda/vacd/convert`
 2. Methode: `POST`
-3. Auth: Basic Auth wie bei `/middleware`
+3. Auth: Bearer-JWT ueber BridgeLink
 4. Body: `multipart/form-data` mit Feld `file=@<deine-cda>.xml`
 
 ### cURL-Aufruf
 
 ```bash
-curl -X POST "https://fhir.woess.ch/middleware/cda/vacd/convert" \
+curl -X POST "https://fhir.omnilink.ch/middleware/cda/vacd/convert" \
   -H "Accept: application/fhir+json" \
   -F "file=@app/tests/data/CDA-EPIC.xml"
 ```

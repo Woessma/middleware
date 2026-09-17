@@ -37,7 +37,7 @@ Nicht uebernehmen:
 
 [ ] Monitoring, Logrotation und Backups fuer den neuen Betrieb einrichten. Backups beginnen leer und enthalten keine Altdaten.
 
-[ ] Gemeinsames Docker-Netz erstellen: `docker network create fhir-server_fhir-net`.
+[ ] Vorhandenes Docker-Netzwerk `proxy` verwenden; kein zweites FHIR-Netz anlegen.
 
 ## 3. Code und neue Konfiguration bereitstellen
 
@@ -69,7 +69,7 @@ Nicht uebernehmen:
 
 [ ] Middleware neu bauen und starten: `docker compose up -d --build`.
 
-[ ] Bestaetigen, dass `fhir-middleware` im Netzwerk `fhir-server_fhir-net` laeuft und den FHIR-Server ueber `http://fhir-server:8080/fhir` erreicht.
+[ ] Bestaetigen, dass `fhir-middleware` im Netzwerk `proxy` laeuft und HAPI ueber `http://hapi-fhir:8080/fhir` erreicht.
 
 [ ] Middleware-Logs auf fehlende Secrets, Netzwerkfehler und Terminologie-/refdata-Fehler pruefen: `docker compose logs --tail=100 middleware`.
 
@@ -77,7 +77,7 @@ Nicht uebernehmen:
 
 ## 6. Abnahme und Abschluss
 
-[ ] Extern `https://fhir.woess.ch/fhir/metadata` mit gueltiger Basic Auth pruefen.
+[ ] Extern `https://fhir.omnilink.ch/fhir/metadata` ueber BridgeLink pruefen.
 
 [ ] Verifizieren, dass die neue FHIR-Datenbank zu Beginn keine Ressourcen aus dem Altsystem enthaelt.
 

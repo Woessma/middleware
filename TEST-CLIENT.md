@@ -43,7 +43,7 @@ POST /echosos/qr/import
 
 ## FHIR-Abfragen visualisieren
 
-`fhir-query-client.html` führt lesende Abfragen direkt gegen den FHIR-Server aus
+`fhir-query-client.html` fuehrt lesende Abfragen ueber BridgeLink gegen den FHIR-Server
 und zeigt bei einer enthaltenen Patient-Ressource zuerst die Stammdaten,
 Kontaktinformationen, Adressen und Notfallkontakte. Danach folgen die fachliche
 Zusammenfassung. In der EchoSOS-Notfallansicht sind Patient und fachliche
@@ -76,7 +76,7 @@ Nach Eingabe einer Patient-ID und Klick auf **Abfrage ausfuehren** laedt die
 voreingestellte Abfrage beispielsweise:
 
 ```text
-https://fhir.woess.ch/fhir/Patient/123/$everything?_count=500
+https://fhir.omnilink.ch/fhir/Patient/123/$everything?_count=500
 ```
 
 Der Platzhalter `{patientId}` im Abfragepfad wird ersetzt. Die Auswahl
@@ -97,8 +97,8 @@ http://localhost:8080/fhir-query-client.html
 
 ## Konfiguration
 
-- **Middleware URL**: Standard ist `https://fhir.woess.ch/middleware/`.
-- **FHIR-Server URL**: Standard ist `https://fhir.woess.ch/fhir/`.
+- **BridgeLink Middleware Route**: Standard ist `https://fhir.omnilink.ch/middleware/`.
+- **BridgeLink FHIR Route**: Standard ist `https://fhir.omnilink.ch/fhir/`.
 - **Auth Typ**: Standard ist Basic Auth; alternativ keine Authentifizierung oder Bearer Token.
 - **Username**: wird nur für Basic Auth verwendet.
 - **Password / Token**: Passwort für Basic Auth oder Bearer Token.
@@ -125,19 +125,18 @@ Beispiel. Text- und JSON-Dateien können direkt in den Eingabebereich geladen
 werden. Die eMediplan-Pfade akzeptieren ausserdem PDF- und Bilddateien mit
 QR-Code als binaeren Multipart-Upload.
 
-Der Use Case **Patient $everything** ruft den Instanz-Endpunkt direkt am
-FHIR-Server mit den im Client eingegebenen Zugangsdaten auf. Ein im Browser
-geöffneter Direktlink enthält diese Zugangsdaten nicht automatisch und kann daher
-am vorgeschalteten Nginx mit `401 Authorization Required` scheitern.
+Der Use Case **Patient $everything** ruft den FHIR-Endpunkt ueber BridgeLink
+auf. Ein im Browser geoeffneter Direktlink enthaelt Zugangsdaten nicht automatisch
+und kann daher mit `401 Unauthorized` scheitern.
 
 **Use Case ausführen** sendet den Payload mit der angezeigten HTTP-Methode an den
 angezeigten Pfad. JSON wird vor dem Versand geparst. CDA und HL7v2 werden als
 roher Body gesendet; der CDA-Debug-Pfad verwendet einen Multipart-Dateiupload.
 HTTP-Status, Laufzeit und Antworttyp erscheinen über der Antwort.
 
-**Als Eingabe verwenden** übernimmt die letzte JSON- oder XML-Antwort in den
-Editor. Damit kann beispielsweise ein CDA zunächst konvertiert und das erzeugte
-Bundle anschließend stabilisiert oder direkt an FHIR gesendet werden.
+**Als Eingabe verwenden** uebernimmt die letzte JSON- oder XML-Antwort in den
+Editor. Damit kann beispielsweise ein CDA zunaechst konvertiert und das erzeugte
+Bundle anschliessend stabilisiert oder ueber BridgeLink an FHIR gesendet werden.
 
 **Antwort herunterladen** speichert die letzte Antwort passend zum Content-Type
 als JSON-, XML- oder Textdatei.

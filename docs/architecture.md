@@ -6,10 +6,16 @@ Stand: 2026-09-10
 
 Quellsystem
 → BridgeLink
-→ Python Middleware
-→ HAPI FHIR Lookup
+→ Python Middleware fuer Convert/Write
+→ FHIR Bundle zurueck an BridgeLink
+→ HAPI FHIR Import durch BridgeLink
+
+Lesepfad:
+
+Quellsystem
 → BridgeLink
-→ HAPI FHIR Import
+→ HAPI FHIR
+→ BridgeLink
 
 Zusatzpfad fuer EPIC Medikation:
 
@@ -50,7 +56,7 @@ EPIC CDA
 - EchoSOS-Import: QR/PKPass -> Patient-Upsert -> Blutgruppen-Observation -> `$everything`-Abfrage -> Notfallansicht
 - Kontaktmodell: `Patient.contact` plus `RelatedPerson`; PCP über `CareTeam.participant` und `Practitioner`-Referenz
 - EchoSOS-Ansicht gruppiert Observations nach `vital-signs`, `laboratory` und `social-history`; unklassifizierte Observations und Encounter werden ausgeblendet
-- HAPI FHIR: HTTP-API über `http://fhir-server:8080/fhir`
+- HAPI FHIR: interne HTTP-API ueber `http://hapi-fhir:8080/fhir`
 
 ## eMediplan-Verordner und GLN
 
@@ -75,9 +81,10 @@ Self-Service-API `GET/PUT /api/identity` gepflegt werden.
 ## Deployment
 
 - Docker Compose Service `middleware`
-- Externes Netzwerk `fhir-server_fhir-net`
+- Externes Docker-Netzwerk `proxy`
 - Interner Port `8000`
-- Externer Zugriff über Nginx-Proxy: `/middleware/*`
+- Externer Zugriff ueber Cloudflare, cloudflared, Caddy und BridgeLink
+- Middleware schreibt bei Standard-Importpfaden nicht direkt nach HAPI FHIR
 
 ## CH VACD
 

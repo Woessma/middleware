@@ -50,7 +50,7 @@ Verantwortlich fuer:
 - FHIR-Mapping
 - FHIR-Bundle-Erzeugung
 - HAPI-Lookup und Referenzaufloesung
-- direkte Importvorbereitung fuer HAPI FHIR
+- direkte Importvorbereitung fuer BridgeLink und HAPI FHIR
 - Bundle-Dedupe
 
 ### HAPI FHIR
@@ -176,9 +176,10 @@ Clinical Notes werden nicht ueber einen klassischen Mapper, sondern ueber die Cl
 ## Deployment und Infrastruktur
 
 - Docker-Compose-Service `middleware` in `docker-compose.yml`
-- verwendet das externe Netzwerk `fhir-server_fhir-net`
+- verwendet das externe Netzwerk `proxy`
 - bindet an internen Port `8000`
-- FHIR-Backend: `http://fhir-server:8080/fhir`
+- FHIR-Backend: `http://hapi-fhir:8080/fhir`
+- Standard-Importpfade liefern Transaction-Bundles an BridgeLink zur Weiterleitung an HAPI FHIR
 - Anforderungen in `requirements.txt`:
   - fastapi
   - uvicorn
@@ -217,8 +218,8 @@ Vermeidung doppelter Ressourcen und idempotente FHIR-Imports.
 
 - `POST /cda/debug` — detaillierte CDA-Analyse im Debug-Modus
 - `POST /cda/convert` — konvertiert CDA zu einem FHIR-Transaction-Bundle
-- `POST /cda/import` — importiert das erzeugte Bundle in HAPI FHIR
-- `POST /emediplan/import-bundle` — stabilisiert und importiert ein einzelnes FHIR-Resource-Objekt oder Bundle in HAPI FHIR
+- `POST /cda/import` — erzeugt und validiert ein Bundle fuer BridgeLink
+- `POST /emediplan/import-bundle` — stabilisiert und validiert ein FHIR-Resource-Objekt oder Bundle fuer BridgeLink
 - `POST /cda/umzh/convert` — konvertiert CDA in UMZH-Workflow-Bundle mit Stages `initial|updated|completed`
 - `POST /cda/umzh/send` — kombiniert UMZH-Convert mit Versand an ein Ziel-FHIR-System und liefert einen Versandreport
 - `POST /cda/etoc/convert` — erzeugt einen CH-eTOC-orientierten `Bundle.type=document`-Pfad (Composition zuerst, inkl. Order-Referral/Purpose-Sections)
@@ -297,9 +298,9 @@ Clinical Notes, DocumentReference, Binary und ein erstes UMZH-orientiertes Diagn
 - Server-basierter Abnahme-Check ergaenzt: `app/scripts/etoc_acceptance_check.py` prueft CapabilityStatement, `/cda/etoc/convert`, Bundle-Shape, `$validate` und optional Persistenz gegen den Ziel-FHIR-Server
 - CI erweitert (Mono-Repo): separater Workflow fuer `fhir-middleware` (Python-Tests) und separater Workflow fuer `fhir-server` (docker-compose + Nginx-Konfigurationschecks + Pflicht-IG-Keys)
 - Isolierter Matrix-Stack im Repo angelegt: `fhir-server/matrix` mit eigenem Compose, `.env.example`, Nginx-vHost-Beispiel und Betriebs-README (keine Kollision mit FHIR-Ports)
-- Produktives Nginx erweitert: Matrix-Endpunkte (`/_matrix`, `/_synapse/client`, `/.well-known/matrix/*`) auf `matrix-synapse:8008` geroutet; Synapse zusaetzlich im `fhir-server_fhir-net` zur Erreichbarkeit durch den FHIR-Nginx
+- Produktives Edge-Routing: Matrix-Endpunkte (`/_matrix`, `/_synapse/client`, `/.well-known/matrix/*`) bleiben ein separater Pfad und werden nicht ueber die FHIR-Middleware geroutet
 - Stabilisierung: Matrix-Proxy in Nginx auf `127.0.0.1:8008` umgestellt, damit Nginx auch dann startet, wenn `matrix-synapse` (Docker-DNS) noch nicht verfuegbar ist
-- Matrix-Inbetriebnahme lokal abgeschlossen: Synapse initialisiert (`/opt/fhir-server/matrix`), auf Postgres umgestellt und gestartet; Matrix-API sowie `/.well-known/matrix/*` ueber `https://fhir.woess.ch` verifiziert
+- Matrix-Inbetriebnahme bleibt vom FHIR- und HTML-Lab getrennt; Matrix ist kein Middleware-Use-Case
 - Nginx-Matrix-Upstream gehaertet: Docker-DNS mit `resolver 127.0.0.11` und variablem Upstream `matrix-synapse:8008` zur Laufzeitaufloesung
 - TLS fuer Matrix aktiviert: Let's-Encrypt-Zertifikat fuer `matrix.woess.ch` via HTTP-01 Webroot ausgestellt; dedizierter Nginx-vHost (`matrix.woess.ch` auf 80/443) live aktiviert und erfolgreich validiert
 - Matrix-Testseite bereitgestellt: statische HTML-Smoketest-Seite unter `/matrix-test/` mit Browser-Checks fuer `/_matrix/client/versions`, `/.well-known/matrix/*` und Federation-Key-Endpunkt
@@ -344,7 +345,7 @@ Clinical Notes, DocumentReference, Binary und ein erstes UMZH-orientiertes Diagn
 - CDA-Autoren dokumentbezogen aufgeloest: ID-only-Authoren werden, wenn im selben CDA benannt, auf den vorhandenen Namen zurueckgefuehrt
 - HAPI-Testbestand gezielt bereinigt: doppelte Patient-, Practitioner-, PractitionerRole-, Organization-, Observation- und CareTeam-Datensaetze entfernt
 - Builder-Dedupe erweitert: redundante `name`, `telecom` und `address` werden fuer Patient und Practitioner vor dem Persistieren reduziert
-- Infrastruktur stabilisiert: `fhir-server` und `fhir-middleware` verwenden dasselbe externe Docker-Netzwerk `fhir-server_fhir-net`
+- Infrastruktur stabilisiert: `hapi-fhir`, `bridgelink` und `fhir-middleware` verwenden das gemeinsame Docker-Netzwerk `proxy`
 - verifiziert: Re-Imports bleiben fuer Referenzressourcen und deduplizierte Bundle-Eintraege idempotent
 
 ### Phase 3
