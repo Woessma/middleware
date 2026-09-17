@@ -58,10 +58,10 @@
   <main class="shell">
     <header class="masthead"><div><div class="eyebrow">BridgeLink Entwicklung</div><h1>API Werkbank</h1></div><div class="version">Test Client v3 · über HTTP öffnen, nicht über file://</div></header>
     <details id="connectionSettings" class="panel url-panel" hidden>
-      <summary>Verbindungseinstellungen (Middleware / FHIR-Server URL)</summary>
+      <summary>Verbindungseinstellungen (BridgeLink-Routen)</summary>
       <div class="url-grid">
-        <div><label for="middlewareUrl">Middleware URL</label><input id="middlewareUrl" value="https://fhir.woess.ch/middleware/" /></div>
-        <div><label for="fhirUrl">FHIR-Server URL</label><input id="fhirUrl" value="https://fhir.woess.ch/fhir/" /></div>
+        <div><label for="middlewareUrl">BridgeLink Middleware Route</label><input id="middlewareUrl" value="https://fhir.omnilink.ch/middleware/" /></div>
+        <div><label for="fhirUrl">BridgeLink FHIR Route</label><input id="fhirUrl" value="https://fhir.omnilink.ch/fhir/" /></div>
       </div>
     </details>
     <section class="panel connection" aria-label="Verbindung und Authentifizierung">
@@ -100,11 +100,11 @@
     const cases=[
       ['FHIR Bundle','fhir-stabilize','Bundle stabilisieren','POST','/fhir/stabilize','json','Bereitet eine Ressource oder ein Bundle idempotent für den FHIR-Import vor.',sampleBundle],
       ['FHIR Bundle','fhir-convert','Bundle stabilisieren + importieren','POST','/fhir/convert','json','Stabilisiert das Bundle und importiert es über den konfigurierten FHIR-Server.',sampleBundle],
-      ['FHIR Bundle','fhir-direct','Bundle direkt an FHIR senden','POST','/','json','Sendet ein bereits gültiges Transaction-Bundle ohne Middleware-Verarbeitung direkt an FHIR.',sampleBundle,[], 'fhir'],
-      ['FHIR Abfragen','patient-everything','Patient $everything','GET','/Patient/{patient_id}/$everything','none','Lädt den Patienten und alle verknüpften Ressourcen direkt vom FHIR-Server.',undefined,[{name:'patient_id',label:'Patient-ID',type:'text',value:'cf480118-7313-4f78-8043-549b9aceec91',path:true},{name:'_count',label:'Max. Treffer',type:'number',value:'500'}],'fhir'],
+      ['FHIR Bundle','fhir-direct','Bundle über BridgeLink senden','POST','/','json','Sendet ein bereits gültiges Transaction-Bundle über BridgeLink an FHIR.',sampleBundle,[], 'fhir'],
+      ['FHIR Abfragen','patient-everything','Patient $everything','GET','/Patient/{patient_id}/$everything','none','Lädt den Patienten und alle verknüpften Ressourcen über BridgeLink aus FHIR.',undefined,[{name:'patient_id',label:'Patient-ID',type:'text',value:'cf480118-7313-4f78-8043-549b9aceec91',path:true},{name:'_count',label:'Max. Treffer',type:'number',value:'500'}],'fhir'],
       ['FHIR Bundle','bundle-import','eMediplan Bundle importieren','POST','/emediplan/import-bundle','json','Importiert ein vorhandenes FHIR-Bundle über den eMediplan-Importpfad.',sampleBundle],
       ['CDA','cda-convert','CDA → FHIR Bundle','POST','/cda/convert','xml','Konvertiert CDA in ein Transaction- oder Document-Bundle.',undefined,[{name:'bundle_type',label:'Bundle-Typ',type:'select',options:['transaction','document'],value:'transaction'}]],
-      ['CDA','cda-import','CDA → FHIR Import','POST','/cda/import','xml','Konvertiert CDA und importiert das Ergebnis direkt in FHIR.'],
+      ['CDA','cda-import','CDA → FHIR Import über BridgeLink','POST','/cda/import','xml','Konvertiert CDA; BridgeLink schreibt das Ergebnis in FHIR.'],
       ['CDA','cda-debug','CDA analysieren (Debug)','POST','/cda/debug','xml-file','Liest Profil, Header, Patient und Sections. Nur im Debug-Modus verfügbar.'],
       ['CDA-Profile','vacd-convert','CDA → CH VACD','POST','/cda/vacd/convert','xml','Erzeugt ein CH-VACD Document-Bundle mit Composition als erstem Eintrag.'],
       ['CDA-Profile','vacd-send','CDA → VACD senden (openEHR)','POST','/cda/vacd/send','xml','Erzeugt das CH-VACD Document-Bundle, legt den Patienten beim Zielserver an und sendet das Bundle mit der zugewiesenen Patient-ID.',undefined,[{name:'destination_base_url',label:'Zielsystem Basis-URL',type:'text',placeholder:'https://vaccination-demo.raly.ch/api/fhir',wide:true},{name:'outbound_authorization',label:'Outbound Authorization',type:'password',placeholder:'Bearer …',wide:true,hint:'Die aktuelle API überträgt diesen Wert als Query-Parameter. Nur in einer kontrollierten Testumgebung verwenden.'}]],
@@ -112,11 +112,11 @@
       ['UMZH','umzh-convert','CDA → UMZH Bundle','POST','/cda/umzh/convert','xml','Erzeugt ServiceRequest und Task für den UMZH-Workflow.',undefined,workflow],
       ['UMZH','umzh-send','CDA → UMZH senden','POST','/cda/umzh/send','xml','Konvertiert CDA und sendet die Ressourcen an das Zielsystem.',undefined,[...workflow,{name:'destination_base_url',label:'Zielsystem Basis-URL',type:'text',placeholder:'https://ziel.example/fhir',wide:true},{name:'outbound_authorization',label:'Outbound Authorization',type:'password',placeholder:'Bearer …',wide:true,hint:'Die aktuelle API überträgt diesen Wert als Query-Parameter. Nur in einer kontrollierten Testumgebung verwenden.'}]],
       ['HL7v2','hl7-convert','ORU^R01 → FHIR Bundle','POST','/hl7v2/convert','hl7','Konvertiert ORU^R01 mit Patient und Laborwerten.',sampleHl7],
-      ['HL7v2','hl7-import','ORU^R01 → FHIR Import','POST','/hl7v2/import','hl7','Konvertiert ORU^R01 und importiert das Bundle direkt in FHIR.',sampleHl7],
+      ['HL7v2','hl7-import','ORU^R01 → FHIR Import über BridgeLink','POST','/hl7v2/import','hl7','Konvertiert ORU^R01; BridgeLink schreibt das Bundle in FHIR.',sampleHl7],
       ['eMediplan','emed-convert','eMediplan → FHIR Bundle','POST','/emediplan/convert','text','Konvertiert eMediplan in ein angereichertes FHIR-Bundle.'],
-      ['eMediplan','emed-import','eMediplan → FHIR Import','POST','/emediplan/import','text','Konvertiert eMediplan und importiert das Bundle direkt in FHIR.'],
+      ['eMediplan','emed-import','eMediplan → FHIR Import über BridgeLink','POST','/emediplan/import','text','Konvertiert eMediplan; BridgeLink schreibt das Bundle in FHIR.'],
       ['eMediplan','emed-qr-convert','eMediplan QR (PDF/Bild) → FHIR Bundle','POST','/emediplan/qr/convert','binary-file','Liest den eMediplan-QR-Code aus einem PDF oder Bild und gibt ein FHIR Bundle zurück.'],
-      ['eMediplan','emed-qr-import','eMediplan QR (PDF/Bild) → FHIR Import','POST','/emediplan/qr/import','binary-file','Liest den eMediplan-QR-Code aus einem PDF oder Bild und importiert das Bundle direkt in FHIR.'],
+      ['eMediplan','emed-qr-import','eMediplan QR (PDF/Bild) → FHIR Import über BridgeLink','POST','/emediplan/qr/import','binary-file','Liest den eMediplan-QR-Code; BridgeLink schreibt das Bundle in FHIR.'],
       ['EchoSOS','echosos-qr-import','EchoSOS QR/PKPass → FHIR + Patient $everything','POST','/echosos/qr/import','binary-file','Liest EchoSOS aus QR oder PKPass, sucht den Patienten nach Name und Geburtsdatum, aktualisiert oder legt ihn an und zeigt danach alle FHIR-Daten.'],
       ['EPIC CDA','fhir-epic','FHIR Bundle → EPIC CDA','POST','/fhir/medications/epic-cda','json','Erzeugt ein EPIC-Medikations-CDA aus einem FHIR-Bundle.',sampleBundle],
       ['EPIC CDA','emed-epic','eMediplan → EPIC CDA','POST','/emediplan/epic-cda','binary-file','Konvertiert eMediplan (Text, PDF oder Bild mit QR-Code) über FHIR in ein EPIC-Medikations-CDA.'],
