@@ -1,6 +1,6 @@
 # Bright-link Sequenzdiagramm
 
-Dieses Diagramm beschreibt die Zielarchitektur fuer alle Lese- und Schreib-Use-Cases. Bright-link ist der Zugangspunkt, validiert das JWT und prueft die Berechtigung vor jedem Aufruf. Die Middleware verarbeitet und transformiert medizinische Daten, waehrend der FHIR-Server die FHIR-Ressourcen speichert und abfragt.
+Dieses Diagramm beschreibt die Zielarchitektur fuer alle Lese- und Schreib-Use-Cases. Bright-link ist der Zugangspunkt, validiert das JWT und prueft die Berechtigung vor jedem Aufruf. Leseanfragen gehen direkt an den FHIR-Server; die Middleware verarbeitet Konvertierungen und Schreibprozesse.
 
 ```mermaid
 sequenceDiagram
@@ -19,10 +19,8 @@ sequenceDiagram
     alt JWT ungueltig oder Berechtigung fehlt
         BrightLink-->>Person: 401 Unauthorized oder 403 Forbidden
     else Lesender Use Case
-        BrightLink->>Middleware: GET Anfrage mit Kontext und Bearer JWT
-        Middleware->>FHIR: FHIR Suchanfrage
-        FHIR-->>Middleware: FHIR Bundle oder Ressource
-        Middleware-->>BrightLink: Aufbereitete FHIR Antwort
+        BrightLink->>FHIR: GET Anfrage mit Kontext und Bearer JWT
+        FHIR-->>BrightLink: FHIR Bundle oder Ressource
         BrightLink-->>Person: Ergebnis
     else Pure Convert Use Case
         BrightLink->>Middleware: Quelldaten fuer Convert mit Bearer JWT
@@ -77,6 +75,6 @@ sequenceDiagram
 | --- | --- |
 | Person | Meldet sich an und startet einen Use Case. |
 | Identity Provider | Authentifiziert die Person und stellt ein signiertes, zeitlich begrenztes JWT aus. |
-| Bright-link | Validiert JWT und Berechtigungen; leitet nur autorisierte Anfragen an die Middleware weiter. |
-| FHIR Middleware | Konvertiert CDA, VACD, eTOC, HL7v2, eMediplan und UMZH-Daten; stabilisiert FHIR-Bundles; koordiniert FHIR-Transaktionen und Abfragen. |
+| Bright-link | Validiert JWT und Berechtigungen; leitet Leseanfragen direkt an den FHIR-Server und Convert-/Write-Anfragen an die Middleware weiter. |
+| FHIR Middleware | Konvertiert CDA, VACD, eTOC, HL7v2, eMediplan und UMZH-Daten; stabilisiert FHIR-Bundles und koordiniert Schreibtransaktionen. Für interne Verarbeitung darf sie HAPI FHIR lesen. |
 | FHIR Server | Persistiert und liefert FHIR-Ressourcen. |

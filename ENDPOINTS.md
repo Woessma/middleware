@@ -225,11 +225,11 @@ Erwartung:
 - `400 Bad Request` bei fehlendem Input oder ungültigem Format
 - `500 Internal Server Error` für interne Fehler
 
-Wichtig: `POST /middleware/cda/convert` liefert ein Bundle zurück. Dieses Bundle kann als zweiter, separater Schritt direkt an den FHIR-Server gesendet werden:
+Wichtig: `POST /middleware/cda/convert` liefert ein Bundle zurück. BridgeLink kann dieses Bundle als separaten Schritt an den FHIR-Server senden:
 
 ```http
-POST https://fhir.woess.ch/fhir
-Authorization: Basic <credentials>
+POST <FHIR-Server-Route ueber BridgeLink>/fhir
+Authorization: Bearer <JWT>
 Content-Type: application/fhir+json
 Accept: application/fhir+json
 ```
@@ -238,9 +238,9 @@ Das bedeutet: Der Ablauf kann auch so aussehen:
 
 1. `POST /middleware/cda/convert` mit CDA-Daten
 2. Ergebnis: FHIR Bundle JSON
-3. `POST https://fhir.woess.ch/fhir` mit diesem Bundle als Body
+3. BridgeLink sendet das Bundle an die FHIR-Server-Route
 
-So ist der Convert-Call nicht der eigentliche Import, sondern die Vorstufe für den direkten FHIR-Write.
+So ist der Convert-Call nicht der eigentliche Import, sondern die Vorstufe fuer den direkten FHIR-Write ueber BridgeLink.
 
 #### 2. Direct Import-Endpunkte
 Diese Endpunkte schreiben Daten direkt in den FHIR-Server.
