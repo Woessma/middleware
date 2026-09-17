@@ -70,8 +70,8 @@ Der derzeitige Arbeitsweg ist:
 - Import-Bundles ergänzen für FHIR-DomainResources eine generierte `Narrative`
   (`resource.text`), sofern die Ressource noch keine Narrative enthält. Ausgenommen
   sind Nicht-DomainResources wie `Bundle`, `Binary` und `Parameters`.
-- Das Bundle wird anschließend direkt an den FHIR-Server unter `FHIR_BASE` gesendet
-- Die Antwort liefert Statusinformationen wie `status`, `fhir_status`, `bundle_entry_count` und den Server-Response
+- Das Bundle wird an BridgeLink zur Weiterleitung an den FHIR-Server zurückgegeben
+- BridgeLink schreibt das Bundle an den FHIR-Server und gibt dessen Ergebnis an den Client zurück
 
 Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server importieren wollen.
 
@@ -87,12 +87,12 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/middleware/cda/convert` | Erwartet CDA-XML; gibt FHIR Bundle JSON zurück | CDA -> FHIR Bundle |
 | `POST` | `/middleware/cda/vacd/convert` | Erwartet CDA-XML; gibt VACD-optimiertes Bundle zurück | CH-VACD-Workflow |
 | `POST` | `/middleware/cda/vacd/send` | Erwartet CDA-XML; konvertiert zu CH-VACD-Bundle, legt den Patienten beim Zielserver an und sendet das Bundle mit dessen zugewiesener ID | CH-VACD -> openEHR-FHIR-Referenzserver |
-| `POST` | `/middleware/cda/import` | Erwartet CDA-XML; erzeugt Bundle und schickt es direkt an den FHIR-Server | Aktueller Importpfad in den FHIR-Server |
+| `POST` | `/middleware/cda/import` | Erwartet CDA-XML; erzeugt und validiert ein Transaction-Bundle | CDA -> BridgeLink -> FHIR |
 | `POST` | `/middleware/emediplan/convert` | Erwartet eMediplan-Text oder PDF/Bild mit QR-Code; gibt FHIR Bundle JSON zurück | eMediplan -> FHIR |
-| `POST` | `/middleware/emediplan/import` | Erwartet eMediplan-Text oder PDF/Bild mit QR-Code; importiert direkt in FHIR-Server | eMediplan-Import |
-| `POST` | `/middleware/emediplan/import-bundle` | Erwartet JSON-Bundle; importiert FHIR Bundle in FHIR-Server | Bundle-Import |
+| `POST` | `/middleware/emediplan/import` | Erwartet eMediplan-Text oder PDF/Bild mit QR-Code; erzeugt und validiert ein Transaction-Bundle | eMediplan -> BridgeLink -> FHIR |
+| `POST` | `/middleware/emediplan/import-bundle` | Erwartet JSON-Bundle; validiert und gibt es an BridgeLink zurück | Bundle -> BridgeLink -> FHIR |
 | `POST` | `/middleware/emediplan/qr/convert` | Erwartet PDF oder Bild mit eMediplan-QR-Code; liest den QR-Code und gibt FHIR Bundle JSON zurück | eMediplan-QR (PDF/Bild) -> FHIR |
-| `POST` | `/middleware/emediplan/qr/import` | Wie oben, importiert das Bundle zusätzlich direkt in den FHIR-Server | eMediplan-QR-Import |
+| `POST` | `/middleware/emediplan/qr/import` | Wie oben, erzeugt und validiert ein Transaction-Bundle | eMediplan-QR -> BridgeLink -> FHIR |
 | `POST` | `/middleware/fhir/medications/epic-cda` | Erwartet FHIR Bundle JSON; liefert CDA-XML zurück | FHIR Bundle -> Epic CDA |
 | `POST` | `/middleware/emediplan/epic-cda` | Erwartet eMediplan-Daten; konvertiert erst zu Bundle und dann zu CDA | eMediplan -> Epic CDA |
 | `GET` | `/middleware/fhir/medications/epic-cda/from-server` | Holt Medikamente aus FHIR-Server und liefert CDA-XML zurück | FHIR -> Epic CDA |
@@ -150,9 +150,9 @@ Verarbeitete Segmente:
 LOINC-Codes werden automatisch zentral über TX validiert. Lokale Codes werden
 übernommen, aber nicht gegen TX validiert.
 
-`POST /middleware/hl7v2/import` verwendet dieselben Eingabeformen und schreibt das
-erzeugte Bundle direkt an `FHIR_BASE`. Die Antwort enthält `status`, `fhir_status`,
-`bundle_entry_count` und `response`.
+`POST /middleware/hl7v2/import` verwendet dieselben Eingabeformen und gibt das
+erzeugte Transaction-Bundle an BridgeLink zurück. BridgeLink schreibt es an den
+FHIR-Server.
 
 Beispiel Raw-Body:
 
@@ -242,8 +242,9 @@ Das bedeutet: Der Ablauf kann auch so aussehen:
 
 So ist der Convert-Call nicht der eigentliche Import, sondern die Vorstufe fuer den direkten FHIR-Write ueber BridgeLink.
 
-#### 2. Direct Import-Endpunkte
-Diese Endpunkte schreiben Daten direkt in den FHIR-Server.
+#### 2. BridgeLink-Import-Endpunkte
+Diese Endpunkte erzeugen und validieren ein Transaction-Bundle. BridgeLink schreibt
+das Bundle anschließend in den FHIR-Server.
 
 Beispiele:
 
@@ -253,9 +254,9 @@ Beispiele:
 
 Erwartung:
 
-- Antwort wie `status`, `fhir_status`, `bundle_entry_count`, `response`
-- `fhir_status` ist der HTTP-Status des FHIR-Servers
-- `status` ist `imported`, wenn der Server erfolgreich akzeptiert hat, sonst `error`
+- `200 OK` mit einem validierten FHIR-Transaction-Bundle
+- `400 Bad Request` bei ungültigem Input
+- Der HAPI-FHIR-Status kommt erst aus dem nachgelagerten BridgeLink-Write
 
 #### 3. Conversion-to-XML-Endpunkte
 Diese Endpunkte liefern als Output XML statt JSON.
@@ -317,18 +318,21 @@ Ablauf:
 `outbound_authorization` (Query-Parameter) wird unveraendert als `Authorization`-
 Header an beide Aufrufe (Patient und Bundle) weitergereicht.
 
-### Direktes Senden eines Bundles zum FHIR-Server
+### Schreiben eines Bundles ueber BridgeLink
 
-Wenn ein fertiges FHIR Bundle bereits vorliegt und direkt auf den FHIR-Server geschrieben werden soll, ist der Standard-Endpunkt:
+Wenn ein fertiges FHIR Bundle vorliegt, sendet BridgeLink es nach der
+Berechtigungspruefung an den FHIR-Server. Die Middleware liefert das Bundle nur
+zurueck und schreibt nicht selbst nach HAPI FHIR.
 
 ```http
-POST https://fhir.woess.ch/fhir
-Authorization: Basic <credentials>
+POST <BridgeLink-FHIR-Route>
+Authorization: Bearer <JWT>
 Content-Type: application/fhir+json
 Accept: application/fhir+json
 ```
 
-Das ist die direkte Variante, wenn das Bundle schon vollständig vorliegt. In der aktuellen Middleware-Logik wird das Bundle aber meistens von `POST /middleware/cda/import` erzeugt und anschließend automatisch an diesen FHIR-Endpunkt geschickt.
+Das Ergebnis des BridgeLink-Schreibens wird an den aufrufenden Client
+zurueckgegeben.
 
 ### Import-Stabilisierung in der Middleware
 
@@ -357,14 +361,14 @@ Beispiel für eine einzelne Ressource:
 
 Diese Eingabe wird intern zu einem Transaction-Entry mit `PUT Patient/p1`.
 
-### Praktischer Ablauf, damit du direkt auf den FHIR-Server schreibst
+### Praktischer Ablauf fuer einen Import ueber BridgeLink
 
 1. Ein gültiges FHIR Bundle als JSON erzeugen.
 2. Für ein Bundle muss `entry` eine Liste mit Ressourcen enthalten.
 3. `type` kann `transaction` sein; ein Dokumentbundle wird beim Middleware-Import automatisch umgewandelt.
 4. Jede `entry.resource` muss ein gültiges FHIR-Resource-Objekt sein.
 5. `request.method` und `request.url` können im Middleware-Import fehlen und werden automatisch ergänzt.
-6. Das JSON per `POST https://fhir.woess.ch/fhir` oder über einen passenden Middleware-Import senden.
+6. Das JSON ueber die BridgeLink-FHIR-Route an HAPI FHIR senden.
 
 ### Beispiel für direktes Schreiben
 

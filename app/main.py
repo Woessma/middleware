@@ -130,8 +130,6 @@ from services.emediplan_service import (
     emediplan_to_fhir_bundle,
     fhir_medications_to_epic_cda,
     fetch_medication_bundle_from_fhir_server,
-    import_emediplan_to_fhir_server,
-    import_bundle_to_fhir_server,
 )
 from services.emediplan_qr_service import extract_emediplan_payload_from_file, resolve_emediplan_payload
 from services.echosos_service import import_echosos
@@ -313,26 +311,7 @@ async def fhir_convert(request: Request):
     try:
         payload = await request.json()
         stabilized = _validate_bundle(_stabilize_bundle(payload))
-        response = requests.post(
-            FHIR_BASE,
-            json=stabilized,
-            headers={
-                "Content-Type": "application/fhir+json",
-                "Accept": "application/fhir+json",
-            },
-            timeout=300,
-        )
-        try:
-            response_payload = response.json()
-        except ValueError:
-            response_payload = response.text
-
-        return {
-            "status": "imported" if response.status_code < 300 else "error",
-            "fhir_status": response.status_code,
-            "bundle_entry_count": len(stabilized.get("entry", [])),
-            "response": response_payload,
-        }
+        return stabilized
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except requests.RequestException as exc:
@@ -421,26 +400,7 @@ async def hl7v2_import(
 
     try:
         bundle = _validate_bundle(to_transaction_bundle(parse_oru_r01(message)))
-        response = requests.post(
-            FHIR_BASE,
-            json=bundle,
-            headers={
-                "Content-Type": "application/fhir+json",
-                "Accept": "application/fhir+json",
-            },
-            timeout=300,
-        )
-        try:
-            response_payload = response.json()
-        except ValueError:
-            response_payload = response.text
-
-        return {
-            "status": "imported" if response.status_code < 300 else "error",
-            "fhir_status": response.status_code,
-            "bundle_entry_count": len(bundle.get("entry", [])),
-            "response": response_payload,
-        }
+        return bundle
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except requests.RequestException as exc:
@@ -1277,39 +1237,7 @@ async def cda_import_bundle(
                     count,
                 )
 
-        response = requests.post(
-            FHIR_BASE,
-            json=bundle,
-            headers={
-                "Content-Type": "application/fhir+json",
-                "Accept": "application/fhir+json"
-            },
-            timeout=300
-        )
-
-        try:
-
-            response_payload = response.json()
-
-        except Exception:
-
-            response_payload = response.text
-
-        return {
-            "status": (
-                "imported"
-                if response.status_code < 300
-                else "error"
-            ),
-            "fhir_status": response.status_code,
-            "bundle_entry_count": len(
-                bundle.get(
-                    "entry",
-                    []
-                )
-            ),
-            "response": response_payload
-        }
+        return bundle
 
     except ET.ParseError as ex:
 
@@ -1385,7 +1313,7 @@ async def emediplan_import(
     try:
         payload = resolve_emediplan_payload(payload, content_type)
         bundle = _validate_bundle(emediplan_to_fhir_bundle(payload))
-        return import_bundle_to_fhir_server(bundle, FHIR_BASE)
+        return bundle
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
     except Exception as ex:
@@ -1423,10 +1351,7 @@ async def emediplan_import_bundle(
 
     try:
         _validate_bundle(bundle)
-        return import_bundle_to_fhir_server(
-            bundle,
-            FHIR_BASE,
-        )
+        return bundle
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
     except Exception as ex:
@@ -1483,7 +1408,7 @@ async def emediplan_qr_import(
     try:
         payload = extract_emediplan_payload_from_file(raw_bytes, content_type)
         bundle = _validate_bundle(emediplan_to_fhir_bundle(payload))
-        return import_bundle_to_fhir_server(bundle, FHIR_BASE)
+        return bundle
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
     except Exception as ex:
