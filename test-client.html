@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store" />
+  <title>BridgeLink API Werkbank</title>
+  <style>
+    :root { --canvas:#eef2f3; --panel:#fff; --ink:#172126; --muted:#647178; --line:#d7dfe2; --brand:#006b5e; --brand-dark:#004e45; --accent:#dcefe9; --warning:#9a5b00; --danger:#b42318; --success:#147447; --code:#142027; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:linear-gradient(120deg,rgba(0,107,94,.08),transparent 32%),repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(23,33,38,.025) 32px),var(--canvas); color:var(--ink); font-family:"Aptos","Segoe UI",sans-serif; }
+    button,input,select,textarea { font:inherit; }
+    .shell { width:min(1500px,calc(100% - 32px)); margin:24px auto 40px; }
+    .masthead { display:flex; justify-content:space-between; gap:24px; align-items:end; margin-bottom:18px; }
+    h1 { margin:0; font:500 clamp(28px,4vw,46px) Georgia,"Times New Roman",serif; letter-spacing:0; }
+    .eyebrow { color:var(--brand); font-size:12px; font-weight:800; margin-bottom:5px; text-transform:uppercase; }
+    .version { color:var(--muted); font-size:13px; white-space:nowrap; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:0 10px 30px rgba(22,43,48,.05); }
+    .connection { display:grid; grid-template-columns:140px minmax(180px,1fr) minmax(200px,1.2fr) auto; gap:12px; align-items:end; padding:16px; margin-bottom:18px; }
+    .connection .actions { grid-column:1/-1; margin-top:0; }
+    .url-panel { margin-bottom:14px; }
+    .url-panel[open] { padding-bottom:16px; }
+    .url-grid { display:grid; grid-template-columns:repeat(2,minmax(220px,1fr)); gap:12px; margin-top:12px; }
+    label { display:block; margin-bottom:6px; color:var(--muted); font-size:12px; font-weight:800; }
+    input,select,textarea { width:100%; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--ink); outline:none; }
+    input,select { min-height:40px; padding:8px 10px; }
+    input:focus,select:focus,textarea:focus { border-color:var(--brand); box-shadow:0 0 0 3px rgba(0,107,94,.12); }
+    button { min-height:40px; border:1px solid var(--brand); border-radius:6px; padding:8px 14px; background:var(--brand); color:#fff; cursor:pointer; font-weight:800; }
+    button:hover { background:var(--brand-dark); } button:disabled { cursor:wait; opacity:.55; }
+    button.secondary { background:#fff; color:var(--brand-dark); } button.secondary:hover { background:var(--accent); }
+    button.quiet { border-color:var(--line); background:#f5f7f7; color:var(--ink); }
+    .workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; }
+    .request,.response { min-width:0; overflow:hidden; }
+    .panel-head { padding:18px 18px 14px; border-bottom:1px solid var(--line); } .panel-body { padding:18px; }
+    .usecase-line { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:end; }
+    .route { display:flex; align-items:center; gap:8px; min-height:40px; max-width:100%; padding:7px 10px; border:1px solid var(--line); border-radius:6px; background:#f7f9f9; font:12px "SFMono-Regular",Consolas,monospace; overflow:hidden; }
+    .method { flex:none; border-radius:4px; padding:3px 6px; background:var(--brand); color:#fff; font-weight:800; }
+    .route-path { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .description { min-height:40px; margin:12px 0 14px; color:var(--muted); font-size:14px; line-height:1.45; }
+    .params { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:14px; } .params:empty { display:none; } .wide { grid-column:1/-1; }
+    .hint { margin-top:5px; color:var(--warning); font-size:11px; line-height:1.35; }
+    .input-tools,.actions,.response-tools { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .input-tools { justify-content:space-between; margin-bottom:8px; } .file-picker { max-width:300px; font-size:12px; min-height:36px; padding:6px; }
+    textarea { min-height:390px; resize:vertical; padding:12px; background:#fbfcfc; font:13px/1.5 "SFMono-Regular",Consolas,monospace; }
+    .actions,.response-tools { margin-top:12px; }
+    .response-head { display:flex; justify-content:space-between; gap:12px; align-items:center; }
+    .response-head h2 { margin:0; font:500 22px Georgia,"Times New Roman",serif; }
+    .status { display:inline-flex; min-height:28px; align-items:center; border-radius:999px; padding:4px 9px; background:#edf1f2; color:var(--muted); font-size:12px; font-weight:800; }
+    .status.success { background:#e4f5eb; color:var(--success); } .status.error { background:#fff0ee; color:var(--danger); } .status.running { background:#fff3dc; color:var(--warning); }
+    pre { min-height:527px; max-height:720px; margin:0; overflow:auto; border-radius:6px; background:var(--code); color:#dce9e8; padding:14px; white-space:pre-wrap; word-break:break-word; font:13px/1.5 "SFMono-Regular",Consolas,monospace; }
+    .response-meta { min-height:20px; margin:10px 0; color:var(--muted); font-size:12px; }
+    @media(max-width:1180px){.connection{grid-template-columns:1fr 1fr 1fr}.url-grid{grid-template-columns:1fr}}
+    @media(max-width:860px){.workspace{grid-template-columns:1fr}.connection{grid-template-columns:1fr}.masthead{align-items:start;flex-direction:column;gap:6px}.usecase-line{grid-template-columns:1fr}}
+    @media(max-width:520px){.shell{width:calc(100% - 20px);margin-top:14px}.params{grid-template-columns:1fr}.wide{grid-column:auto}textarea{min-height:310px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead"><div><div class="eyebrow">BridgeLink Entwicklung</div><h1>API Werkbank</h1></div><div class="version">Test Client v3 · über HTTP öffnen, nicht über file://</div></header>
+    <details id="connectionSettings" class="panel url-panel" hidden>
+      <summary>Verbindungseinstellungen (Middleware / FHIR-Server URL)</summary>
+      <div class="url-grid">
+        <div><label for="middlewareUrl">Middleware URL</label><input id="middlewareUrl" value="https://fhir.woess.ch/middleware/" /></div>
+        <div><label for="fhirUrl">FHIR-Server URL</label><input id="fhirUrl" value="https://fhir.woess.ch/fhir/" /></div>
+      </div>
+    </details>
+    <section class="panel connection" aria-label="Verbindung und Authentifizierung">
+      <div><label for="authType">Auth Typ</label><select id="authType"><option value="none">Keine</option><option value="basic" selected>Basic Auth</option><option value="bearer">Bearer Token</option></select></div>
+      <div><label for="authUsername">Username</label><input id="authUsername" autocomplete="username" placeholder="Basic Auth" /></div>
+      <div><label for="authPassword">Passwort / Token</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="nur für diesen Request" /></div>
+      <div class="actions">
+        <button id="checkBtn" class="secondary" type="button">Verbindung prüfen</button>
+        <button id="saveCredentialsBtn" class="secondary" type="button">Zugangsdaten speichern</button>
+        <button id="clearCredentialsBtn" class="quiet" type="button">Zugangsdaten löschen</button>
+      </div>
+    </section>
+    <div class="workspace">
+      <section class="panel request">
+        <div class="panel-head">
+          <div class="usecase-line"><div><label for="useCase">Use Case</label><select id="useCase"></select></div><div id="route" class="route" title="Aktiver API-Pfad"></div></div>
+          <div id="description" class="description"></div><div id="params" class="params"></div>
+        </div>
+        <div class="panel-body">
+          <div class="input-tools"><label id="inputLabel" for="payload">Eingabe</label><div class="input-actions"><button id="cameraBtn" class="secondary" type="button" hidden>Kamera öffnen</button><input id="fileInput" class="file-picker" type="file" /></div></div>
+          <textarea id="payload" spellcheck="false"></textarea>
+          <div class="actions"><button id="runBtn" type="button">Use Case ausführen</button><button id="formatBtn" class="secondary" type="button">JSON formatieren</button><button id="clearBtn" class="quiet" type="button">Eingabe leeren</button></div>
+        </div>
+      </section>
+      <section class="panel response">
+        <div class="panel-head response-head"><h2>Antwort</h2><span id="status" class="status">Bereit</span></div>
+        <div class="panel-body"><div id="responseMeta" class="response-meta">Noch kein Request ausgeführt.</div><pre id="output">{}</pre><div class="response-tools"><button id="reuseBtn" class="secondary" type="button" disabled>Als Eingabe verwenden</button><button id="downloadBtn" class="quiet" type="button" disabled>Antwort herunterladen</button></div></div>
+      </section>
+    </div>
+  </main>
+  <script>
+    const sampleBundle={resourceType:'Bundle',type:'transaction',entry:[{fullUrl:'urn:uuid:patient-1',resource:{resourceType:'Patient',id:'patient-1',name:[{family:'Muster',given:['Max']}]},request:{method:'PUT',url:'Patient/patient-1'}}]};
+    const sampleHl7=['MSH|^~\\&|LAB|WOESS|FHIR|WOESS|20260901100000||ORU^R01|MSG-1|P|2.5','PID|1||12345^^^WOESS^MR||Muster^Max||19800101|M','OBR|1|||24323-8^Basic metabolic panel^LN|||20260901100000','OBX|1|NM|2345-7^Glucose^LN||5.1|mmol/L|3.9-5.5|N|||F'].join('\r');
+    const txCode={resourceType:'Parameters',parameter:[{name:'system',valueUri:'http://loinc.org'},{name:'code',valueCode:'2345-7'}]};
+    const workflow=[{name:'workflow_stage',label:'Workflow-Phase',type:'select',options:['initial','updated','completed'],value:'initial'},{name:'target',label:'Zielprofil',type:'select',options:['default','sandbox-placer'],value:'default'}];
+    const cases=[
+      ['FHIR Bundle','fhir-stabilize','Bundle stabilisieren','POST','/fhir/stabilize','json','Bereitet eine Ressource oder ein Bundle idempotent für den FHIR-Import vor.',sampleBundle],
+      ['FHIR Bundle','fhir-convert','Bundle stabilisieren + importieren','POST','/fhir/convert','json','Stabilisiert das Bundle und importiert es über den konfigurierten FHIR-Server.',sampleBundle],
+      ['FHIR Bundle','fhir-direct','Bundle direkt an FHIR senden','POST','/','json','Sendet ein bereits gültiges Transaction-Bundle ohne Middleware-Verarbeitung direkt an FHIR.',sampleBundle,[], 'fhir'],
+      ['FHIR Abfragen','patient-everything','Patient $everything','GET','/Patient/{patient_id}/$everything','none','Lädt den Patienten und alle verknüpften Ressourcen direkt vom FHIR-Server.',undefined,[{name:'patient_id',label:'Patient-ID',type:'text',value:'cf480118-7313-4f78-8043-549b9aceec91',path:true},{name:'_count',label:'Max. Treffer',type:'number',value:'500'}],'fhir'],
+      ['FHIR Bundle','bundle-import','eMediplan Bundle importieren','POST','/emediplan/import-bundle','json','Importiert ein vorhandenes FHIR-Bundle über den eMediplan-Importpfad.',sampleBundle],
+      ['CDA','cda-convert','CDA → FHIR Bundle','POST','/cda/convert','xml','Konvertiert CDA in ein Transaction- oder Document-Bundle.',undefined,[{name:'bundle_type',label:'Bundle-Typ',type:'select',options:['transaction','document'],value:'transaction'}]],
+      ['CDA','cda-import','CDA → FHIR Import','POST','/cda/import','xml','Konvertiert CDA und importiert das Ergebnis direkt in FHIR.'],
+      ['CDA','cda-debug','CDA analysieren (Debug)','POST','/cda/debug','xml-file','Liest Profil, Header, Patient und Sections. Nur im Debug-Modus verfügbar.'],
+      ['CDA-Profile','vacd-convert','CDA → CH VACD','POST','/cda/vacd/convert','xml','Erzeugt ein CH-VACD Document-Bundle mit Composition als erstem Eintrag.'],
+      ['CDA-Profile','vacd-send','CDA → VACD senden (openEHR)','POST','/cda/vacd/send','xml','Erzeugt das CH-VACD Document-Bundle, legt den Patienten beim Zielserver an und sendet das Bundle mit der zugewiesenen Patient-ID.',undefined,[{name:'destination_base_url',label:'Zielsystem Basis-URL',type:'text',placeholder:'https://vaccination-demo.raly.ch/api/fhir',wide:true},{name:'outbound_authorization',label:'Outbound Authorization',type:'password',placeholder:'Bearer …',wide:true,hint:'Die aktuelle API überträgt diesen Wert als Query-Parameter. Nur in einer kontrollierten Testumgebung verwenden.'}]],
+      ['CDA-Profile','etoc-convert','CDA → CH eTOC','POST','/cda/etoc/convert','xml','Erzeugt ein CH-eTOC Document-Bundle für den gewählten Workflow.',undefined,workflow],
+      ['UMZH','umzh-convert','CDA → UMZH Bundle','POST','/cda/umzh/convert','xml','Erzeugt ServiceRequest und Task für den UMZH-Workflow.',undefined,workflow],
+      ['UMZH','umzh-send','CDA → UMZH senden','POST','/cda/umzh/send','xml','Konvertiert CDA und sendet die Ressourcen an das Zielsystem.',undefined,[...workflow,{name:'destination_base_url',label:'Zielsystem Basis-URL',type:'text',placeholder:'https://ziel.example/fhir',wide:true},{name:'outbound_authorization',label:'Outbound Authorization',type:'password',placeholder:'Bearer …',wide:true,hint:'Die aktuelle API überträgt diesen Wert als Query-Parameter. Nur in einer kontrollierten Testumgebung verwenden.'}]],
+      ['HL7v2','hl7-convert','ORU^R01 → FHIR Bundle','POST','/hl7v2/convert','hl7','Konvertiert ORU^R01 mit Patient und Laborwerten.',sampleHl7],
+      ['HL7v2','hl7-import','ORU^R01 → FHIR Import','POST','/hl7v2/import','hl7','Konvertiert ORU^R01 und importiert das Bundle direkt in FHIR.',sampleHl7],
+      ['eMediplan','emed-convert','eMediplan → FHIR Bundle','POST','/emediplan/convert','text','Konvertiert eMediplan in ein angereichertes FHIR-Bundle.'],
+      ['eMediplan','emed-import','eMediplan → FHIR Import','POST','/emediplan/import','text','Konvertiert eMediplan und importiert das Bundle direkt in FHIR.'],
+      ['eMediplan','emed-qr-convert','eMediplan QR (PDF/Bild) → FHIR Bundle','POST','/emediplan/qr/convert','binary-file','Liest den eMediplan-QR-Code aus einem PDF oder Bild und gibt ein FHIR Bundle zurück.'],
+      ['eMediplan','emed-qr-import','eMediplan QR (PDF/Bild) → FHIR Import','POST','/emediplan/qr/import','binary-file','Liest den eMediplan-QR-Code aus einem PDF oder Bild und importiert das Bundle direkt in FHIR.'],
+      ['EchoSOS','echosos-qr-import','EchoSOS QR/PKPass → FHIR + Patient $everything','POST','/echosos/qr/import','binary-file','Liest EchoSOS aus QR oder PKPass, sucht den Patienten nach Name und Geburtsdatum, aktualisiert oder legt ihn an und zeigt danach alle FHIR-Daten.'],
+      ['EPIC CDA','fhir-epic','FHIR Bundle → EPIC CDA','POST','/fhir/medications/epic-cda','json','Erzeugt ein EPIC-Medikations-CDA aus einem FHIR-Bundle.',sampleBundle],
+      ['EPIC CDA','emed-epic','eMediplan → EPIC CDA','POST','/emediplan/epic-cda','binary-file','Konvertiert eMediplan (Text, PDF oder Bild mit QR-Code) über FHIR in ein EPIC-Medikations-CDA.'],
+      ['EPIC CDA','server-epic','FHIR-Server → EPIC CDA','GET','/fhir/medications/epic-cda/from-server','none','Liest Medikationen aus FHIR und erzeugt ein EPIC-CDA.',undefined,[{name:'patient_id',label:'Patient-ID',type:'text',placeholder:'optional'},{name:'count',label:'Max. Treffer',type:'number',value:'100'}]],
+      ['Terminologie','tx-expand','ValueSet $expand','POST','/terminology/ValueSet/$expand','json','Expandiert ein ValueSet über den TX-Server.',{resourceType:'Parameters',parameter:[{name:'url',valueUri:'http://hl7.org/fhir/ValueSet/observation-codes'}]}],
+      ['Terminologie','tx-lookup','CodeSystem $lookup','POST','/terminology/CodeSystem/$lookup','json','Liest Details zu einem Code aus dem TX-Server.',txCode],
+      ['Terminologie','tx-validate','ValueSet $validate-code','POST','/terminology/ValueSet/$validate-code','json','Validiert einen Code gegen ein ValueSet.',txCode],
+      ['Terminologie','tx-translate','ConceptMap $translate','POST','/terminology/ConceptMap/$translate','json','Übersetzt einen Code über eine ConceptMap.',txCode],
+      ['Terminologie','tx-subsumes','CodeSystem $subsumes','POST','/terminology/CodeSystem/$subsumes','json','Prüft die hierarchische Beziehung zweier Codes.',txCode],
+      ['Terminologie','tx-closure','ConceptMap $closure','POST','/terminology/ConceptMap/$closure','json','Verarbeitet den Terminologie-Abschluss.',{resourceType:'Parameters',parameter:[{name:'name',valueString:'bridgelink-test'}]}],
+      ['Smoke Tests','test-patient','Testpatient anlegen/finden','GET','/test/patient','none','Ruft den serverseitigen Patient-Smoke-Test auf.'],
+      ['Smoke Tests','test-organization','Testorganisation anlegen/finden','GET','/test/organization','none','Ruft den serverseitigen Organization-Smoke-Test auf.']
+    ].map(([group,id,name,method,path,input,description,template,params=[],target='middleware'])=>({group,id,name,method,path,input,description,template,params,target}));
+    const el=Object.fromEntries(['useCase','route','description','params','payload','inputLabel','fileInput','runBtn','formatBtn','status','output','responseMeta','reuseBtn','downloadBtn'].map(id=>[id,document.getElementById(id)]));
+    const credentialsStorageKey='bridgelink-test-client-credentials';
+    function restoreCredentials(){try{const saved=JSON.parse(localStorage.getItem(credentialsStorageKey)||'null');if(!saved)return;document.getElementById('authType').value=saved.type||'basic';document.getElementById('authUsername').value=saved.username||'';document.getElementById('authPassword').value=saved.secret||''}catch{localStorage.removeItem(credentialsStorageKey)}}
+    function saveCredentials(){localStorage.setItem(credentialsStorageKey,JSON.stringify({type:document.getElementById('authType').value,username:document.getElementById('authUsername').value,secret:document.getElementById('authPassword').value}));status('Zugangsdaten wurden in diesem Browser gespeichert.','success')}
+    function clearCredentials(){localStorage.removeItem(credentialsStorageKey);document.getElementById('authUsername').value='';document.getElementById('authPassword').value='';status('Gespeicherte Zugangsdaten wurden gelöscht.','success')}
+    let lastResponse=null,lastContentType='application/json';
+    const restrictedUserGroups={'EPIC-Spital':['CDA','EPIC CDA','eMediplan']};
+    function visibleCases(){const allowed=restrictedUserGroups[document.getElementById('authUsername').value.trim()];return allowed?cases.filter(item=>allowed.includes(item.group)):cases}
+    function current(){return visibleCases().find(item=>item.id===el.useCase.value)||visibleCases()[0]}
+    function populate(){const previous=el.useCase.value;el.useCase.replaceChildren();const groups=new Map();for(const item of visibleCases()){if(!groups.has(item.group)){const group=document.createElement('optgroup');group.label=item.group;groups.set(item.group,group);el.useCase.append(group)}const option=document.createElement('option');option.value=item.id;option.textContent=item.name;groups.get(item.group).append(option)}if(visibleCases().some(item=>item.id===previous))el.useCase.value=previous}
+    function refreshUseCases(){populate();render()}
+    function render(){const item=current();el.route.replaceChildren();const method=document.createElement('span');method.className='method';method.textContent=item.method;const path=document.createElement('span');path.className='route-path';path.textContent=(item.target==='fhir'?'FHIR ':'')+item.path;el.route.append(method,path);el.description.textContent=item.description;el.params.replaceChildren();for(const spec of item.params){const box=document.createElement('div');if(spec.wide)box.className='wide';const label=document.createElement('label');label.htmlFor='param-'+spec.name;label.textContent=spec.label;let input;if(spec.type==='select'){input=document.createElement('select');for(const value of spec.options){const option=document.createElement('option');option.value=value;option.textContent=value;input.append(option)}}else{input=document.createElement('input');input.type=spec.type||'text';input.placeholder=spec.placeholder||''}input.id='param-'+spec.name;input.dataset.param=spec.name;if(spec.path)input.dataset.path='true';input.value=spec.value||'';box.append(label,input);if(spec.hint){const hint=document.createElement('div');hint.className='hint';hint.textContent=spec.hint;box.append(hint)}el.params.append(box)}const none=item.input==='none';const binaryFile=item.input==='binary-file';el.payload.disabled=none||binaryFile;el.fileInput.disabled=none;el.formatBtn.hidden=item.input!=='json';el.inputLabel.textContent=none?'Keine Request-Eingabe erforderlich':binaryFile?'PDF oder Bild mit QR-Code':item.input==='json'?'FHIR JSON / Parameters':item.input.startsWith('xml')?'CDA XML':item.input==='hl7'?'HL7v2 Nachricht':'Payload';el.fileInput.accept=binaryFile?'.pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg,text/plain':item.input==='json'?'.json,application/json':item.input.startsWith('xml')?'.xml,text/xml,application/xml':item.input==='hl7'?'.hl7,.txt,text/plain':'.txt,.json';el.payload.placeholder=none?'Dieser Use Case verwendet nur Query-Parameter.':binaryFile?'Datei auswählen – kein Text-Payload notwendig.':'Payload einfügen oder Datei auswählen …';el.payload.value=item.template===undefined?'':typeof item.template==='string'?item.template:JSON.stringify(item.template,null,2);el.fileInput.value=''}
+    function auth(legacy=false){const type=document.getElementById('authType').value,user=document.getElementById('authUsername').value.trim(),secret=document.getElementById('authPassword').value;if(type==='none')return{};if(type==='bearer'){if(!secret)throw Error('Bitte einen Bearer Token eingeben.');return{Authorization:`Bearer ${secret}`}}if(!user||!secret)throw Error('Bitte Username und Passwort für Basic Auth eingeben.');const raw=`${user}:${secret}`;return{Authorization:`Basic ${legacy?btoa(raw):btoa(unescape(encodeURIComponent(raw)))}`}}
+    function legacyRetry(){if(document.getElementById('authType').value!=='basic')return false;try{const raw=`${document.getElementById('authUsername').value.trim()}:${document.getElementById('authPassword').value}`;return btoa(raw)!==btoa(unescape(encodeURIComponent(raw)))}catch{return false}}
+    function urlFor(item){const baseId=item.target==='fhir'?'fhirUrl':'middlewareUrl',base=document.getElementById(baseId).value.trim().replace(/\/+$/,'');if(!base)throw Error(`Bitte ${item.target==='fhir'?'FHIR-Server':'Middleware'} URL eingeben.`);let path=item.path;el.params.querySelectorAll('[data-path]').forEach(input=>{if(!input.value.trim())throw Error(`Bitte ${input.previousElementSibling.textContent} eingeben.`);path=path.replace(`{${input.dataset.param}}`,encodeURIComponent(input.value.trim()))});const url=new URL(base+path);el.params.querySelectorAll('[data-param]:not([data-path])').forEach(input=>{if(input.value.trim())url.searchParams.set(input.dataset.param,input.value.trim())});return url}
+    function requestFor(item,legacy=false){const headers={Accept:'application/fhir+json, application/json, application/xml, text/xml, text/plain',...auth(legacy)},options={method:item.method,headers,mode:'cors',credentials:'same-origin'};if(item.input==='none')return options;if(item.input==='binary-file'){const file=el.fileInput.files[0];if(!file)throw Error('Bitte eine Datei auswählen.');const form=new FormData();form.append('file',file,file.name);options.body=form;return options}const value=el.payload.value.trim();if(!value)throw Error('Bitte einen Payload eingeben oder eine Datei auswählen.');if(item.input==='json'){options.body=JSON.stringify(JSON.parse(value));headers['Content-Type']='application/fhir+json'}else if(item.input==='xml-file'){const form=new FormData();form.append('file',new Blob([value],{type:'application/xml'}),el.fileInput.files[0]?.name||'document.xml');options.body=form}else{options.body=value;headers['Content-Type']=item.input==='xml'?'application/xml':'text/plain; charset=utf-8'}return options}
+    async function fetchRetry(url,item){let response=await fetch(url,requestFor(item));if(response.status===401&&legacyRetry())response=await fetch(url,requestFor(item,true));return response}
+    function parse(text,type){const trimmed=text.trim();if(!trimmed)return{};if(type.includes('json')||trimmed.startsWith('{')||trimmed.startsWith('[')){try{return JSON.parse(text)}catch{return text}}return text}
+    function display(value){el.output.textContent=typeof value==='string'?value:JSON.stringify(value,null,2)}
+    function status(text,type=''){el.status.textContent=text;el.status.className=`status ${type}`.trim()}
+    function errorText(error){if(error instanceof SyntaxError)return `Ungültiges JSON: ${error.message}`;if(error instanceof TypeError&&error.message.toLowerCase().includes('fetch'))return `Netzwerk- oder CORS-Fehler. Browser-Origin: ${window.location.origin}. Prüfe URL, OPTIONS-Request und Auth-Konfiguration.`;return error.message||'Unbekannter Fehler'}
+    async function run(){const item=current(),started=performance.now();el.runBtn.disabled=true;lastResponse=null;status('Request läuft …','running');try{const url=urlFor(item),response=await fetchRetry(url,item),type=response.headers.get('Content-Type')||'text/plain',value=parse(await response.text(),type),elapsed=Math.round(performance.now()-started);lastResponse=value;lastContentType=type;display(value);el.responseMeta.textContent=`${item.method} ${url} · HTTP ${response.status} · ${elapsed} ms · ${type.split(';')[0]}`;el.reuseBtn.disabled=false;el.downloadBtn.disabled=false;if(!response.ok){const detail=response.status===401?'Authentifizierung fehlgeschlagen.':typeof value==='object'&&value?.detail?value.detail:'Der Server hat den Request abgelehnt.';throw Error(`HTTP ${response.status}: ${detail}`)}status(`HTTP ${response.status}`,'success')}catch(error){const message=errorText(error);if(lastResponse===null)display(message);status(message,'error')}finally{el.runBtn.disabled=false}}
+    async function check(){const checks=[['Middleware',document.getElementById('middlewareUrl').value.trim().replace(/\/+$/,'')+'/fhir/stabilize'],['FHIR-Server',document.getElementById('fhirUrl').value.trim().replace(/\/+$/,'')+'/metadata']];status('Verbindungen werden geprüft …','running');const results=await Promise.all(checks.map(async([endpoint,url])=>{try{let response=await fetch(url,{method:'GET',headers:auth(),mode:'cors',credentials:'same-origin'});if(response.status===401&&legacyRetry())response=await fetch(url,{method:'GET',headers:auth(true),mode:'cors',credentials:'same-origin'});return{endpoint,url,http_status:response.status,reachable:true,status:response.ok||response.status===405?'ok':'http_error'}}catch(error){return{endpoint,url,reachable:false,status:'network_or_cors_error',detail:errorText(error)}}}));lastResponse=results;lastContentType='application/json';display(results);el.responseMeta.textContent='Verbindungsprüfung abgeschlossen.';el.reuseBtn.disabled=false;el.downloadBtn.disabled=false;const failed=results.filter(result=>!result.reachable||result.status!=='ok');status(failed.length?`${failed.length} Verbindung(en) mit Fehler`:'Beide Endpunkte erreichbar',failed.length?'error':'success')}
+    el.useCase.addEventListener('change',render);el.runBtn.addEventListener('click',run);document.getElementById('checkBtn').addEventListener('click',check);document.getElementById('clearBtn').addEventListener('click',()=>{el.payload.value='';el.payload.focus()});
+    el.formatBtn.addEventListener('click',()=>{try{el.payload.value=JSON.stringify(JSON.parse(el.payload.value),null,2);status('JSON formatiert','success')}catch(error){status(errorText(error),'error')}});
+    el.fileInput.addEventListener('change',async()=>{const file=el.fileInput.files[0];if(file){if(current().input==='binary-file'){status(`${file.name} ausgewählt`,'success')}else{el.payload.value=await file.text();status(`${file.name} geladen`,'success')}}});
+    el.reuseBtn.addEventListener('click',()=>{el.payload.value=typeof lastResponse==='string'?lastResponse:JSON.stringify(lastResponse,null,2);status('Antwort in die Eingabe übernommen','success')});
+    el.downloadBtn.addEventListener('click',()=>{const content=typeof lastResponse==='string'?lastResponse:JSON.stringify(lastResponse,null,2),extension=lastContentType.includes('xml')?'xml':lastContentType.includes('json')?'json':'txt',link=document.createElement('a');link.href=URL.createObjectURL(new Blob([content],{type:lastContentType}));link.download=`bridgelink-response.${extension}`;link.click();URL.revokeObjectURL(link.href)});
+    document.getElementById('saveCredentialsBtn').addEventListener('click',saveCredentials);
+    document.getElementById('clearCredentialsBtn').addEventListener('click',clearCredentials);
+    document.getElementById('authUsername').addEventListener('input',refreshUseCases);
+    const cameraBtn=document.getElementById('cameraBtn');
+    const baseRender=render;
+    render=function(){baseRender();const echoSelected=current().id==='echosos-qr-import';cameraBtn.hidden=!echoSelected;if(echoSelected){el.fileInput.accept='.pkpass,.png,.jpg,.jpeg,image/png,image/jpeg,application/vnd.apple.pkpass';el.fileInput.setAttribute('capture','environment')}else{el.fileInput.removeAttribute('capture')}};
+    cameraBtn.addEventListener('click',()=>{el.fileInput.setAttribute('capture','environment');el.fileInput.click()});
+    restoreCredentials();populate();render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store" />
+  <title>EPIC-Spital: eMediplan (CHMED16A) → EPIC CDA</title>
+  <style>
+    :root { --canvas:#eef2f3; --panel:#fff; --ink:#172126; --muted:#647178; --line:#d7dfe2; --brand:#006b5e; --brand-dark:#004e45; --accent:#dcefe9; --warning:#9a5b00; --danger:#b42318; --success:#147447; --code:#142027; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:linear-gradient(120deg,rgba(0,107,94,.08),transparent 32%),repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(23,33,38,.025) 32px),var(--canvas); color:var(--ink); font-family:"Aptos","Segoe UI",sans-serif; }
+    button,input,select,textarea { font:inherit; }
+    .shell { width:min(1200px,calc(100% - 32px)); margin:24px auto 40px; }
+    .masthead { display:flex; justify-content:space-between; gap:24px; align-items:end; margin-bottom:18px; }
+    h1 { margin:0; font:500 clamp(24px,4vw,38px) Georgia,"Times New Roman",serif; letter-spacing:0; }
+    .eyebrow { color:var(--brand); font-size:12px; font-weight:800; margin-bottom:5px; text-transform:uppercase; }
+    .version { color:var(--muted); font-size:13px; white-space:nowrap; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:0 10px 30px rgba(22,43,48,.05); }
+    .connection { display:grid; grid-template-columns:140px minmax(180px,1fr) minmax(200px,1.2fr) auto; gap:12px; align-items:end; padding:16px; margin-bottom:18px; }
+    .connection .actions { grid-column:1/-1; margin-top:0; }
+    .url-panel { margin-bottom:14px; }
+    .url-panel[open] { padding-bottom:16px; }
+    .url-grid { display:grid; grid-template-columns:minmax(220px,1fr); gap:12px; margin-top:12px; }
+    label { display:block; margin-bottom:6px; color:var(--muted); font-size:12px; font-weight:800; }
+    input,select,textarea { width:100%; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--ink); outline:none; }
+    input,select { min-height:40px; padding:8px 10px; }
+    input:focus,select:focus,textarea:focus { border-color:var(--brand); box-shadow:0 0 0 3px rgba(0,107,94,.12); }
+    button { min-height:40px; border:1px solid var(--brand); border-radius:6px; padding:8px 14px; background:var(--brand); color:#fff; cursor:pointer; font-weight:800; }
+    button:hover { background:var(--brand-dark); } button:disabled { cursor:wait; opacity:.55; }
+    button.secondary { background:#fff; color:var(--brand-dark); } button.secondary:hover { background:var(--accent); }
+    button.quiet { border-color:var(--line); background:#f5f7f7; color:var(--ink); }
+    .workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; }
+    .request,.response { min-width:0; overflow:hidden; }
+    .panel-head { padding:18px 18px 14px; border-bottom:1px solid var(--line); } .panel-body { padding:18px; }
+    .route { display:flex; align-items:center; gap:8px; min-height:40px; max-width:100%; padding:7px 10px; border:1px solid var(--line); border-radius:6px; background:#f7f9f9; font:12px "SFMono-Regular",Consolas,monospace; overflow:hidden; margin-top:12px; }
+    .method { flex:none; border-radius:4px; padding:3px 6px; background:var(--brand); color:#fff; font-weight:800; }
+    .route-path { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .description { margin:12px 0 0; color:var(--muted); font-size:14px; line-height:1.45; }
+    .input-tools,.actions,.response-tools { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .input-tools { justify-content:space-between; margin-bottom:8px; } .file-picker { max-width:300px; font-size:12px; min-height:36px; padding:6px; }
+    textarea { min-height:420px; resize:vertical; padding:12px; background:#fbfcfc; font:13px/1.5 "SFMono-Regular",Consolas,monospace; }
+    .actions,.response-tools { margin-top:12px; }
+    .response-head { display:flex; justify-content:space-between; gap:12px; align-items:center; }
+    .response-head h2 { margin:0; font:500 20px Georgia,"Times New Roman",serif; }
+    .status { display:inline-flex; min-height:28px; align-items:center; border-radius:999px; padding:4px 9px; background:#edf1f2; color:var(--muted); font-size:12px; font-weight:800; }
+    .status.success { background:#e4f5eb; color:var(--success); } .status.error { background:#fff0ee; color:var(--danger); } .status.running { background:#fff3dc; color:var(--warning); }
+    pre { min-height:420px; max-height:640px; margin:0; overflow:auto; border-radius:6px; background:var(--code); color:#dce9e8; padding:14px; white-space:pre-wrap; word-break:break-word; font:13px/1.5 "SFMono-Regular",Consolas,monospace; }
+    .response-meta { min-height:20px; margin:10px 0; color:var(--muted); font-size:12px; }
+    @media(max-width:1180px){.connection{grid-template-columns:1fr 1fr 1fr}}
+    @media(max-width:860px){.workspace{grid-template-columns:1fr}.connection{grid-template-columns:1fr}.masthead{align-items:start;flex-direction:column;gap:6px}}
+    @media(max-width:520px){.shell{width:calc(100% - 20px);margin-top:14px}textarea{min-height:280px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead"><div><div class="eyebrow">EPIC-Spital</div><h1>eMediplan (CHMED16A) → EPIC CDA</h1></div><div class="version">Nur dieser Use Case · über HTTP öffnen, nicht über file://</div></header>
+    <details id="connectionSettings" class="panel url-panel" hidden>
+      <summary>Verbindungseinstellungen (Middleware-URL)</summary>
+      <div class="url-grid">
+        <div><label for="middlewareUrl">Middleware URL</label><input id="middlewareUrl" value="https://fhir.woess.ch/middleware/" /></div>
+      </div>
+    </details>
+    <section class="panel connection" aria-label="Verbindung und Authentifizierung">
+      <div><label for="authType">Auth Typ</label><select id="authType"><option value="none">Keine</option><option value="basic" selected>Basic Auth</option><option value="bearer">Bearer Token</option></select></div>
+      <div><label for="authUsername">Username</label><input id="authUsername" autocomplete="username" placeholder="EPIC-Spital" /></div>
+      <div><label for="authPassword">Passwort / Token</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="nur für diesen Request" /></div>
+      <div class="actions">
+        <button id="saveCredentialsBtn" class="secondary" type="button">Zugangsdaten speichern</button>
+        <button id="clearCredentialsBtn" class="quiet" type="button">Zugangsdaten löschen</button>
+      </div>
+    </section>
+    <div class="workspace">
+      <section class="panel request">
+        <div class="panel-head">
+          <div class="route"><span class="method">POST</span><span class="route-path">/emediplan/epic-cda</span></div>
+          <div class="description">Konvertiert eMediplan im CHMED16A-Format (Text, PDF oder Bild mit QR-Code) über FHIR in ein EPIC-Medikations-CDA.</div>
+        </div>
+        <div class="panel-body">
+          <div class="input-tools"><label id="inputLabel" for="payload">CHMED16A-Text (oder Datei wählen)</label><input id="fileInput" class="file-picker" type="file" accept=".pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg,text/plain" /></div>
+          <textarea id="payload" spellcheck="false" placeholder="CHMED16A-Text hier einfügen, oder rechts eine PDF-/Bilddatei mit QR-Code auswählen."></textarea>
+          <div class="actions"><button id="runBtn" type="button">Use Case ausführen</button><button id="clearBtn" class="quiet" type="button">Eingabe leeren</button></div>
+        </div>
+      </section>
+      <section class="panel response">
+        <div class="panel-head response-head"><h2>EPIC CDA</h2><span id="status" class="status">Bereit</span></div>
+        <div class="panel-body"><div id="responseMeta" class="response-meta">Noch kein Request ausgeführt.</div><pre id="output"></pre><div class="response-tools"><button id="downloadBtn" class="quiet" type="button" disabled>CDA herunterladen</button></div></div>
+      </section>
+    </div>
+  </main>
+  <script>
+    const el = Object.fromEntries(['payload','fileInput','runBtn','clearBtn','status','output','responseMeta','downloadBtn'].map(id => [id, document.getElementById(id)]));
+    const credentialsStorageKey = 'epic-spital-emediplan-cda-credentials';
+    let lastResponse = null;
+
+    function restoreCredentials() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(credentialsStorageKey) || 'null');
+        if (!saved) return;
+        document.getElementById('authType').value = saved.type || 'basic';
+        document.getElementById('authUsername').value = saved.username || '';
+        document.getElementById('authPassword').value = saved.secret || '';
+      } catch { localStorage.removeItem(credentialsStorageKey); }
+    }
+
+    function saveCredentials() {
+      localStorage.setItem(credentialsStorageKey, JSON.stringify({
+        type: document.getElementById('authType').value,
+        username: document.getElementById('authUsername').value,
+        secret: document.getElementById('authPassword').value,
+      }));
+      status('Zugangsdaten wurden in diesem Browser gespeichert.', 'success');
+    }
+
+    function clearCredentials() {
+      localStorage.removeItem(credentialsStorageKey);
+      document.getElementById('authUsername').value = '';
+      document.getElementById('authPassword').value = '';
+      status('Gespeicherte Zugangsdaten wurden gelöscht.', 'success');
+    }
+
+    function auth(legacy = false) {
+      const type = document.getElementById('authType').value;
+      const user = document.getElementById('authUsername').value.trim();
+      const secret = document.getElementById('authPassword').value;
+      if (type === 'none') return {};
+      if (type === 'bearer') {
+        if (!secret) throw Error('Bitte einen Bearer Token eingeben.');
+        return { Authorization: `Bearer ${secret}` };
+      }
+      if (!user || !secret) throw Error('Bitte Username und Passwort für Basic Auth eingeben.');
+      const raw = `${user}:${secret}`;
+      return { Authorization: `Basic ${legacy ? btoa(raw) : btoa(unescape(encodeURIComponent(raw)))}` };
+    }
+
+    function legacyRetry() {
+      if (document.getElementById('authType').value !== 'basic') return false;
+      try {
+        const raw = `${document.getElementById('authUsername').value.trim()}:${document.getElementById('authPassword').value}`;
+        return btoa(raw) !== btoa(unescape(encodeURIComponent(raw)));
+      } catch { return false; }
+    }
+
+    function status(text, type = '') {
+      el.status.textContent = text;
+      el.status.className = `status ${type}`.trim();
+    }
+
+    function errorText(error) {
+      if (error instanceof TypeError && error.message.toLowerCase().includes('fetch')) {
+        return `Netzwerk- oder CORS-Fehler. Browser-Origin: ${window.location.origin}. Prüfe URL und Auth-Konfiguration.`;
+      }
+      return error.message || 'Unbekannter Fehler';
+    }
+
+    function requestOptions(legacy = false) {
+      const headers = { Accept: 'application/xml, text/xml, application/json', ...auth(legacy) };
+      const file = el.fileInput.files[0];
+      if (file) {
+        const form = new FormData();
+        form.append('file', file, file.name);
+        return { method: 'POST', headers, mode: 'cors', credentials: 'same-origin', body: form };
+      }
+      const value = el.payload.value.trim();
+      if (!value) throw Error('Bitte CHMED16A-Text eingeben oder eine Datei auswählen.');
+      headers['Content-Type'] = 'text/plain; charset=utf-8';
+      return { method: 'POST', headers, mode: 'cors', credentials: 'same-origin', body: value };
+    }
+
+    async function fetchRetry(url) {
+      let response = await fetch(url, requestOptions());
+      if (response.status === 401 && legacyRetry()) response = await fetch(url, requestOptions(true));
+      return response;
+    }
+
+    async function run() {
+      const base = document.getElementById('middlewareUrl').value.trim().replace(/\/+$/, '');
+      if (!base) { status('Bitte Middleware-URL eingeben.', 'error'); return; }
+      const url = `${base}/emediplan/epic-cda`;
+      const started = performance.now();
+      el.runBtn.disabled = true;
+      lastResponse = null;
+      status('Request läuft …', 'running');
+      try {
+        const response = await fetchRetry(url);
+        const text = await response.text();
+        const elapsed = Math.round(performance.now() - started);
+        lastResponse = text;
+        el.output.textContent = text;
+        el.responseMeta.textContent = `POST ${url} · HTTP ${response.status} · ${elapsed} ms`;
+        el.downloadBtn.disabled = false;
+        if (!response.ok) {
+          const detail = response.status === 401 ? 'Authentifizierung fehlgeschlagen.' : text;
+          throw Error(`HTTP ${response.status}: ${detail}`);
+        }
+        status(`HTTP ${response.status}`, 'success');
+      } catch (error) {
+        const message = errorText(error);
+        if (lastResponse === null) el.output.textContent = message;
+        status(message, 'error');
+      } finally {
+        el.runBtn.disabled = false;
+      }
+    }
+
+    el.runBtn.addEventListener('click', run);
+    el.clearBtn.addEventListener('click', () => { el.payload.value = ''; el.fileInput.value = ''; el.payload.focus(); });
+    el.fileInput.addEventListener('change', () => {
+      const file = el.fileInput.files[0];
+      if (file) status(`${file.name} ausgewählt`, 'success');
+    });
+    el.downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([lastResponse || ''], { type: 'application/xml' }));
+      link.download = 'epic-medications.xml';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+    document.getElementById('saveCredentialsBtn').addEventListener('click', saveCredentials);
+    document.getElementById('clearCredentialsBtn').addEventListener('click', clearCredentials);
+
+    restoreCredentials();
+  </script>
+</body>
+</html>

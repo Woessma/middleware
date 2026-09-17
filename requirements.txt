@@ -1,0 +1,10 @@
+fastapi
+httpx2
+uvicorn
+requests
+python-multipart
+openpyxl
+pymupdf
+pyzbar
+Pillow
+qrcode

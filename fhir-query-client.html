@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <title>FHIR Server Query Client</title>
+    <style>
+      :root { --ink: #172033; --muted: #5b6474; --line: #d7dde7; --canvas: #f4f7fb; --paper: #fff; --accent: #006d77; --accent-soft: #e2f2f1; --error: #b42318; --error-soft: #fef1f0; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--canvas); color: var(--ink); font: 15px/1.45 Georgia, "Times New Roman", serif; }
+      main { max-width: 1360px; margin: 0 auto; padding: 28px 20px 48px; }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { margin-bottom: 4px; font-size: 30px; }
+      h2 { margin: 30px 0 12px; font-size: 22px; }
+      h3 { margin-bottom: 4px; font-size: 17px; }
+      .subtitle, .muted { color: var(--muted); }
+      .notice { margin: 18px 0; padding: 10px 12px; border-left: 4px solid var(--accent); background: var(--accent-soft); }
+      .query-form, .result-panel { border: 1px solid var(--line); background: var(--paper); padding: 18px; }
+      .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+      .field-wide { grid-column: 1 / -1; }
+      label { display: block; margin-bottom: 5px; font-weight: bold; }
+      input, select { width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; color: var(--ink); background: #fff; font: 14px Consolas, Monaco, monospace; }
+      .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+      button { min-height: 38px; border: 1px solid var(--accent); border-radius: 4px; padding: 8px 15px; background: var(--accent); color: #fff; cursor: pointer; font: bold 14px Georgia, "Times New Roman", serif; }
+      button.secondary { background: #fff; color: var(--accent); }
+      button:disabled { cursor: wait; opacity: .65; }
+      .status { display: none; margin-top: 14px; padding: 10px 12px; border-left: 4px solid var(--accent); background: var(--accent-soft); }
+      .status.error { display: block; border-color: var(--error); background: var(--error-soft); color: var(--error); }
+      .status.success { display: block; }
+      .resource-table { width: 100%; border-collapse: collapse; background: #fff; font-size: 14px; }
+      .resource-table th, .resource-table td { border: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; }
+      .resource-table th { background: #e8eef5; }
+      .summary-grid { display: grid; gap: 14px; }
+      .summary-panel { border: 1px solid var(--line); background: var(--paper); padding: 14px; }
+      .summary-panel h3 { margin-bottom: 10px; }
+      code { font: 12px Consolas, Monaco, monospace; word-break: break-word; }
+      .type { display: inline-block; padding: 2px 6px; border-radius: 3px; background: var(--accent-soft); color: #075b63; font: bold 12px Consolas, Monaco, monospace; }
+      .details { display: grid; gap: 10px; }
+      details { border: 1px solid var(--line); background: #fff; padding: 10px 12px; }
+      #connectionSettings { margin-bottom: 14px; }
+      #connectionSettings .form-grid { margin-top: 12px; }
+      summary { cursor: pointer; font-weight: bold; }
+      .resource-detail { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0; margin-top: 14px; border: 1px solid var(--line); }
+      .resource-field { min-width: 0; padding: 9px 10px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+      .resource-field dt { margin-bottom: 3px; color: var(--muted); font: bold 12px Georgia, "Times New Roman", serif; }
+      .resource-field dd { margin: 0; word-break: break-word; }
+      .resource-narrative { margin-top: 14px; padding: 12px; border-left: 3px solid var(--accent); background: #f8fbfb; }
+      .composition-sections { margin-top: 14px; }
+      .composition-sections table { width: 100%; border-collapse: collapse; background: #fff; }
+      .composition-sections th, .composition-sections td { border: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; }
+      .composition-sections th { background: #e8eef5; }
+      pre { max-height: 520px; overflow: auto; margin: 10px 0 0; padding: 12px; background: #16202d; color: #eaf1f8; font: 12px/1.45 Consolas, Monaco, monospace; white-space: pre-wrap; word-break: break-word; }
+      .empty { color: var(--muted); font-style: italic; }
+      @media (max-width: 720px) { main { padding: 20px 12px 36px; } .form-grid { grid-template-columns: 1fr; } .field-wide { grid-column: auto; } .resource-table { display: block; overflow-x: auto; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>FHIR Server Query Client</h1>
+      <p class="subtitle">Lesende FHIR-Abfragen mit Bundle-Visualisierung.</p>
+      <p class="notice">Zugangsdaten werden nur auf Wunsch in diesem Browser gespeichert.</p>
+
+      <section class="query-form" aria-label="FHIR-Abfrage">
+        <details id="connectionSettings" hidden>
+          <summary>Verbindungseinstellungen (FHIR-Server URL, Abfragepfad)</summary>
+          <div class="form-grid">
+            <div class="field-wide">
+              <label for="fhirUrl">FHIR-Server URL</label>
+              <input id="fhirUrl" type="text" value="https://fhir.woess.ch/fhir/" />
+            </div>
+            <div class="field-wide">
+              <label for="queryPath">Abfragepfad</label>
+              <input id="queryPath" type="text" value="Patient/{patientId}/$everything?_count=500" spellcheck="false" />
+            </div>
+          </div>
+        </details>
+        <div class="form-grid">
+          <div>
+            <label for="patientId">Patient-ID</label>
+            <input id="patientId" type="text" placeholder="z. B. 123" />
+          </div>
+          <div>
+            <label for="queryPreset">Use Case</label>
+            <select id="queryPreset">
+              <option value="Patient/{patientId}/$everything?_count=500" selected>Alle Patientendaten ($everything)</option>
+              <option value="MedicationStatement?patient={patientId}&amp;_count=500">MedicationStatement</option>
+              <option value="AllergyIntolerance?patient={patientId}&amp;_count=500">AllergyIntolerance</option>
+              <option value="Immunization?patient=Patient/{patientId}&amp;_count=500">Immunization</option>
+              <option value="Observation?subject=Patient/{patientId}&amp;_count=500">Observation</option>
+              <option value="Condition?subject=Patient/{patientId}&amp;_count=500">Condition</option>
+              <option value="Encounter?subject=Patient/{patientId}&amp;_count=500">Encounter</option>
+              <option value="DiagnosticReport?subject=Patient/{patientId}&amp;_count=500">DiagnosticReport</option>
+              <option value="DocumentReference?subject=Patient/{patientId}&amp;_count=500">DocumentReference</option>
+              <option value="ServiceRequest?subject=Patient/{patientId}&amp;_count=500">ServiceRequest</option>
+              <option value="custom">Eigene Abfrage</option>
+            </select>
+          </div>
+          <div>
+            <label for="authType">Authentifizierung</label>
+            <select id="authType"><option value="none">Keine</option><option value="basic" selected>Basic Auth</option><option value="bearer">Bearer Token</option></select>
+          </div>
+          <div>
+            <label for="authUsername">Username</label>
+            <input id="authUsername" type="text" autocomplete="username" placeholder="nur Basic Auth" />
+          </div>
+          <div class="field-wide">
+            <label for="authPassword">Password / Token</label>
+            <input id="authPassword" type="password" autocomplete="current-password" placeholder="nur für den aktuellen Request" />
+          </div>
+        </div>
+        <div class="actions">
+          <button id="queryButton" type="button">Abfrage ausfuehren</button>
+          <button id="saveCredentialsButton" class="secondary" type="button">Zugangsdaten speichern</button>
+          <button id="clearCredentialsButton" class="secondary" type="button">Gespeicherte Zugangsdaten loeschen</button>
+        </div>
+        <div id="status" class="status" role="status"></div>
+      </section>
+
+      <section id="result" hidden>
+        <details id="patientSummary" hidden>
+          <summary>Patient</summary>
+          <div id="patientDetails" class="summary-grid"></div>
+        </details>
+        <details id="clinicalSummary">
+          <summary>Fachliche Zusammenfassung</summary>
+          <div id="groupedSummary" class="summary-grid"></div>
+        </details>
+        <details id="resourceDetailsSection">
+          <summary>Einträge im Detail</summary>
+          <div id="resourceDetails" class="details"></div>
+        </details>
+      </section>
+    </main>
+    <script>
+      const statusBox = document.getElementById('status');
+      const resultBox = document.getElementById('result');
+      const credentialsStorageKey = 'fhir-query-client-credentials';
+
+      function escapeHtml(value) { return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+      function showStatus(message, type) { statusBox.textContent = message; statusBox.className = 'status ' + type; }
+      function normalizeBaseUrl(value) { return value.trim().replace(/\/+$/, ''); }
+      function getBasicCredentials() {
+        const username = document.getElementById('authUsername').value.trim();
+        const secret = document.getElementById('authPassword').value;
+        if (!username || !secret) throw new Error('Bitte Username und Passwort für Basic Auth eingeben.');
+        return username + ':' + secret;
+      }
+      function getAuthHeaders(useLegacyBasicEncoding = false) {
+        const type = document.getElementById('authType').value;
+        const secret = document.getElementById('authPassword').value;
+        if (type === 'basic') {
+          const credentials = getBasicCredentials();
+          return { Authorization: 'Basic ' + (useLegacyBasicEncoding ? btoa(credentials) : btoa(unescape(encodeURIComponent(credentials)))) };
+        }
+        if (type === 'bearer') {
+          if (!secret) throw new Error('Bitte einen Bearer Token eingeben.');
+          return { Authorization: 'Bearer ' + secret };
+        }
+        return {};
+      }
+      function restoreCredentials() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(credentialsStorageKey) || 'null');
+          if (!saved) return;
+          document.getElementById('authType').value = saved.type || 'basic';
+          document.getElementById('authUsername').value = saved.username || '';
+          document.getElementById('authPassword').value = saved.secret || '';
+        } catch {
+          localStorage.removeItem(credentialsStorageKey);
+        }
+      }
+      function saveCredentials() {
+        localStorage.setItem(credentialsStorageKey, JSON.stringify({
+          type: document.getElementById('authType').value,
+          username: document.getElementById('authUsername').value,
+          secret: document.getElementById('authPassword').value,
+        }));
+        showStatus('Zugangsdaten wurden in diesem Browser gespeichert.', 'success');
+      }
+      function clearCredentials() {
+        localStorage.removeItem(credentialsStorageKey);
+        document.getElementById('authUsername').value = '';
+        document.getElementById('authPassword').value = '';
+        showStatus('Gespeicherte Zugangsdaten wurden geloescht.', 'success');
+      }
+      function canRetryLegacyBasicAuth() {
+        if (document.getElementById('authType').value !== 'basic') return false;
+        try {
+          const credentials = getBasicCredentials();
+          return btoa(credentials) !== btoa(unescape(encodeURIComponent(credentials)));
+        } catch {
+          return false;
+        }
+      }
+      function buildRequestUrl() {
+        const patientId = document.getElementById('patientId').value.trim();
+        let path = document.getElementById('queryPath').value.trim();
+        if (!path) throw new Error('Bitte einen Abfragepfad eingeben.');
+        if (path.includes('{patientId}') && !patientId) throw new Error('Bitte eine Patient-ID eingeben.');
+        path = path.replaceAll('{patientId}', encodeURIComponent(patientId));
+        return normalizeBaseUrl(document.getElementById('fhirUrl').value) + '/' + path.replace(/^\/+/, '');
+      }
+      function selectQueryPreset() {
+        const preset = document.getElementById('queryPreset').value;
+        if (preset !== 'custom') document.getElementById('queryPath').value = preset;
+      }
+      function parseResponse(text) { try { return JSON.parse(text); } catch { return text; } }
+      function authFailureMessage(response) {
+        const realm = response.headers.get('WWW-Authenticate') || 'Basic Auth';
+        return 'HTTP 401: Die im Formular eingegebenen Zugangsdaten wurden von Nginx nicht akzeptiert (' + realm + '). Bitte Auth Typ, Username und Passwort prüfen.';
+      }
+      function getDisplay(resource) {
+        if (!resource) return '';
+        const code = resource.code || resource.vaccineCode || resource.medicationCodeableConcept;
+        if (resource.resourceType === 'Patient' && resource.name && resource.name[0]) return [Array.isArray(resource.name[0].given) ? resource.name[0].given.join(' ') : '', resource.name[0].family || ''].filter(Boolean).join(' ');
+        if (resource.resourceType === 'Practitioner') {
+          const name = formatName(resource.name && resource.name[0]);
+          const glnIdentifier = (resource.identifier || []).find(function(identifier) { return identifier.system === 'urn:oid:2.51.1.3'; });
+          const gln = glnIdentifier && glnIdentifier.value;
+          return [name, gln && '(GLN: ' + gln + ')'].filter(Boolean).join(' ') || '';
+        }
+        if (resource.resourceType === 'Organization') return resource.name || '';
+        if (resource.resourceType === 'MedicationStatement' && resource.medicationReference) return referenceDisplay(resource.medicationReference);
+        if (code) return code.text || (code.coding && code.coding[0] && (code.coding[0].display || code.coding[0].code)) || '';
+        return resource.title || resource.status || '';
+      }
+      function codingDisplay(value) {
+        if (!value) return '';
+        return value.text || (value.coding && value.coding[0] && (value.coding[0].display || value.coding[0].code)) || '';
+      }
+      function codingCodeSystem(value) {
+        if (!value) return '';
+        return (value.coding || []).map(function(coding) {
+          return [coding.code, coding.system].filter(Boolean).join(' | ');
+        }).filter(Boolean).join('; ');
+      }
+      let resourceIndex = {};
+      function buildResourceIndex(entries) {
+        const index = {};
+        entries.forEach(function(entry) {
+          const resource = entry.resource || {};
+          if (resource.resourceType && resource.id) index[resource.resourceType + '/' + resource.id] = resource;
+        });
+        return index;
+      }
+      function referenceDisplay(value) {
+        if (!value) return '';
+        if (value.display) return value.display;
+        const resolved = value.reference && resourceIndex[value.reference];
+        return (resolved && getDisplay(resolved)) || value.reference || '';
+      }
+      function prescriberDisplay(value) {
+        if (!value) return '';
+        const resolved = value.reference && resourceIndex[value.reference];
+        if (resolved) return getDisplay(resolved);
+        const display = referenceDisplay(value);
+        return display && !/\bGLN\s*:/i.test(display) ? display + ' (GLN: nicht vorhanden)' : display;
+      }
+      function medicationConcept(resource) {
+        if (resource.medicationCodeableConcept) return resource.medicationCodeableConcept;
+        const ref = resource.medicationReference && resource.medicationReference.reference;
+        const resolved = ref && resourceIndex[ref];
+        return (resolved && resolved.code) || null;
+      }
+      function formatDate(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? value : date.toLocaleString('de-CH');
+      }
+      function formatDateOnly(value) {
+        if (!value) return '';
+        const date = new Date(value + (value.length === 10 ? 'T00:00:00' : ''));
+        return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('de-CH', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+      function formatName(name) {
+        if (!name) return '';
+        return [Array.isArray(name.given) ? name.given.join(' ') : '', name.family || ''].filter(Boolean).join(' ') || name.text || '';
+      }
+      function formatQuantity(value) {
+        if (!value) return '';
+        return [value.value, value.unit || value.code].filter(function(item) { return item !== undefined && item !== null && item !== ''; }).join(' ');
+      }
+      function formatTelecom(telecom) {
+        if (!telecom) return '';
+        return [telecom.use, telecom.system, telecom.value].filter(Boolean).join(' | ');
+      }
+      function formatAddress(address) {
+        if (!address) return '';
+        const location = [address.postalCode, address.city, address.district, address.state, address.country].filter(Boolean).join(' ');
+        return [address.use, address.type, address.line && address.line.join(', '), location].filter(Boolean).join(' | ');
+      }
+      function resourceFields(resource) {
+        const fields = [['Resource type', resource.resourceType], ['ID', resource.id], ['Status', resource.status]];
+        if (resource.resourceType === 'Patient') fields.push(['Name', formatName(resource.name && resource.name[0])], ['Geburtsdatum', formatDateOnly(resource.birthDate)], ['Geschlecht', resource.gender], ['Kontaktinformationen', (resource.telecom || []).map(formatTelecom).filter(Boolean).join('; ')], ['Adressen', (resource.address || []).map(formatAddress).filter(Boolean).join('; ')]);
+        else if (resource.resourceType === 'Observation') fields.push(['Code', codingDisplay(resource.code)], ['Wert', formatQuantity(resource.valueQuantity) || codingDisplay(resource.valueCodeableConcept) || resource.valueString || resource.valueBoolean], ['Datum', resource.effectiveDateTime || resource.issued], ['Patient', referenceDisplay(resource.subject)], ['Kategorie', resource.category && resource.category.map(codingDisplay).filter(Boolean).join(', ')]);
+        else if (resource.resourceType === 'Condition') fields.push(['Problem', codingDisplay(resource.code)], ['Klinischer Status', codingDisplay(resource.clinicalStatus)], ['Verifikation', codingDisplay(resource.verificationStatus)], ['Beginn', resource.onsetDateTime || resource.recordedDate], ['Patient', referenceDisplay(resource.subject)]);
+        else if (resource.resourceType === 'MedicationStatement') fields.push(['Medikation', codingDisplay(medicationConcept(resource)) || referenceDisplay(resource.medicationReference)], ['Code / System', codingCodeSystem(medicationConcept(resource))], ['Wirksam ab', resource.effectiveDateTime || (resource.effectivePeriod && resource.effectivePeriod.start)], ['Dosierung', resource.dosage && resource.dosage[0] && resource.dosage[0].text], ['Verordner', prescriberDisplay(resource.informationSource)], ['Patient', referenceDisplay(resource.subject)]);
+        else if (resource.resourceType === 'AllergyIntolerance') fields.push(['Allergie', codingDisplay(resource.code)], ['Kritikalität', resource.criticality], ['Klinischer Status', codingDisplay(resource.clinicalStatus)], ['Verifikation', codingDisplay(resource.verificationStatus)], ['Patient', referenceDisplay(resource.patient)], ['Erfasst am', resource.recordedDate]);
+        else if (resource.resourceType === 'Immunization') fields.push(['Impfstoff', codingDisplay(resource.vaccineCode)], ['Datum', resource.occurrenceDateTime || resource.recorded], ['Chargennummer', resource.lotNumber], ['Patient', referenceDisplay(resource.patient)]);
+        else if (resource.resourceType === 'Encounter') fields.push(['Klasse', codingDisplay(resource.class)], ['Typ', resource.type && resource.type.map(codingDisplay).filter(Boolean).join(', ')], ['Beginn', resource.period && resource.period.start], ['Ende', resource.period && resource.period.end], ['Patient', referenceDisplay(resource.subject)]);
+        else if (resource.resourceType === 'Organization') fields.push(['Name', resource.name], ['Typ', resource.type && resource.type.map(codingDisplay).filter(Boolean).join(', ')]);
+        else fields.push(['Titel / Code', getDisplay(resource)], ['Erstellt', resource.date || resource.authoredOn || resource.recordedDate], ['Patient', referenceDisplay(resource.subject || resource.patient)]);
+        return fields.filter(function(field) { return field[1] !== undefined && field[1] !== null && field[1] !== ''; });
+      }
+      function renderResourceHtml(resource) {
+        const fields = resourceFields(resource);
+        const fieldHtml = fields.length ? '<dl class="resource-detail">' + fields.map(function(field) { return '<div class="resource-field"><dt>' + escapeHtml(field[0]) + '</dt><dd>' + escapeHtml(field[1]) + '</dd></div>'; }).join('') + '</dl>' : '<p class="empty">Keine darstellbaren Felder vorhanden.</p>';
+        const narrative = resource.text && resource.text.div ? '<div class="resource-narrative">' + resource.text.div + '</div>' : '';
+        return fieldHtml + narrative + renderCompositionSections(resource);
+      }
+      function sectionCodeDisplay(section) {
+        const coding = section.code && section.code.coding && section.code.coding[0];
+        return coding ? [coding.code, coding.display].filter(Boolean).join(' | ') : '';
+      }
+      function renderCompositionSections(resource) {
+        if (!resource || resource.resourceType !== 'Composition' || !Array.isArray(resource.section)) return '';
+        const rows = resource.section.map(function(section, index) {
+          const references = Array.isArray(section.entry) ? section.entry.map(function(entry) { return entry.reference || ''; }).filter(Boolean) : [];
+          return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(section.title || '') + '</td><td>' + escapeHtml(sectionCodeDisplay(section)) + '</td><td>' + (references.length ? references.map(function(reference) { return '<code>' + escapeHtml(reference) + '</code>'; }).join('<br>') : '<span class="empty">Keine Referenzen</span>') + '</td></tr>';
+        }).join('');
+        return '<div class="composition-sections"><h3>Composition Sections</h3><table><thead><tr><th>#</th><th>Titel</th><th>Code</th><th>Referenzen</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      }
+      function getCategoryCodes(resource) {
+        return (resource.category || []).flatMap(function(category) { return (category.coding || []).map(function(coding) { return coding.code || ''; }); });
+      }
+      function getObservationValue(resource) {
+        if (resource.valueQuantity) return formatQuantity(resource.valueQuantity);
+        if (resource.valueCodeableConcept) return codingDisplay(resource.valueCodeableConcept);
+        if (resource.valueString) return resource.valueString;
+        if (resource.valueBoolean !== undefined) return String(resource.valueBoolean);
+        if (resource.valueInteger !== undefined) return String(resource.valueInteger);
+        if (resource.dataAbsentReason) return codingDisplay(resource.dataAbsentReason);
+        if (Array.isArray(resource.component)) {
+          return resource.component.map(function(component) {
+            return [codingDisplay(component.code), formatQuantity(component.valueQuantity) || codingDisplay(component.valueCodeableConcept) || component.valueString].filter(Boolean).join(': ');
+          }).filter(Boolean).join(', ');
+        }
+        return '';
+      }
+      function observationDate(resource) {
+        return resource.effectiveDateTime || resource.issued || '';
+      }
+      function immunizationDate(resource) {
+        return resource.occurrenceDateTime || resource.recorded || '';
+      }
+      function renderSummaryTable(title, headers, rows) {
+        return '<section class="summary-panel"><h3>' + escapeHtml(title) + '</h3><table class="resource-table"><thead><tr>' + headers.map(function(header) { return '<th>' + escapeHtml(header) + '</th>'; }).join('') + '</tr></thead><tbody>' + rows.map(function(row) { return '<tr>' + row.map(function(cell) { return '<td>' + escapeHtml(cell) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></section>';
+      }
+      function renderGroupedSummaries(entries) {
+        const resources = entries.map(function(entry) { return entry.resource || {}; });
+        const observations = resources.filter(function(resource) { return resource.resourceType === 'Observation'; });
+        const vitalRows = observations.filter(function(resource) { return getCategoryCodes(resource).includes('vital-signs'); }).sort(function(a, b) { return new Date(observationDate(b)) - new Date(observationDate(a)); }).map(function(resource) { return [formatDate(observationDate(resource)), codingDisplay(resource.code) || resource.id || '', getObservationValue(resource), resource.status || '', codingCodeSystem(resource.code)]; });
+        const labRows = observations.filter(function(resource) { return getCategoryCodes(resource).includes('laboratory'); }).sort(function(a, b) { return new Date(observationDate(b)) - new Date(observationDate(a)); }).map(function(resource) { return [formatDate(observationDate(resource)), codingDisplay(resource.code) || resource.id || '', getObservationValue(resource), resource.status || '', codingCodeSystem(resource.code)]; });
+        const socialHistoryRows = observations.filter(function(resource) { return getCategoryCodes(resource).includes('social-history'); }).sort(function(a, b) { return new Date(observationDate(b)) - new Date(observationDate(a)); }).map(function(resource) { return [formatDate(observationDate(resource)), codingDisplay(resource.code) || resource.id || '', getObservationValue(resource), resource.status || '', codingCodeSystem(resource.code)]; });
+        const immunizationRows = resources.filter(function(resource) { return resource.resourceType === 'Immunization'; }).sort(function(a, b) { return new Date(immunizationDate(b)) - new Date(immunizationDate(a)); }).map(function(resource) { return [formatDate(immunizationDate(resource)), codingDisplay(resource.vaccineCode) || resource.id || '', resource.status || '', resource.lotNumber || '', codingCodeSystem(resource.vaccineCode)]; });
+        const medicationRows = resources.filter(function(resource) { return resource.resourceType === 'MedicationStatement'; }).sort(function(a, b) { return new Date(b.dateAsserted || b.effectiveDateTime || (b.effectivePeriod && b.effectivePeriod.start)) - new Date(a.dateAsserted || a.effectiveDateTime || (a.effectivePeriod && a.effectivePeriod.start)); }).map(function(resource) { const concept = medicationConcept(resource); return [codingDisplay(concept) || referenceDisplay(resource.medicationReference) || resource.id || '', resource.status || '', resource.dosage && resource.dosage[0] && resource.dosage[0].text || '', formatDate(resource.effectiveDateTime || (resource.effectivePeriod && resource.effectivePeriod.start) || resource.dateAsserted), prescriberDisplay(resource.informationSource), codingCodeSystem(concept)]; });
+        const conditionRows = resources.filter(function(resource) { return resource.resourceType === 'Condition'; }).sort(function(a, b) { return new Date(b.onsetDateTime || b.recordedDate) - new Date(a.onsetDateTime || a.recordedDate); }).map(function(resource) { return [codingDisplay(resource.code) || resource.id || '', codingDisplay(resource.clinicalStatus), codingDisplay(resource.verificationStatus), formatDate(resource.onsetDateTime || resource.recordedDate), codingCodeSystem(resource.code)]; });
+        const allergyRows = resources.filter(function(resource) { return resource.resourceType === 'AllergyIntolerance'; }).sort(function(a, b) { return new Date(b.recordedDate || b.onsetDateTime) - new Date(a.recordedDate || a.onsetDateTime); }).map(function(resource) { return [codingDisplay(resource.code) || resource.id || '', resource.criticality || '', codingDisplay(resource.clinicalStatus), codingDisplay(resource.verificationStatus), formatDate(resource.recordedDate || resource.onsetDateTime), codingCodeSystem(resource.code)]; });
+        const summaries = [
+          [vitalRows, 'Vital Signs', ['Datum', 'Messung', 'Wert', 'Status', 'Code / System']],
+          [labRows, 'Labor', ['Datum', 'Befund', 'Wert / Ergebnis', 'Status', 'Code / System']],
+          [socialHistoryRows, 'Sozialanamnese', ['Datum', 'Angabe', 'Wert', 'Status', 'Code / System']],
+          [medicationRows, 'Medikationen', ['Medikation', 'Status', 'Dosierung', 'Wirksam ab', 'Verordner', 'Code / System']],
+          [conditionRows, 'Probleme', ['Problem', 'Klinischer Status', 'Verifikation', 'Beginn', 'Code / System']],
+          [allergyRows, 'Allergien und Unvertraeglichkeiten', ['Allergie', 'Kritikalitaet', 'Klinischer Status', 'Verifikation', 'Erfasst am', 'Code / System']],
+          [immunizationRows, 'Immunisierungen', ['Datum', 'Impfstoff', 'Status', 'Charge', 'Code / System']]
+        ];
+        const summaryHtml = summaries.filter(function(summary) { return summary[0].length; }).map(function(summary) { return renderSummaryTable(summary[1], summary[2], summary[0]); }).join('');
+        document.getElementById('groupedSummary').innerHTML = summaryHtml || '<p class="empty">Keine klinisch relevanten Eintraege gefunden.</p>';
+      }
+      function renderPatientSummary(resources) {
+        const patient = resources.find(function(resource) { return resource.resourceType === 'Patient'; });
+        const summary = document.getElementById('patientSummary');
+        const details = document.getElementById('patientDetails');
+        if (!patient) {
+          summary.hidden = true;
+          details.innerHTML = '';
+          return;
+        }
+        const patientFields = resourceFields(patient).filter(function(field) { return field[0] !== 'Resource type' && field[0] !== 'Status' && field[0] !== 'Kontaktinformationen' && field[0] !== 'Adressen'; });
+        const patientHtml = '<section class="summary-panel"><h3>' + escapeHtml(getDisplay(patient) || patient.id || 'Patient') + '</h3><dl class="resource-detail">' + patientFields.map(function(field) { return '<div class="resource-field"><dt>' + escapeHtml(field[0]) + '</dt><dd>' + escapeHtml(field[1]) + '</dd></div>'; }).join('') + '</dl></section>';
+        const telecomRows = (patient.telecom || []).map(function(telecom) { return [telecom.use || '', telecom.system || '', telecom.value || '']; });
+        const addressRows = (patient.address || []).map(function(address) { return [address.use || '', address.type || '', address.line && address.line.join(', ') || '', [address.postalCode, address.city, address.district, address.state, address.country].filter(Boolean).join(' ')]; });
+        const contactRows = (patient.contact || []).map(function(contact) { return [formatName(contact.name) || '', (contact.relationship || []).map(codingDisplay).filter(Boolean).join(', '), (contact.telecom || []).map(formatTelecom).filter(Boolean).join('; '), formatAddress(contact.address)]; });
+        const telecomHtml = telecomRows.length ? renderSummaryTable('Kontaktinformationen', ['Nutzung', 'System', 'Wert'], telecomRows) : '';
+        const addressHtml = addressRows.length ? renderSummaryTable('Adressen', ['Nutzung', 'Typ', 'Adresse', 'Ort'], addressRows) : '';
+        const contactHtml = contactRows.length ? renderSummaryTable('Notfallkontakte', ['Name', 'Beziehung', 'Kontakt', 'Adresse'], contactRows) : '';
+        details.innerHTML = patientHtml + telecomHtml + addressHtml + contactHtml;
+        summary.open = false;
+        summary.hidden = false;
+      }
+      function asEntries(payload) {
+        if (payload && payload.resourceType === 'Bundle') return payload.entry || [];
+        return payload && payload.resourceType ? [{ resource: payload }] : [];
+      }
+      function render(payload) {
+        const entries = asEntries(payload);
+        resourceIndex = buildResourceIndex(entries);
+        renderPatientSummary(entries.map(function(entry) { return entry.resource || {}; }));
+        renderGroupedSummaries(entries);
+        document.getElementById('clinicalSummary').open = false;
+        document.getElementById('resourceDetailsSection').open = false;
+        document.getElementById('resourceDetails').innerHTML = entries.map(function(entry, index) { const resource = entry.resource || {}; const label = [resource.resourceType || 'Resource', resource.id || '', getDisplay(resource)].filter(Boolean).join(' | '); return '<details><summary>' + escapeHtml((index + 1) + '. ' + label) + '</summary>' + renderResourceHtml(resource) + '</details>'; }).join('');
+        resultBox.hidden = false;
+      }
+      async function runQuery() {
+        const button = document.getElementById('queryButton');
+        try {
+          const url = buildRequestUrl();
+          button.disabled = true;
+          showStatus('FHIR-Abfrage wird ausgeführt: ' + url, 'success');
+          let response = await fetch(url, { method: 'GET', headers: Object.assign({ Accept: 'application/fhir+json, application/json' }, getAuthHeaders()), mode: 'cors', credentials: 'same-origin' });
+          if (response.status === 401 && canRetryLegacyBasicAuth()) {
+            response = await fetch(url, { method: 'GET', headers: Object.assign({ Accept: 'application/fhir+json, application/json' }, getAuthHeaders(true)), mode: 'cors', credentials: 'same-origin' });
+          }
+          const payload = parseResponse(await response.text());
+          if (!response.ok) throw new Error(response.status === 401 ? authFailureMessage(response) : 'HTTP ' + response.status + ': ' + (typeof payload === 'string' ? payload : JSON.stringify(payload)));
+          render(payload);
+          showStatus('Abfrage erfolgreich: HTTP ' + response.status + '.', 'success');
+        } catch (error) {
+          const isNetwork = error instanceof TypeError && String(error.message).toLowerCase().includes('fetch');
+          showStatus(isNetwork ? 'Netzwerk- oder CORS-Fehler. Prüfe die Server-URL, Authentifizierung und Browser-Netzwerk-Konsole.' : error.message, 'error');
+        } finally { button.disabled = false; }
+      }
+      document.getElementById('queryButton').addEventListener('click', runQuery);
+      document.getElementById('saveCredentialsButton').addEventListener('click', saveCredentials);
+      document.getElementById('clearCredentialsButton').addEventListener('click', clearCredentials);
+      document.getElementById('queryPreset').addEventListener('change', selectQueryPreset);
+      document.getElementById('queryPath').addEventListener('input', function() {
+        const preset = document.getElementById('queryPreset');
+        if (this.value !== preset.value) preset.value = 'custom';
+      });
+      restoreCredentials();
+    </script>
+  </body>
+</html>
