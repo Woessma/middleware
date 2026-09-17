@@ -11,10 +11,10 @@ services:
       - "8000"
     networks:
       - default
-      - fhir-net
+      - proxy
     restart: unless-stopped
  
 networks:
-  fhir-net:
+  proxy:
     external: true
-    name: fhir-server_fhir-net
+    name: proxy
