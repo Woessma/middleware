@@ -1,0 +1,43 @@
+flowchart TB
+    Title["VM Ressourcen - aktueller Stand\n09.09.2026"]
+
+    subgraph VM["VM / Docker Host - 11 GiB RAM - 96 GiB Disk"]
+        RAM["RAM\n5.0 GiB genutzt - 6.7 GiB verfuegbar\nSwap: 0 B"]
+        Disk["Disk /dev/sda1\n20 GiB genutzt - 77 GiB frei\n21 Prozent genutzt"]
+
+        subgraph Docker["Docker Ressourcen"]
+            Summary["8 aktive Container\n12 Images: 3.759 GiB\n2 Volumes: 197.8 MiB\nBuild-Cache: 408.3 MiB"]
+
+            subgraph FHIR["FHIR Stack - 4 Container"]
+                Nginx["fhir-nginx\n9.9 MiB - 0.00 Prozent CPU"]
+                Middleware["fhir-middleware\n138.5 MiB - 0.25 Prozent CPU"]
+                HAPI["fhir-server / HAPI\n1.975 GiB - 0.31 Prozent CPU"]
+                FHIRDB["fhir-postgres\n74.7 MiB - Volume: fhir-server_postgres-data"]
+                Adminer["fhir-adminer\n8.4 MiB - 0.01 Prozent CPU"]
+            end
+
+            subgraph Matrix["Matrix Stack - 3 Container"]
+                Synapse["matrix-synapse\n139.4 MiB - 0.99 Prozent CPU"]
+                MatrixDB["matrix-postgres\n83.8 MiB - Volume: matrix_matrix-postgres-data"]
+                Bot["matrix-emediplan-bot\n39.8 MiB - 0.02 Prozent CPU"]
+            end
+        end
+    end
+
+    Title --> RAM
+    RAM --> Disk
+    Disk --> Summary
+    Summary --> Nginx
+    Summary --> Synapse
+    Nginx --> Middleware --> HAPI --> FHIRDB
+    Synapse --> MatrixDB
+    Synapse --> Bot
+
+    classDef resource fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef app fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef data fill:#fef3c7,stroke:#d97706,color:#111827
+    classDef matrix fill:#f3e8ff,stroke:#9333ea,color:#111827
+    class RAM,Disk,Summary resource
+    class Nginx,Middleware,HAPI,Adminer app
+    class FHIRDB,MatrixDB data
+    class Synapse,Bot matrix

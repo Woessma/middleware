@@ -1,0 +1,28 @@
+
+title <size:21><color:#003366></color></size>
+
+participantspacing 1
+bottomparticipants
+
+actor "Hausarzt" as ha
+participant "**api-Client**\n(Bruno)" as cl #yellow #orange;4
+participant "**IdP**\n(Keycloak)" as idp
+participant "**ESB**\n(BridgeLink)" as bl
+participant "**Middleware**\n(Python)" as mw
+participant "**HAPI Server**" as hs
+
+autonumber on
+
+ha->cl:Use Case:Get Dokuments (read or write)
+
+cl->idp: Get JWT (Authentication)
+idp->cl:Reoponse JWT
+
+cl -> bl: **Request ** <background:#yellow><stroke:1:#green><color:#white>++** Step 1 **++</color></stroke>
+
+bl->mw: REQ
+
+mw->hs: REQ
+hs->mw: RES
+
+mw->bl: RES

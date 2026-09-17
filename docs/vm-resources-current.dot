@@ -1,0 +1,61 @@
+digraph VMResources {
+  graph [rankdir=TB, bgcolor="white", pad="0.25", nodesep="0.35", ranksep="0.55", fontname="DejaVu Sans"];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=10, margin="0.14,0.08", color="#374151", penwidth=1.1];
+  edge [fontname="DejaVu Sans", fontsize=9, color="#6b7280", arrowsize=0.7];
+
+  title [label="VM Ressourcen - aktueller Stand\n09.09.2026", shape=plaintext, fontsize=18, fontname="DejaVu Sans Bold"];
+
+  subgraph cluster_vm {
+    label="VM / Docker Host  |  11 GiB RAM  |  96 GiB Disk";
+    color="#2563eb";
+    style="rounded,dashed";
+    penwidth=1.5;
+    fontname="DejaVu Sans Bold";
+    fontsize=13;
+
+    vm_ram [label="RAM\n5.0 GiB used  |  6.7 GiB available\nSwap: 0 B", fillcolor="#dbeafe", color="#2563eb"];
+    vm_disk [label="Disk /dev/sda1\n20 GiB used  |  77 GiB free\n21% used", fillcolor="#dbeafe", color="#2563eb"];
+
+    subgraph cluster_docker {
+      label="Docker Ressourcen";
+      color="#9ca3af";
+      style="rounded,dashed";
+      fontname="DejaVu Sans";
+      fontsize=11;
+
+      docker_summary [label="8 aktive Container\n12 Images: 3.759 GiB\n2 Volumes: 197.8 MiB\nBuild-Cache: 408.3 MiB", fillcolor="#f3f4f6", color="#6b7280"];
+
+      subgraph cluster_fhir {
+        label="FHIR Stack (4 Container)";
+        color="#16a34a";
+        style="rounded";
+        fhir_nginx [label="fhir-nginx\n9.9 MiB | 0.00% CPU", fillcolor="#dcfce7", color="#16a34a"];
+        fhir_middleware [label="fhir-middleware\n138.5 MiB | 0.25% CPU", fillcolor="#dcfce7", color="#16a34a"];
+        fhir_server [label="fhir-server / HAPI\n1.975 GiB | 0.31% CPU", fillcolor="#fee2e2", color="#dc2626"];
+        fhir_postgres [label="fhir-postgres\n74.7 MiB | 0.00% CPU\nVolume: fhir-server_postgres-data", fillcolor="#fef3c7", color="#d97706"];
+        adminer [label="fhir-adminer\n8.4 MiB | 0.01% CPU", fillcolor="#f3f4f6", color="#6b7280"];
+        fhir_nginx -> fhir_middleware [style=invis];
+        fhir_middleware -> fhir_server [style=invis];
+        fhir_server -> fhir_postgres [style=invis];
+        fhir_postgres -> adminer [style=invis];
+      }
+
+      subgraph cluster_matrix {
+        label="Matrix Stack (3 Container)";
+        color="#9333ea";
+        style="rounded";
+        matrix_synapse [label="matrix-synapse\n139.4 MiB | 0.99% CPU", fillcolor="#f3e8ff", color="#9333ea"];
+        matrix_postgres [label="matrix-postgres\n83.8 MiB | 0.25% CPU\nVolume: matrix_matrix-postgres-data", fillcolor="#fef3c7", color="#d97706"];
+        matrix_bot [label="matrix-emediplan-bot\n39.8 MiB | 0.02% CPU", fillcolor="#f3e8ff", color="#9333ea"];
+        matrix_synapse -> matrix_postgres [style=invis];
+        matrix_postgres -> matrix_bot [style=invis];
+      }
+    }
+  }
+
+  title -> vm_ram [style=invis];
+  vm_ram -> vm_disk [style=invis];
+  vm_disk -> docker_summary [style=invis];
+  docker_summary -> fhir_nginx [style=invis];
+  docker_summary -> matrix_synapse [style=invis];
+}

@@ -1,0 +1,48 @@
+flowchart LR
+    Internet["Internet"] --> Cloudflare["Cloudflare / Cloudserver\nDNS - Tunnel - DDoS - Proxy"]
+    Kunde["Kunde / Quellsysteme"] -->|"Kundenanfragen"| Cloudflare
+    Admin["Admin"] -->|"WireGuard"| Fortigate["FortiGate\nFirewall / Segmentierung"]
+    Cloudflare -->|"outbound Tunnel"| Fortigate
+    Fortigate --> HyperV["AXZHS200\nHyper-V Host"]
+    HyperV --> INF["001-l-inf01\nInfrastruktur\nCaddy - Cloudflared - WireGuard"]
+    HyperV --> IDP["001-l-idp01\nIdentity\nKeycloak / IdP"]
+
+    BridgeLink["Mirth / BridgeLink\nRouting + Orchestrierung"]
+
+    subgraph HLT["001-l-hlt01 - Healthcare-VM"]
+        BridgeLink --> Nginx["Nginx\nTLS + Basic Auth"]
+        Nginx --> Middleware["Python Middleware\nFastAPI :8000"]
+        Nginx --> HAPI["HAPI FHIR\nFHIR REST API :8080"]
+        Middleware --> HAPI
+
+        Matrix["Matrix / Synapse"] --> Bot["eMediplan / CDA\nImport-Bot"]
+        Bot --> Middleware
+    end
+
+    HyperV --> BridgeLink
+
+    subgraph DB["001-l-db01 - Datenbank-VM"]
+        FHIRDB["PostgreSQL\nFHIR-Daten"]
+        MatrixDB["PostgreSQL\nMatrix-Daten"]
+    end
+
+    HAPI -->|"internes DB-Netz"| FHIRDB
+    Matrix -->|"internes DB-Netz"| MatrixDB
+    CI["001-l-ci01\nSelf-hosted Runner\nInterne Tests / Docker Build"] -. "interne Tests" .-> Middleware
+    HAPI -. "FHIR-Antwort" .-> BridgeLink
+    BridgeLink -. "Response zurück" .-> Kunde
+
+    Refdata["refdata.ch\nexterner Dienst"] -. optional .-> Middleware
+    TX["tx.fhir.ch/r4\nTerminologie-Server"] -. "$lookup / Validierung" .-> Middleware
+    Middleware -. "weiterer Ausbau: Outbound via Mirth" .-> BridgeLink
+    BridgeLink --> Targets["Zielsysteme\nFHIR / eTOC / VACD"]
+
+    classDef edge fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef app fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef data fill:#fef3c7,stroke:#d97706,color:#111827
+    classDef external fill:#f3e8ff,stroke:#9333ea,color:#111827
+
+    class Sources,BridgeLink,Refdata,TX,Targets external
+    class Nginx edge
+    class Middleware,HAPI,Matrix,Bot app
+    class FHIRDB,MatrixDB data

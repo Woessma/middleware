@@ -1,0 +1,77 @@
+@startuml
+title <size:21><color:#003366>FHIR Middleware: CDA/HL7v2 Workflow zu Mappern, Terminologie und Tx-Server</color></size>
+
+actor "Bright-link" as bl #LightYellow
+participant "Middleware API\n(main.py)" as api
+participant "Parser\n(cda / hl7v2)" as parser
+participant "Converter\n(section_dispatcher,\nclinical_note_extractor)" as conv
+participant "Mapper\n(app/mappers/*)" as mapper
+participant "Terminology Service\n(services/terminology_service)" as tx_svc
+participant "Terminologieserver\n(tx.fhir.ch)" as tx_server
+participant "Builder\n(app/builders/*)" as builder
+participant "FHIR Bundle\n(fhir/bundle.py)" as bundle
+participant "HAPI FHIR Server" as fhir
+
+== CDA Import / Convert ==
+bl -> api: POST /cda/convert oder /cda/import (CDA Dokument)
+api -> parser: CDA parsen (Header, Sections, Entries)
+parser --> api: Domain-Objekte (Patient, Encounter, ...)
+api -> conv: Section Code an Dispatcher uebergeben
+conv -> conv: get_section_mapper(section_code)
+conv -> mapper: map_*_section(section, domain)
+
+loop je Coding in Section
+    mapper -> tx_svc: validate_coding(coding)
+    alt System validierbar (LOINC, SNOMED, CH-VACD, CVX->SNOMED)
+        tx_svc -> tx_server: $lookup / $validate-code / $translate
+        tx_server --> tx_svc: Parameters Response
+        tx_svc --> mapper: {status: validated, result}
+    else System nicht unterstuetzt
+        tx_svc --> mapper: {status: skipped, reason}
+    end
+end
+
+mapper --> conv: FHIR Ressourcen (Condition, Observation, ...)
+conv --> api: gemappte Ressourcenliste
+api -> builder: Builder je Ressourcentyp\n(ch_core_*_builder, observation_builder, ...)
+builder --> api: FHIR-konforme Ressourcen (CH-Core Profile)
+api -> bundle: Bundle assemblieren (Composition zuerst, fullUrl aufloesen)
+bundle --> api: FHIR Bundle (document oder transaction)
+
+alt Import (/cda/import)
+    api -> api: Bundle stabilisieren, deduplizieren, Requests setzen
+    api -> fhir: Transaction Bundle
+    fhir --> api: Transaction Response
+end
+api --> bl: FHIR Bundle bzw. Import-Ergebnis
+
+== HL7v2 Laborimport ==
+bl -> api: POST /hl7v2/convert oder /hl7v2/import (ORU R01)
+api -> parser: oru_r01_parser.parse(message)
+parser --> api: Segmente (PID, OBX, OBR, ...)
+api -> mapper: map_lab_section(obx_segment)
+mapper -> tx_svc: validate_coding(loinc_coding)
+tx_svc -> tx_server: $lookup CodeSystem/LOINC
+tx_server --> tx_svc: Parameters Response
+tx_svc --> mapper: {status: validated, result}
+mapper --> api: Observation Ressourcen (Labor)
+api -> builder: observation_builder
+builder --> api: FHIR Observation
+api -> bundle: Bundle assemblieren
+bundle --> api: FHIR Bundle
+
+alt Import (/hl7v2/import)
+    api -> fhir: Transaction Bundle
+    fhir --> api: Transaction Response
+end
+api --> bl: FHIR Bundle bzw. Import-Ergebnis
+
+== Direkter Terminologie-Zugriff ==
+bl -> api: POST /terminology/{resource_type}/{operation}
+api -> tx_svc: call_terminology_operation(resource_type, operation, params)
+tx_svc -> tx_server: FHIR Terminology Operation
+tx_server --> tx_svc: Parameters Response
+tx_svc --> api: Response
+api --> bl: Terminologie-Ergebnis
+
+@enduml

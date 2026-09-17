@@ -1,0 +1,69 @@
+digraph Architecture {
+  graph [rankdir=LR, bgcolor="white", pad="0.25", nodesep="0.45", ranksep="0.7", fontname="DejaVu Sans"];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=11, margin="0.14,0.08", color="#374151", penwidth=1.2];
+  edge [fontname="DejaVu Sans", fontsize=9, color="#4b5563", arrowsize=0.75];
+
+  internet [label="Internet", fillcolor="#e0f2fe", color="#0284c7"];
+  customer [label="Kunde / Quellsysteme", fillcolor="#e0f2fe", color="#0284c7"];
+  admin [label="Admin", fillcolor="#f1f5f9", color="#475569"];
+  cloudflare [label="Cloudflare / Cloudserver\nDNS | Tunnel | DDoS | Proxy", fillcolor="#fef3c7", color="#d97706"];
+  fortigate [label="FortiGate\nFirewall / Segmentierung", fillcolor="#fee2e2", color="#dc2626"];
+  hyperv [label="AXZHS200\nHyper-V Host", fillcolor="#e2e8f0", color="#475569"];
+  inf [label="001-l-inf01\nInfrastruktur\nCaddy | Cloudflared | WireGuard", fillcolor="#f1f5f9", color="#475569"];
+  idp [label="001-l-idp01\nIdentity\nKeycloak / IdP", fillcolor="#f1f5f9", color="#475569"];
+  bridgelink [label="Mirth / BridgeLink\nRouting + Orchestrierung", fillcolor="#f3e8ff", color="#9333ea"];
+  refdata [label="refdata.ch\nexterner Dienst", fillcolor="#f3e8ff", color="#9333ea"];
+  tx [label="tx.fhir.ch/r4\nTerminologie-Server", fillcolor="#f3e8ff", color="#9333ea"];
+  targets [label="Zielsysteme\nFHIR / eTOC / VACD", fillcolor="#f3e8ff", color="#9333ea"];
+  ci [label="001-l-ci01\nSelf-hosted Runner\nInterne Tests / Docker Build", fillcolor="#f1f5f9", color="#475569"];
+
+  subgraph cluster_hlt {
+    label="001-l-hlt01 | Healthcare-VM";
+    color="#2563eb";
+    style="rounded,dashed";
+    fontname="DejaVu Sans";
+    fontsize=13;
+
+    nginx [label="Nginx\nTLS + Basic Auth", fillcolor="#dbeafe", color="#2563eb"];
+    middleware [label="Python Middleware\nFastAPI :8000", fillcolor="#dcfce7", color="#16a34a"];
+    hapi [label="HAPI FHIR\nFHIR REST API :8080", fillcolor="#dcfce7", color="#16a34a"];
+    matrix [label="Matrix / Synapse", fillcolor="#dcfce7", color="#16a34a"];
+    bot [label="eMediplan / CDA\nImport-Bot", fillcolor="#dcfce7", color="#16a34a"];
+
+    bridgelink -> nginx;
+    nginx -> middleware;
+    nginx -> hapi;
+    middleware -> hapi;
+    matrix -> bot;
+    bot -> middleware;
+  }
+
+  subgraph cluster_db {
+    label="001-l-db01 | Datenbank-VM";
+    color="#d97706";
+    style="rounded,dashed";
+    fontname="DejaVu Sans";
+    fontsize=13;
+    fhirdb [label="PostgreSQL\nFHIR-Daten", fillcolor="#fef3c7", color="#d97706"];
+    matrixdb [label="PostgreSQL\nMatrix-Daten", fillcolor="#fef3c7", color="#d97706"];
+    fhirdb -> matrixdb [style=invis];
+  }
+
+  internet -> cloudflare;
+  customer -> cloudflare [label="Kundenanfragen"];
+  admin -> fortigate [label="WireGuard"];
+  cloudflare -> fortigate [label="outbound Tunnel"];
+  fortigate -> hyperv;
+  hyperv -> inf;
+  hyperv -> idp;
+  hyperv -> bridgelink;
+  bridgelink -> customer [style=dashed, label="Response zurück"];
+  refdata -> middleware [style=dashed, label="optional"];
+  tx -> middleware [style=dashed, label="$lookup / Validierung"];
+  middleware -> bridgelink [style=dashed, label="weiterer Ausbau: Outbound via Mirth"];
+  hapi -> bridgelink [style=dashed, label="FHIR-Antwort"];
+  bridgelink -> targets;
+  hapi -> fhirdb [label="internes DB-Netz"];
+  matrix -> matrixdb [label="internes DB-Netz"];
+  ci -> middleware [style=dashed, label="interne Tests"];
+}
