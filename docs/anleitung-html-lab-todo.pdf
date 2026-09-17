@@ -1,0 +1,291 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+3 0 obj
+<< /Type /Pages /Kids [6 0 R 8 0 R 10 0 R] /Count 3 >>
+endobj
+4 0 obj
+<< /Type /Catalog /Pages 3 0 R >>
+endobj
+5 0 obj
+<< /Length 1269 >>
+stream
+0.12 0.20 0.28 rg
+0.12 0.20 0.28 RG
+BT
+/F2 19 Tf
+50 790 Td
+(HTML Lab - To-do) Tj
+ET
+BT
+/F1 10 Tf
+50 766 Td
+(Showcases fuer Read, Convert und Import ueber Cloudflare, Caddy und BridgeLink.) Tj
+ET
+BT
+/F2 13 Tf
+50 730 Td
+(1. Zielarchitektur) Tj
+ET
+BT
+/F1 10 Tf
+50 707 Td
+([ ] Cloudflare und cloudflared auf den Caddy-Einstiegspunkt zeigen.) Tj
+ET
+BT
+/F1 10 Tf
+50 688 Td
+([ ] Caddy liefert /lab/* statisch aus und routet /fhir/* sowie /middleware/* zu) Tj
+ET
+BT
+/F1 10 Tf
+50 674 Td
+(    BridgeLink.) Tj
+ET
+BT
+/F1 10 Tf
+50 655 Td
+([ ] HAPI FHIR und Middleware bleiben intern und werden nicht direkt aus dem Browser) Tj
+ET
+BT
+/F1 10 Tf
+50 641 Td
+(    angesprochen.) Tj
+ET
+BT
+/F1 10 Tf
+50 622 Td
+([ ] BridgeLink prueft JWT, Berechtigungen und leitet den Use Case weiter.) Tj
+ET
+BT
+/F2 13 Tf
+50 595 Td
+(2. Caddy und Deployment) Tj
+ET
+BT
+/F1 10 Tf
+50 572 Td
+([ ] HTML-Dateien unter /srv/lab bereitstellen und /lab/test-client.html pruefen.) Tj
+ET
+BT
+/F1 10 Tf
+50 553 Td
+([ ] Nur die benoetigten Pfade /lab, /fhir und /middleware oeffnen.) Tj
+ET
+BT
+/F1 10 Tf
+50 534 Td
+([ ] Direkte Internetfreigaben fuer HAPI, BridgeLink-Admin und Middleware entfernen.) Tj
+ET
+BT
+/F1 10 Tf
+50 515 Td
+([ ] Request-Groesse fuer CDA, PDF und QR-Dateien begrenzen und Zugriffe protokollieren.) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 3 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 1354 >>
+stream
+0.12 0.20 0.28 rg
+0.12 0.20 0.28 RG
+BT
+/F2 19 Tf
+50 790 Td
+(HTML Lab - Showcases) Tj
+ET
+BT
+/F1 10 Tf
+50 766 Td
+(Jeder Showcase verwendet oeffentliche BridgeLink-Routen und synthetische Testdaten.) Tj
+ET
+BT
+/F2 13 Tf
+50 730 Td
+(3. Read-Showcase) Tj
+ET
+BT
+/F1 10 Tf
+50 707 Td
+([ ] FHIR-Patientensuche ueber die BridgeLink-FHIR-Route aufrufen.) Tj
+ET
+BT
+/F1 10 Tf
+50 688 Td
+([ ] Patient, Bundle und Ressourcen-Timeline lesbar darstellen.) Tj
+ET
+BT
+/F1 10 Tf
+50 669 Td
+([ ] Read-only JWT-Scope verwenden und keine Schreibaktion anbieten.) Tj
+ET
+BT
+/F2 13 Tf
+50 642 Td
+(4. Convert-Showcases) Tj
+ET
+BT
+/F1 10 Tf
+50 619 Td
+([ ] CDA, HL7v2, eMediplan, VACD, eTOC und UMZH als Testdaten anbieten.) Tj
+ET
+BT
+/F1 10 Tf
+50 600 Td
+([ ] Konvertierungsantwort als formatiertes FHIR-Bundle darstellen.) Tj
+ET
+BT
+/F1 10 Tf
+50 581 Td
+([ ] Request, Response, Status und Laufzeit im Request Inspector anzeigen.) Tj
+ET
+BT
+/F2 13 Tf
+50 554 Td
+(5. Import-Showcases) Tj
+ET
+BT
+/F1 10 Tf
+50 531 Td
+([ ] Import zuerst konvertieren und eine Vorschau des Transaction-Bundles zeigen.) Tj
+ET
+BT
+/F1 10 Tf
+50 512 Td
+([ ] Nach expliziter Bestaetigung ueber BridgeLink schreiben lassen.) Tj
+ET
+BT
+/F1 10 Tf
+50 493 Td
+([ ] HAPI-Transaction-Response mit angelegten und aktualisierten Ressourcen anzeigen.) Tj
+ET
+BT
+/F1 10 Tf
+50 474 Td
+([ ] Kein direkter Browser-Write nach HAPI FHIR.) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 3 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Length 1489 >>
+stream
+0.12 0.20 0.28 rg
+0.12 0.20 0.28 RG
+BT
+/F2 19 Tf
+50 790 Td
+(HTML Lab - Sicherheit und Abnahme) Tj
+ET
+BT
+/F1 10 Tf
+50 766 Td
+(Das Lab ist eine kontrollierte Demo-Oberflaeche, kein Ersatz fuer die API-Autorisierung.) Tj
+ET
+BT
+/F2 13 Tf
+50 730 Td
+(6. Browser-Sicherheit) Tj
+ET
+BT
+/F1 10 Tf
+50 707 Td
+([ ] OAuth2/OIDC mit Authorization Code und PKCE verwenden.) Tj
+ET
+BT
+/F1 10 Tf
+50 688 Td
+([ ] Tokens nicht in HTML, Quellcode oder localStorage speichern.) Tj
+ET
+BT
+/F1 10 Tf
+50 669 Td
+([ ] Lab mit Cloudflare Access oder einer getrennten Demo-Identitaet schuetzen.) Tj
+ET
+BT
+/F1 10 Tf
+50 650 Td
+([ ] Nur synthetische Patienten- und Dokumentdaten verwenden.) Tj
+ET
+BT
+/F2 13 Tf
+50 623 Td
+(7. Qualitaet und Abnahme) Tj
+ET
+BT
+/F1 10 Tf
+50 600 Td
+([ ] CDA Convert liefert ein valides Bundle ohne HAPI-Write.) Tj
+ET
+BT
+/F1 10 Tf
+50 581 Td
+([ ] CDA Import wird durch BridgeLink in HAPI geschrieben.) Tj
+ET
+BT
+/F1 10 Tf
+50 562 Td
+([ ] FHIR Read liefert Daten nur ueber BridgeLink.) Tj
+ET
+BT
+/F1 10 Tf
+50 543 Td
+([ ] Fehler 400, 401, 403, 413 und 5xx werden im Lab verstaendlich angezeigt.) Tj
+ET
+BT
+/F1 10 Tf
+50 524 Td
+([ ] Alle Showcases funktionieren unter https://fhir.omnilink.ch/lab/.) Tj
+ET
+BT
+/F2 13 Tf
+50 497 Td
+(8. Offen) Tj
+ET
+BT
+/F1 10 Tf
+50 474 Td
+([ ] Konkrete BridgeLink-Kanalnamen und JWT-Scopes festlegen.) Tj
+ET
+BT
+/F1 10 Tf
+50 455 Td
+([ ] Matrix ausserhalb dieses Labs halten.) Tj
+ET
+BT
+/F1 10 Tf
+50 436 Td
+([ ] Caddy-Konfiguration in der VM versioniert ablegen und testen.) Tj
+ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 3 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 9 0 R >>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000009 00000 n 
+0000000079 00000 n 
+0000000154 00000 n 
+0000000224 00000 n 
+0000000273 00000 n 
+0000001594 00000 n 
+0000001730 00000 n 
+0000003136 00000 n 
+0000003272 00000 n 
+0000004813 00000 n 
+trailer
+<< /Size 11 /Root 4 0 R >>
+startxref
+4950
+%%EOF
