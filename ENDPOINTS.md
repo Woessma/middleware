@@ -4,6 +4,27 @@
 
 - BridgeLink FHIR Route: https://fhir.omnilink.ch/fhir/
 - BridgeLink Middleware Route: https://fhir.omnilink.ch/middleware/
+- Aktuelle BridgeLink-Testadresse im LAN: http://192.168.167.212:9080/
+
+### Bruno / aktueller Live-Aufruf
+
+Für Requests aus Bruno wird aktuell die BridgeLink-Adresse im LAN verwendet:
+
+```text
+http://192.168.167.212:9080/middleware/
+```
+
+Beispiele:
+
+```text
+POST http://192.168.167.212:9080/middleware/cda/convert?bundle_type=transaction
+POST http://192.168.167.212:9080/middleware/cda/import
+```
+
+Die öffentliche Route `https://fhir.omnilink.ch/cda/convert` ist nicht der
+konfigurierte Middleware-Pfad und liefert derzeit `404`. Auch die öffentliche
+Route unter `/middleware/` muss separat durch den Reverse Proxy geroutet werden;
+für den aktuellen Test daher die LAN-Adresse oben verwenden.
 
 ## Beobachtung aus dem Live-System
 
@@ -72,6 +93,10 @@ Der derzeitige Arbeitsweg ist:
   sind Nicht-DomainResources wie `Bundle`, `Binary` und `Parameters`.
 - Das Bundle wird an BridgeLink zur Weiterleitung an den FHIR-Server zurückgegeben
 - BridgeLink schreibt das Bundle an den FHIR-Server und gibt dessen Ergebnis an den Client zurück
+
+Die Python-Middleware selbst verwendet intern die Route `/cda/...`. Der Prefix
+`/middleware` wird beim Aufruf über BridgeLink verwendet und ist nicht Teil der
+internen FastAPI-Route.
 
 Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server importieren wollen.
 
@@ -410,7 +435,7 @@ Beispiel-JSON:
 ### Beispiel für den Middleware-Weg
 
 ```http
-POST https://fhir.omnilink.ch/middleware/cda/import
+POST http://192.168.167.212:9080/middleware/cda/import
 Authorization: Bearer <JWT>
 Content-Type: multipart/form-data
 ```

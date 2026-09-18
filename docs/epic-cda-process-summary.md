@@ -9,7 +9,19 @@ Dieses Dokument beschreibt den aktuellen End-to-End Prozess fuer:
 
 Referenz-Testpfad:
 
-`app/tests/data/CDA-EPIC.xml` -> `POST /cda/import` -> `GET /fhir/medications/epic-cda/from-server?patient_id=<id>&count=100`
+`app/tests/data/CDA-EPIC.xml` -> `POST /middleware/cda/import` via BridgeLink -> `GET /middleware/fhir/medications/epic-cda/from-server?patient_id=<id>&count=100` via BridgeLink
+
+Aktuelle Bruno-Basisadresse:
+
+```text
+http://192.168.167.212:9080
+```
+
+Damit lautet der Import-Aufruf vollständig:
+
+```text
+POST http://192.168.167.212:9080/middleware/cda/import
+```
 
 Die Referenzen nutzen die Kommentar-IDs in den Python-Dateien.
 

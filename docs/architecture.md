@@ -20,9 +20,9 @@ Quellsystem
 Zusatzpfad fuer EPIC Medikation:
 
 EPIC CDA
-→ `/cda/import`
+→ BridgeLink `POST /middleware/cda/import`
 → FHIR MedicationStatement/Medication in HAPI
-→ `/fhir/medications/epic-cda/from-server?patient_id=<id>&count=100`
+→ BridgeLink `GET /middleware/fhir/medications/epic-cda/from-server?patient_id=<id>&count=100`
 → EPIC CDA Export
 
 ## Komponenten
@@ -44,7 +44,8 @@ EPIC CDA
 
 ## Schnittstellen
 
-- CDA-API: `/cda/debug`, `/cda/convert`, `/cda/import`, `/cda/umzh/convert`, `/cda/umzh/send`
+- CDA-API intern: `/cda/debug`, `/cda/convert`, `/cda/import`, `/cda/umzh/convert`, `/cda/umzh/send`
+- CDA-API ueber BridgeLink: `/middleware/cda/debug`, `/middleware/cda/convert`, `/middleware/cda/import`, `/middleware/cda/umzh/convert`, `/middleware/cda/umzh/send`
 - CH-VACD-API: `/cda/vacd/convert` fuer CH-VACD Immunization Administration Documents
 - eMediplan-API: `/emediplan/convert`, `/emediplan/import`, `/emediplan/import-bundle`, `/emediplan/qr/convert`, `/emediplan/qr/import`, `/emediplan/epic-cda`
 - EPIC-CDA-API: `/fhir/medications/epic-cda`, `/fhir/medications/epic-cda/from-server` (Default `count=100`)
