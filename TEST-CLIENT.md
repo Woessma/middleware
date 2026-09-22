@@ -19,6 +19,30 @@ Danach im Browser öffnen:
 http://localhost:8080/test-client.html
 ```
 
+## Card Analysis Service testen
+
+`card-analysis-test.html` testet den generischen Card-Analyse-Endpunkt direkt.
+Die Seite unterstützt QR-Daten aus der Kamera, Bilddateien, `.pkpass`, MRZ-
+Text und Versicherungs-Kartenfotos per OCR. Dabei werden sichtbare Felder wie
+Name, Vorname, Geburtsdatum, Versicherungsnummer und Krankenkasse erkannt. Im
+Feld **Card Analysis Endpoint** kann lokal
+standardmäßig `http://localhost:8000/card/analyze` oder die erreichbare
+Middleware-Route eingetragen werden.
+
+Die Kamera liest den aufgedruckten Karteninhalt als Bild. Einen elektronischen
+Chip oder NFC-Inhalt kann dieser Browser-Flow nicht auslesen; dafür wäre ein
+separater NFC-Kartenleser mit eigener Geräteintegration erforderlich.
+
+```text
+http://localhost:8080/card-analysis-test.html
+```
+
+Der verwendete Endpoint ist:
+
+```text
+POST /card/analyze
+```
+
 ## EchoSOS + FHIR kombiniert
 
 `echosos-fhir-test.html` verbindet den EchoSOS-Import mit der Patientensuche.

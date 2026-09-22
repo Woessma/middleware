@@ -8,3 +8,5 @@ pymupdf
 pyzbar
 Pillow
 qrcode
+pytesseract
+pillow-heif

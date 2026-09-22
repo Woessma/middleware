@@ -2,7 +2,6 @@ import io
 
 import pymupdf
 from PIL import Image
-from pyzbar.pyzbar import decode as decode_qr_codes
 
 from services.emediplan_service import EMEDIPLAN_PREFIX
 
@@ -35,6 +34,11 @@ def _looks_like_emediplan_payload(text):
 def extract_emediplan_payload_from_file(raw_bytes, content_type=None):
     if not raw_bytes:
         raise ValueError("No file content provided")
+
+    try:
+        from pyzbar.pyzbar import decode as decode_qr_codes
+    except ImportError as ex:
+        raise ValueError("QR-Decoding ist auf diesem System nicht verfügbar: zbar-Bibliothek fehlt") from ex
 
     is_pdf = _looks_like_pdf(raw_bytes) or content_type == "application/pdf"
 

@@ -1,1 +1,3 @@
 .DS_Store
+app/tests/data/*.heic
+app/tests/data/*.HEIC

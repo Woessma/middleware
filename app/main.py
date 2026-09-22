@@ -35,6 +35,7 @@ from fastapi import (
     Query,
     Response,
 )
+from fastapi.middleware.cors import CORSMiddleware
 
 
 # CDA Constants
@@ -133,6 +134,7 @@ from services.emediplan_service import (
 )
 from services.emediplan_qr_service import extract_emediplan_payload_from_file, resolve_emediplan_payload
 from services.echosos_service import import_echosos
+from services.card_analysis_service import analyze_card
 from services.terminology_service import (
     call_terminology_operation,
     enrich_bundle_terminology,
@@ -290,6 +292,22 @@ app = FastAPI(
     docs_url=None,
     redoc_url=None,
     openapi_url=None
+)
+
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOW_ORIGINS",
+        "http://localhost:8080,http://127.0.0.1:8080",
+    ).split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -1442,6 +1460,30 @@ async def echosos_qr_import(
     except Exception as ex:
         traceback.print_exc()
         raise HTTPException(status_code=502, detail=f"EchoSOS/FHIR request failed: {ex}")
+
+
+@app.post("/card/analyze")
+async def card_analyze(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+):
+    if file is not None:
+        raw_bytes = await file.read()
+        content_type = file.content_type
+    else:
+        raw_bytes = await request.body()
+        content_type = request.headers.get("content-type")
+
+    if not raw_bytes:
+        raise HTTPException(status_code=400, detail="No file or payload provided")
+
+    try:
+        return analyze_card(raw_bytes, content_type=content_type)
+    except ValueError as ex:
+        raise HTTPException(status_code=400, detail=str(ex))
+    except Exception as ex:
+        traceback.print_exc()
+        raise HTTPException(status_code=502, detail=f"Card analysis failed: {ex}")
 
 
 @app.post("/fhir/medications/epic-cda")
