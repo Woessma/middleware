@@ -529,6 +529,10 @@ def _parse_text_card(data):
         if parsed:
             return parsed
 
+    parsed = _parse_swiss_id_ocr_text(text)
+    if parsed:
+        return parsed
+
     parsed = _parse_key_value_text(text)
     if parsed:
         return parsed
