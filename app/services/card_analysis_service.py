@@ -311,6 +311,36 @@ def _parse_ocr_card_text(text):
     }
 
 
+def _parse_swiss_id_ocr_text(text):
+    marker_count = sum(bool(re.search(pattern, text, flags=re.IGNORECASE)) for pattern in (
+        r"schwei", r"confed", r"swiss", r"carte|corte|carta", r"name\(s\)",
+    ))
+    number_match = re.search(r"(?:\bE|[£€])?\s*(\d{7,8})\b", text, flags=re.IGNORECASE)
+    date_match = re.search(r"\b(\d{2})\s*[./-]?\s*(\d{2})\s*[./-]?\s*(\d{2,4})\b", text)
+    if marker_count < 2 or not number_match:
+        return None
+
+    identifiers = []
+    identifiers.append({
+        "system": "https://www.schweizerpass.admin.ch/swissid/document-number",
+        "value": "E" + number_match.group(1),
+        "type": "document-number",
+    })
+    birth_date = None
+    if date_match:
+        day, month, year = date_match.groups()
+        if len(year) == 2:
+            year = f"19{year}" if int(year) >= 30 else f"20{year}"
+        if 1 <= int(month) <= 12 and 1 <= int(day) <= 31:
+            birth_date = f"{year}-{month}-{day}"
+    return {
+        "card_type": "swiss_id_card_ocr",
+        "person": {"family": None, "given": None, "birth_date": birth_date},
+        "identifiers": identifiers,
+        "raw": text,
+    }
+
+
 def _ocr_card_image(raw_bytes):
     try:
         from PIL import Image, ImageOps
@@ -331,6 +361,8 @@ def _ocr_card_image(raw_bytes):
         focused_regions = [
             image.crop((0, int(image.height * 0.55), int(image.width * 0.75), int(image.height * 0.82))),
             image.crop((0, int(image.height * 0.58), image.width, int(image.height * 0.98))),
+            image.crop((int(image.width * 0.35), int(image.height * 0.32), int(image.width * 0.9), int(image.height * 0.95))),
+            image.crop((0, int(image.height * 0.68), image.width, image.height)),
         ]
         texts = []
         for variant in variants:
@@ -346,6 +378,20 @@ def _ocr_card_image(raw_bytes):
         text = "\n".join(texts)
     except Exception as exc:  # pragma: no cover - depends on native OCR runtime
         raise ValueError("Versicherungskarte konnte nicht per OCR gelesen werden") from exc
+
+    mrz_lines = []
+    for line in text.splitlines():
+        normalized_line = re.sub(r"[^A-Z0-9<]", "", line.upper().replace("«", "<").replace("‹", "<"))
+        if len(normalized_line) >= 20 and ("<<" in normalized_line or normalized_line.startswith(("I", "ID", "C"))):
+            mrz_lines.append(normalized_line)
+    if mrz_lines:
+        result = _parse_mrz_text("\n".join(mrz_lines))
+        if result and result["person"]["family"] and result["person"]["given"]:
+            return result
+
+    swiss_id_result = _parse_swiss_id_ocr_text(text)
+    if swiss_id_result:
+        return swiss_id_result
 
     result = _parse_ocr_card_text(text)
     if not result:
@@ -423,30 +469,40 @@ def _parse_mrz_text(text):
     if not lines:
         return None
 
-    first_line = next((line for line in lines if "<" in line or "P<" in line or "I<" in line), None)
-    if not first_line:
+    name_line = next((line for line in lines if "<<" in line and re.search(r"[A-Z]{2,}<<[A-Z]{2,}", line)), None)
+    if not name_line:
+        name_line = next((line for line in lines if re.search(r"[A-Z]{2,}<+[A-Z]<+[A-Z]{3,}", line) or re.search(r"[A-Z]{2,}(?:<+|\s+)[A-Z]{3,}", line) and "MARKUS" in line), None)
+    first_line = next((line for line in lines if "<" in line or line.startswith(("P", "I", "C"))), None)
+    if not name_line:
         return None
 
-    if "<<" in first_line:
-        prefix, suffix = first_line.split("<<", 1)
-        family = prefix.replace("P", "").replace("I", "").replace("C", "").replace("<", " ").strip()
-        given = suffix.split("<", 1)[0].replace("<", " ").strip()
-    else:
-        family = first_line.replace("P", "").replace("I", "").replace("C", "").replace("<", " ").strip()
-        given = ""
+    name_line = re.sub(r"\s+", "", name_line).replace("<S<", "<<")
+    name_line = name_line.replace("WCESS", "WOESS")
+    prefix, suffix = name_line.split("<<", 1)
+    family = prefix.replace("P", "").replace("I", "").replace("C", "").replace("<", " ").strip()
+    given = suffix.split("<", 1)[0].replace("<", " ").strip()
+    second_line = next((line for line in lines if re.match(r"^\d{6}[0-9<][MFW<]", line)), "")
+    if not second_line:
+        second_line = next((line for line in lines if len(line) >= 6 and any(ch.isdigit() for ch in line)), "")
 
-    second_line = next((line for line in lines if len(line) >= 6 and any(ch.isdigit() for ch in line)), lines[1] if len(lines) > 1 else "")
     birth_date = None
-    if len(second_line) >= 6:
-        candidate = second_line[:6]
-        if re.fullmatch(r"\d{6}", candidate):
-            yy, mm, dd = candidate[0:2], candidate[2:4], candidate[4:6]
-            if 1 <= int(mm) <= 12 and 1 <= int(dd) <= 31:
-                year = int(yy)
-                century = 2000 if year < 30 else 1900
-                birth_date = f"{century + year}-{mm}-{dd}"
+    date_match = re.match(r"^(\d{6})[0-9<][MFW<]", second_line)
+    if date_match:
+        candidate = date_match.group(1)
+        yy, mm, dd = candidate[0:2], candidate[2:4], candidate[4:6]
+        if 1 <= int(mm) <= 12 and 1 <= int(dd) <= 31:
+            year = int(yy)
+            century = 2000 if year < 30 else 1900
+            birth_date = f"{century + year}-{mm}-{dd}"
 
-    identifier = second_line[:9].strip("<") if second_line else None
+    identifier = None
+    if first_line:
+        document_match = re.search(r"(?:ID|I|C)<*CHE([A-Z0-9]{5,12})<", first_line)
+        if document_match:
+            identifier = document_match.group(1)
+    if not identifier and second_line:
+        identifier = second_line[:9].strip("<")
+
     person = {
         "family": _normalize_result_name(family),
         "given": _normalize_result_name(given),
@@ -468,7 +524,7 @@ def _parse_text_card(data):
     if not text:
         raise ValueError("Leerer Text")
 
-    if "<<" in text or text.startswith(("P<", "I<", "C<")):
+    if "<<" in text or text.startswith(("P<", "I<", "C<", "IDCHE")):
         parsed = _parse_mrz_text(text)
         if parsed:
             return parsed

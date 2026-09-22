@@ -3,7 +3,7 @@ import json
 import unittest
 import zipfile
 
-from services.card_analysis_service import analyze_card, _parse_ocr_card_text
+from services.card_analysis_service import analyze_card, _parse_ocr_card_text, _parse_swiss_id_ocr_text
 
 URL = "https://eid.echosos.com/#b=1&f=Markus%20&g=euJH&i=&l=W%C3%B6ss%20&n1=Claudia%20Maria%20Enz%20W%C3%B6ss&p1=%2B41765771463"
 
@@ -49,6 +49,34 @@ class CardAnalysisServiceTests(unittest.TestCase):
         self.assertEqual(result["person"]["family"], "MUSTER")
         self.assertEqual(result["person"]["given"], "ANNA")
         self.assertEqual(result["person"]["birth_date"], "1999-05-21")
+
+    def test_analyzes_swiss_id_mrz_ocr_text(self):
+        payload = "IDCHEE5927398<7<<<<<<<<<<<<<<<\n6609070W3302093CHE<<<<<<<<<<2\nWOESS<S<MARKUS<<<<<<<<<<<<<<"
+
+        result = analyze_card(payload.encode("utf-8"))
+
+        self.assertEqual(result["card_type"], "mrz_card")
+        self.assertEqual(result["person"]["family"], "WOESS")
+        self.assertEqual(result["person"]["given"], "MARKUS")
+        self.assertEqual(result["person"]["birth_date"], "1966-09-07")
+        self.assertEqual(result["identifiers"][0]["value"], "E5927398")
+
+    def test_classifies_swiss_id_front_ocr_without_mrz(self):
+        payload = "SCHWEIZERISCHE EIDGENOSSENSCHAFT\nCONFEDERATION SUISSE\nSWISS CONFEDERATION\nCARTE D'IDENTITE\nE5927398"
+
+        result = _parse_swiss_id_ocr_text(payload)
+
+        self.assertEqual(result["card_type"], "swiss_id_card_ocr")
+        self.assertEqual(result["identifiers"][0]["value"], "E5927398")
+
+    def test_classifies_noisy_swiss_id_front_ocr(self):
+        payload = "SCHWEIZERISCARS\nCONFED RATION SUSE\nSWISS CO!\nE5927398\n07 09.66"
+
+        result = _parse_swiss_id_ocr_text(payload)
+
+        self.assertEqual(result["card_type"], "swiss_id_card_ocr")
+        self.assertEqual(result["person"]["birth_date"], "1966-09-07")
+        self.assertEqual(result["identifiers"][0]["value"], "E5927398")
 
     def test_normalizes_insurance_card_ocr_fields(self):
         ocr_text = """Nachname: Muster
