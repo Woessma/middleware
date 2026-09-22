@@ -315,18 +315,20 @@ def _parse_swiss_id_ocr_text(text):
     marker_count = sum(bool(re.search(pattern, text, flags=re.IGNORECASE)) for pattern in (
         r"schwei", r"confed", r"swiss", r"carte|corte|carta", r"name\(s\)",
     ))
-    number_match = re.search(r"(?:\bE|[£€])?\s*(\d{7,8})\b", text, flags=re.IGNORECASE)
+    number_match = re.search(r"(?:\bE|[£€])\s*(\d{6,8})\b", text, flags=re.IGNORECASE)
     date_match = re.search(r"\b(\d{2})\s*[./-]?\s*(\d{2})\s*[./-]?\s*(\d{2,4})\b", text)
     compact_date_match = re.search(r"\b(\d{2})(\d{2})(\d{2})\b", text)
-    if marker_count < 2 or not number_match:
+    strong_swiss_marker = re.search(r"schwei|swiss\s+con|confed", text, flags=re.IGNORECASE)
+    if marker_count < 2 or not strong_swiss_marker:
         return None
 
     identifiers = []
-    identifiers.append({
-        "system": "https://www.schweizerpass.admin.ch/swissid/document-number",
-        "value": "E" + number_match.group(1),
-        "type": "document-number",
-    })
+    if number_match:
+        identifiers.append({
+            "system": "https://www.schweizerpass.admin.ch/swissid/document-number",
+            "value": "E" + number_match.group(1),
+            "type": "document-number",
+        })
     birth_date = None
     if date_match:
         day, month, year = date_match.groups()
