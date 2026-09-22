@@ -339,7 +339,16 @@ def _parse_swiss_id_ocr_text(text):
         if 1 <= int(month) <= 12 and 1 <= int(day) <= 31:
             birth_date = f"19{year}-{month}-{day}" if int(year) >= 30 else f"20{year}-{month}-{day}"
 
-    name = None
+    starred_names = []
+    for line in text.splitlines():
+        starred_match = re.fullmatch(r"\s*([A-Za-zÄÖÜäöüßÀ-ÿ'’ -]{2,40})\s*\*\s*", line)
+        if starred_match:
+            candidate = _normalize_name(starred_match.group(1))
+            if candidate and not any(part in candidate.lower() for part in ("confed", "swiss", "schwei", "carta", "ident")):
+                starred_names.append(_display_name(candidate))
+
+    name = starred_names[0] if starred_names else None
+    given = starred_names[1] if len(starred_names) > 1 else None
     ignored_name_parts = ("confed", "swiss", "schwei", "schweiz", "carta", "ident", "name", "wössens", "e592")
     for line in text.splitlines():
         candidate = _normalize_name(line).strip(" -_.,:;|'")
@@ -349,7 +358,7 @@ def _parse_swiss_id_ocr_text(text):
             name = name or _display_name(candidate)
     return {
         "card_type": "swiss_id_card_ocr",
-        "person": {"family": name, "given": None, "birth_date": birth_date},
+        "person": {"family": name, "given": given, "birth_date": birth_date},
         "identifiers": identifiers,
         "raw": text,
     }
