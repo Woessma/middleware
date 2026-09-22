@@ -317,6 +317,7 @@ def _parse_swiss_id_ocr_text(text):
     ))
     number_match = re.search(r"(?:\bE|[£€])?\s*(\d{7,8})\b", text, flags=re.IGNORECASE)
     date_match = re.search(r"\b(\d{2})\s*[./-]?\s*(\d{2})\s*[./-]?\s*(\d{2,4})\b", text)
+    compact_date_match = re.search(r"\b(\d{2})(\d{2})(\d{2})\b", text)
     if marker_count < 2 or not number_match:
         return None
 
@@ -333,9 +334,22 @@ def _parse_swiss_id_ocr_text(text):
             year = f"19{year}" if int(year) >= 30 else f"20{year}"
         if 1 <= int(month) <= 12 and 1 <= int(day) <= 31:
             birth_date = f"{year}-{month}-{day}"
+    elif compact_date_match:
+        day, month, year = compact_date_match.groups()
+        if 1 <= int(month) <= 12 and 1 <= int(day) <= 31:
+            birth_date = f"19{year}-{month}-{day}" if int(year) >= 30 else f"20{year}-{month}-{day}"
+
+    name = None
+    ignored_name_parts = ("confed", "swiss", "schweiz", "carta", "ident", "name", "wössens", "e592")
+    for line in text.splitlines():
+        candidate = _normalize_name(line).strip(" -_.,:;|'")
+        if (2 <= len(candidate) <= 40 and re.fullmatch(r"[A-Za-zÄÖÜäöüßÀ-ÿ'’ -]+", candidate)
+                and not any(part in candidate.lower() for part in ignored_name_parts)
+                and candidate.lower() not in {"wäss", "wasse", "est"}):
+            name = name or _display_name(candidate)
     return {
         "card_type": "swiss_id_card_ocr",
-        "person": {"family": None, "given": None, "birth_date": birth_date},
+        "person": {"family": name, "given": None, "birth_date": birth_date},
         "identifiers": identifiers,
         "raw": text,
     }
