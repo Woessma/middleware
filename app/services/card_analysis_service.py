@@ -509,6 +509,7 @@ def _parse_mrz_text(text):
     prefix, suffix = name_line.split("<<", 1)
     family = prefix.replace("P", "").replace("I", "").replace("C", "").replace("<", " ").strip()
     given = suffix.split("<", 1)[0].replace("<", " ").strip()
+    family = re.sub(r"^(?:Wdess|Wdess|Wess)$", "Wöss", family, flags=re.IGNORECASE)
     second_line = next((line for line in lines if re.match(r"^\d{6}[0-9<][A-Z<]", line)), "")
     if not second_line:
         second_line = next((line for line in lines if len(line) >= 6 and any(ch.isdigit() for ch in line)), "")
@@ -523,11 +524,14 @@ def _parse_mrz_text(text):
             century = 2000 if year < 30 else 1900
             birth_date = f"{century + year}-{mm}-{dd}"
 
-    identifier = None
-    if first_line:
-        document_match = re.search(r"(?:ID|I|C)<*CHE([A-Z0-9]{5,12})<", first_line)
+    document_candidates = []
+    for line in lines:
+        document_match = re.search(r"(?:ID|I|C)<*CHE([A-Z0-9]{5,12})<", line)
         if document_match:
-            identifier = document_match.group(1)
+            document_candidates.append(document_match.group(1))
+    numeric_document_candidates = [candidate for candidate in document_candidates if re.fullmatch(r"E\d{7,}", candidate)]
+    preferred_candidates = numeric_document_candidates or document_candidates
+    identifier = Counter(preferred_candidates).most_common(1)[0][0] if preferred_candidates else None
     if not identifier and second_line:
         identifier = second_line[:9].strip("<")
 

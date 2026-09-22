@@ -70,6 +70,15 @@ class CardAnalysisServiceTests(unittest.TestCase):
         self.assertEqual(result["person"]["given"], "Markus")
         self.assertEqual(result["person"]["birth_date"], "1966-09-07")
 
+    def test_normalizes_wdess_ocr_variant_and_uses_repeated_document_number(self):
+        payload = "IDCHEE5S927398<7<<<K<<<\n6609070M3302093CHE<<<S<<<<<<<2\nWDESS<<MARKUS<<<<<<<<<<<<<<<<<\nIDCHEE5927398<7<<<<<<<<<\nWESS<<MARKUS<<<<<<<<<"
+
+        result = analyze_card(payload.encode("utf-8"))
+
+        self.assertEqual(result["person"]["family"], "Wöss")
+        self.assertEqual(result["person"]["given"], "Markus")
+        self.assertEqual(result["identifiers"][0]["value"], "E5927398")
+
     def test_classifies_swiss_id_front_ocr_without_mrz(self):
         payload = "SCHWEIZERISCHE EIDGENOSSENSCHAFT\nCONFEDERATION SUISSE\nSWISS CONFEDERATION\nCARTE D'IDENTITE\nE5927398"
 
