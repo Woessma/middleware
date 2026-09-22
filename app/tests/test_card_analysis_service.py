@@ -101,6 +101,13 @@ class CardAnalysisServiceTests(unittest.TestCase):
 
         self.assertIsNone(result["person"]["family"])
 
+    def test_ignores_single_letter_swiss_id_ocr_fragment_as_name(self):
+        payload = "SWISS CONFEDERATION\nCARTE D'IDENTITE\nE5927398\nI I J"
+
+        result = _parse_swiss_id_ocr_text(payload)
+
+        self.assertIsNone(result["person"]["family"])
+
     def test_extracts_starred_swiss_id_names_and_bottom_date(self):
         payload = "SCHWEIZERISCHE EIDGENOSSENSCHAFT\nCONFEDERATION SUISSE\nE5927398\nWöss*\nMarkus*\n07 09 66"
 
