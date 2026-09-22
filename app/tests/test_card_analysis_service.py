@@ -86,6 +86,14 @@ class CardAnalysisServiceTests(unittest.TestCase):
         self.assertEqual(result["person"]["family"], "Wöss")
         self.assertEqual(result["person"]["birth_date"], "1986-09-07")
 
+    def test_ignores_swiss_id_header_as_person_name(self):
+        payload = "SCHWEI SCRE ED\nCONFEDERATION SUISSE\nSWISS CONFEDERATION\nE5927398"
+
+        result = _parse_swiss_id_ocr_text(payload)
+
+        self.assertIsNone(result["person"]["family"])
+        self.assertIsNone(result["person"]["given"])
+
     def test_normalizes_insurance_card_ocr_fields(self):
         ocr_text = """Nachname: Muster
 Vorname: Anna

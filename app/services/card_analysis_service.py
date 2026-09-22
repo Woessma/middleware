@@ -340,7 +340,7 @@ def _parse_swiss_id_ocr_text(text):
             birth_date = f"19{year}-{month}-{day}" if int(year) >= 30 else f"20{year}-{month}-{day}"
 
     name = None
-    ignored_name_parts = ("confed", "swiss", "schweiz", "carta", "ident", "name", "wössens", "e592")
+    ignored_name_parts = ("confed", "swiss", "schwei", "schweiz", "carta", "ident", "name", "wössens", "e592")
     for line in text.splitlines():
         candidate = _normalize_name(line).strip(" -_.,:;|'")
         if (2 <= len(candidate) <= 40 and re.fullmatch(r"[A-Za-zÄÖÜäöüßÀ-ÿ'’ -]+", candidate)
