@@ -61,6 +61,15 @@ class CardAnalysisServiceTests(unittest.TestCase):
         self.assertEqual(result["person"]["birth_date"], "1966-09-07")
         self.assertEqual(result["identifiers"][0]["value"], "E5927398")
 
+    def test_selects_longest_ocr_mrz_name_and_tolerates_gender_error(self):
+        payload = "IDCHEE5927398<7<<<<<<<<<<<<<<<X\nESS<<MARKUS<<<<<<<<<<<<<<\nSS<<MARKUS<<<<<<<<<<<<<<\n6609070N3302093CNE<CAGGCCE<<<2"
+
+        result = analyze_card(payload.encode("utf-8"))
+
+        self.assertEqual(result["person"]["family"], "Ess")
+        self.assertEqual(result["person"]["given"], "Markus")
+        self.assertEqual(result["person"]["birth_date"], "1966-09-07")
+
     def test_classifies_swiss_id_front_ocr_without_mrz(self):
         payload = "SCHWEIZERISCHE EIDGENOSSENSCHAFT\nCONFEDERATION SUISSE\nSWISS CONFEDERATION\nCARTE D'IDENTITE\nE5927398"
 

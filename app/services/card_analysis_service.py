@@ -496,7 +496,8 @@ def _parse_mrz_text(text):
     if not lines:
         return None
 
-    name_line = next((line for line in lines if "<<" in line and re.search(r"[A-Z]{2,}<<[A-Z]{2,}", line)), None)
+    name_lines = [line for line in lines if "<<" in line and re.search(r"[A-Z]{2,}<<[A-Z]{2,}", line)]
+    name_line = max(name_lines, key=lambda line: len(line.split("<<", 1)[0].strip("<")), default=None)
     if not name_line:
         name_line = next((line for line in lines if re.search(r"[A-Z]{2,}<+[A-Z]<+[A-Z]{3,}", line) or re.search(r"[A-Z]{2,}(?:<+|\s+)[A-Z]{3,}", line) and "MARKUS" in line), None)
     first_line = next((line for line in lines if "<" in line or line.startswith(("P", "I", "C"))), None)
@@ -508,12 +509,12 @@ def _parse_mrz_text(text):
     prefix, suffix = name_line.split("<<", 1)
     family = prefix.replace("P", "").replace("I", "").replace("C", "").replace("<", " ").strip()
     given = suffix.split("<", 1)[0].replace("<", " ").strip()
-    second_line = next((line for line in lines if re.match(r"^\d{6}[0-9<][MFW<]", line)), "")
+    second_line = next((line for line in lines if re.match(r"^\d{6}[0-9<][A-Z<]", line)), "")
     if not second_line:
         second_line = next((line for line in lines if len(line) >= 6 and any(ch.isdigit() for ch in line)), "")
 
     birth_date = None
-    date_match = re.match(r"^(\d{6})[0-9<][MFW<]", second_line)
+    date_match = re.match(r"^(\d{6})[0-9<][A-Z<]", second_line)
     if date_match:
         candidate = date_match.group(1)
         yy, mm, dd = candidate[0:2], candidate[2:4], candidate[4:6]
