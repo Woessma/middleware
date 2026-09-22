@@ -15,7 +15,7 @@ def _normalize_name(value):
 
 def _display_name(value):
     display_value = " ".join(part[:1].upper() + part[1:].lower() for part in _normalize_name(value).split())
-    return re.sub(r"^Woss$", "Wöss", display_value)
+    return re.sub(r"^W(?:oss|oess)$", "Wöss", display_value)
 
 
 def _normalize_result_name(value):
@@ -531,8 +531,8 @@ def _parse_mrz_text(text):
         identifier = second_line[:9].strip("<")
 
     person = {
-        "family": _normalize_result_name(family),
-        "given": _normalize_result_name(given),
+        "family": _display_name(_normalize_result_name(family)),
+        "given": _display_name(_normalize_result_name(given)),
         "birth_date": birth_date,
     }
     identifiers = []

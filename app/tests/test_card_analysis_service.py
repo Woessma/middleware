@@ -46,8 +46,8 @@ class CardAnalysisServiceTests(unittest.TestCase):
         result = analyze_card(payload.encode("utf-8"))
 
         self.assertEqual(result["card_type"], "mrz_card")
-        self.assertEqual(result["person"]["family"], "MUSTER")
-        self.assertEqual(result["person"]["given"], "ANNA")
+        self.assertEqual(result["person"]["family"], "Muster")
+        self.assertEqual(result["person"]["given"], "Anna")
         self.assertEqual(result["person"]["birth_date"], "1999-05-21")
 
     def test_analyzes_swiss_id_mrz_ocr_text(self):
@@ -56,8 +56,8 @@ class CardAnalysisServiceTests(unittest.TestCase):
         result = analyze_card(payload.encode("utf-8"))
 
         self.assertEqual(result["card_type"], "mrz_card")
-        self.assertEqual(result["person"]["family"], "WOESS")
-        self.assertEqual(result["person"]["given"], "MARKUS")
+        self.assertEqual(result["person"]["family"], "Wöss")
+        self.assertEqual(result["person"]["given"], "Markus")
         self.assertEqual(result["person"]["birth_date"], "1966-09-07")
         self.assertEqual(result["identifiers"][0]["value"], "E5927398")
 
