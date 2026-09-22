@@ -508,7 +508,7 @@ def _parse_mrz_text(text):
     name_line = name_line.replace("WCESS", "WOESS")
     prefix, suffix = name_line.split("<<", 1)
     family = prefix.replace("P", "").replace("I", "").replace("C", "").replace("<", " ").strip()
-    given = suffix.split("<", 1)[0].replace("<", " ").strip()
+    given = " ".join(part for part in suffix.split("<") if part).strip()
     family = re.sub(r"^(?:Wdess|Wdess|Wess)$", "Wöss", family, flags=re.IGNORECASE)
     second_line = next((line for line in lines if re.match(r"^\d{6}[0-9<][A-Z<]", line)), "")
     if not second_line:

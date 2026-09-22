@@ -79,6 +79,16 @@ class CardAnalysisServiceTests(unittest.TestCase):
         self.assertEqual(result["person"]["given"], "Markus")
         self.assertEqual(result["identifiers"][0]["value"], "E5927398")
 
+    def test_parses_swiss_id1_three_line_mrz_positions(self):
+        payload = "IDCHEE5927398<7<<<<<<<<<<<<<<<\n6609070M3302093CHE<<<<<<<<<<2\nMUELLER<<MARKUS<PETER<<<<<<<<"
+
+        result = analyze_card(payload.encode("utf-8"))
+
+        self.assertEqual(result["person"]["family"], "Mueller")
+        self.assertEqual(result["person"]["given"], "Markus Peter")
+        self.assertEqual(result["person"]["birth_date"], "1966-09-07")
+        self.assertEqual(result["identifiers"][0]["value"], "E5927398")
+
     def test_classifies_swiss_id_front_ocr_without_mrz(self):
         payload = "SCHWEIZERISCHE EIDGENOSSENSCHAFT\nCONFEDERATION SUISSE\nSWISS CONFEDERATION\nCARTE D'IDENTITE\nE5927398"
 
