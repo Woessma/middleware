@@ -352,9 +352,9 @@ def _parse_swiss_id_ocr_text(text):
     ignored_name_parts = ("confed", "swiss", "schwei", "schweiz", "carta", "ident", "name", "wössens", "e592")
     for line in text.splitlines():
         candidate = _normalize_name(line).strip(" -_.,:;|'")
-        if (2 <= len(candidate) <= 40 and re.fullmatch(r"[A-Za-zÄÖÜäöüßÀ-ÿ'’ -]+", candidate)
+        if (3 <= len(candidate) <= 40 and re.fullmatch(r"[A-Za-zÄÖÜäöüßÀ-ÿ'’ -]+", candidate)
                 and not any(part in candidate.lower() for part in ignored_name_parts)
-                and candidate.lower() not in {"wäss", "wasse", "est"}):
+                and candidate.lower() not in {"wäss", "wasse", "est", "mm", "id", "opa", "see"}):
             name = name or _display_name(candidate)
     return {
         "card_type": "swiss_id_card_ocr",
