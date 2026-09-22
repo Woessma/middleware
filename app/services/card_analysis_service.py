@@ -14,7 +14,8 @@ def _normalize_name(value):
 
 
 def _display_name(value):
-    return " ".join(part[:1].upper() + part[1:].lower() for part in _normalize_name(value).split())
+    display_value = " ".join(part[:1].upper() + part[1:].lower() for part in _normalize_name(value).split())
+    return re.sub(r"^Woss$", "Wöss", display_value)
 
 
 def _normalize_result_name(value):
@@ -160,6 +161,17 @@ def _parse_ocr_card_text(text):
             given = given or parts[1]
 
     lines = [line.strip() for line in text.splitlines() if line.strip()]
+    comma_candidates = []
+    for line in lines:
+        match = re.match(
+            r"^\s*([A-Za-zÄÖÜäöüßÀ-ÿ][A-Za-zÄÖÜäöüßÀ-ÿ'’-]{2,})\s*,\s*([A-Za-zÄÖÜäöüßÀ-ÿ][A-Za-zÄÖÜäöüßÀ-ÿ'’-]{2,})\s*$",
+            line,
+        )
+        if match and valid_name(match.group(1)) and valid_name(match.group(2)):
+            comma_candidates.append((match.group(1), match.group(2)))
+    if comma_candidates:
+        family, given = Counter(comma_candidates).most_common(1)[0][0]
+
     date_name_candidates = []
     for index, line in enumerate(lines):
         date_name_match = re.match(
@@ -168,11 +180,19 @@ def _parse_ocr_card_text(text):
         )
         if date_name_match and index > 0 and valid_name(lines[index - 1]):
             date_name_candidates.append((lines[index - 1], date_name_match.group(1)))
-    if date_name_candidates:
+        if date_name_match:
+            nearby_surnames = [
+                candidate
+                for candidate in lines[max(0, index - 4):index]
+                if valid_name(candidate) and not re.search(r"(?:name|nom|vorname|geburt|datum|kennnummer|europ|karte)", candidate, re.IGNORECASE)
+            ]
+            if nearby_surnames:
+                date_name_candidates.append((nearby_surnames[-1], date_name_match.group(1)))
+    if date_name_candidates and not comma_candidates:
         family, given = date_name_candidates[-1]
 
     for index, line in enumerate(lines):
-        if date_name_candidates:
+        if date_name_candidates or comma_candidates:
             break
         if not valid_name(line):
             continue
@@ -271,7 +291,8 @@ def _parse_ocr_card_text(text):
                 "type": "ahv-number",
             })
             existing_values.add(normalized_ahv)
-    carrier_match = re.search(r"\b(\d{4})\s*[-=]\s*EGK\b", text, flags=re.IGNORECASE)
+    carrier_match = re.search(r"\b0?(\d{4})\s*[-=]?\s*EGK\b", text, flags=re.IGNORECASE)
+    carrier_match = carrier_match or re.search(r"\b0(\d{4})\b\s+756(?:[.\s-]?\d{4}){2}[.\s-]?\d{2}", text)
     if carrier_match and carrier_match.group(1) not in existing_values:
         identifiers.append({
             "system": "https://example.org/insurance-card/carrier",

@@ -90,6 +90,17 @@ Versicherten-Nummer: 00196760 CH
         self.assertEqual(result["person"]["given"], "Markus")
         self.assertEqual(result["identifiers"][0]["value"], "00196760")
 
+    def test_normalizes_front_card_ocr_name_and_carrier(self):
+        ocr_text = """Woss, Markus
+80756008810013298945 00881 756.4582.5336.44
+07.09.1966 M 31.03.2027"""
+
+        result = _parse_ocr_card_text(ocr_text)
+
+        self.assertEqual(result["person"]["family"], "Wöss")
+        self.assertEqual(result["person"]["given"], "Markus")
+        self.assertEqual(result["identifiers"][-1]["value"], "0881")
+
 
 if __name__ == "__main__":
     unittest.main()
