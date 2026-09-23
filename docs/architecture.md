@@ -84,6 +84,9 @@ Self-Service-API `GET/PUT /api/identity` gepflegt werden.
 - Docker Compose Service `middleware`
 - Externes Docker-Netzwerk `proxy`
 - Interner Port `8000`
+- Containername `python-middleware`
+- Lokaler VM-Zugriff: `http://10.20.30.212:8000`
+- BridgeLink auf der HLT-VM: `http://10.20.30.212:9080`
 - Externer Zugriff ueber Cloudflare, cloudflared, Caddy und BridgeLink
 - Middleware schreibt bei Standard-Importpfaden nicht direkt nach HAPI FHIR
 

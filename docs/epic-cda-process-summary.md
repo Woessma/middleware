@@ -1,6 +1,6 @@
 # EPIC CDA Process Summary
 
-Stand: 2026-09-04
+Stand: 2026-09-23
 
 Dieses Dokument beschreibt den aktuellen End-to-End Prozess fuer:
 - CDA Import nach FHIR
@@ -14,13 +14,13 @@ Referenz-Testpfad:
 Aktuelle Bruno-Basisadresse:
 
 ```text
-http://192.168.167.212:9080
+http://10.20.30.212:9080
 ```
 
 Damit lautet der Import-Aufruf vollständig:
 
 ```text
-POST http://192.168.167.212:9080/middleware/cda/import
+POST http://10.20.30.212:9080/middleware/cda/import
 ```
 
 Die Referenzen nutzen die Kommentar-IDs in den Python-Dateien.

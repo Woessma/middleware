@@ -5,7 +5,7 @@ Stand: 2026-09-09
 ## Geltungsbereich
 
 Ziel ist ein vollstaendiger Neuaufbau der Plattform. Es werden keine Betriebsdaten
-von der bisherigen Umgebung uebernommen. Die Python-FHIR-Middleware wird als
+von der bisherigen Umgebung uebernommen. Die Python-Middleware wird als
 Quellcode aus diesem Repository weiterverwendet und auf der Zielumgebung neu
 deployt.
 
@@ -45,7 +45,7 @@ Nicht uebernehmen:
 
 [ ] Fuer jeden Dienst neue Secrets erzeugen und sicher ablegen: PostgreSQL-Zugang, Nginx-Basic-Auth, Matrix-Secrets und API-Keys.
 
-[ ] Neue, nicht versionierte `fhir-middleware/.env` erstellen und den benoetigten `REFDATA_API_KEY` hinterlegen.
+[ ] Neue, nicht versionierte `.env` erstellen und den benoetigten `REFDATA_API_KEY` hinterlegen.
 
 [ ] `fhir-server/docker-compose.yml` auf neue Datenbank-Credentials abstimmen; keine alten PostgreSQL-Volumes referenzieren.
 
@@ -65,11 +65,11 @@ Nicht uebernehmen:
 
 ## 5. Python-Middleware deployen
 
-[ ] Im Verzeichnis `fhir-middleware` die Konfiguration mit `docker compose config` pruefen.
+[ ] Im Verzeichnis `/opt/python-middleware` die Konfiguration mit `docker compose config` pruefen.
 
 [ ] Middleware neu bauen und starten: `docker compose up -d --build`.
 
-[ ] Bestaetigen, dass `fhir-middleware` im Netzwerk `proxy` laeuft und HAPI ueber `http://hapi-fhir:8080/fhir` erreicht.
+[ ] Bestaetigen, dass `python-middleware` im Netzwerk `proxy` laeuft und HAPI ueber `http://hapi-fhir:8080/fhir` erreicht.
 
 [ ] Middleware-Logs auf fehlende Secrets, Netzwerkfehler und Terminologie-/refdata-Fehler pruefen: `docker compose logs --tail=100 middleware`.
 

@@ -178,6 +178,9 @@ Clinical Notes werden nicht ueber einen klassischen Mapper, sondern ueber die Cl
 - Docker-Compose-Service `middleware` in `docker-compose.yml`
 - verwendet das externe Netzwerk `proxy`
 - bindet an internen Port `8000`
+- Containername: `python-middleware`
+- Lokaler HTML-Testserver: `http://localhost:8082`
+- HTML-Login: Keycloak Realm `omnilink`, Authorization Code + PKCE `S256`, ohne Client Secret
 - FHIR-Backend: `http://hapi-fhir:8080/fhir`
 - Standard-Importpfade liefern Transaction-Bundles an BridgeLink zur Weiterleitung an HAPI FHIR
 - Anforderungen in `requirements.txt`:
@@ -220,7 +223,7 @@ Vermeidung doppelter Ressourcen und idempotente FHIR-Imports.
 - Intern: `POST /cda/convert` — konvertiert CDA zu einem FHIR-Transaction-Bundle
 - Intern: `POST /cda/import` — erzeugt und validiert ein Bundle fuer BridgeLink
 - Ueber BridgeLink: `POST /middleware/cda/convert` bzw. `POST /middleware/cda/import`
-- Aktuelle Bruno-Basisadresse: `http://192.168.167.212:9080`
+- Aktuelle Bruno-Basisadresse auf `001-l-hlt01`: `http://10.20.30.212:9080`
 - `POST /emediplan/import-bundle` — stabilisiert und validiert ein FHIR-Resource-Objekt oder Bundle fuer BridgeLink
 - `POST /cda/umzh/convert` — konvertiert CDA in UMZH-Workflow-Bundle mit Stages `initial|updated|completed`
 - `POST /cda/umzh/send` — kombiniert UMZH-Convert mit Versand an ein Ziel-FHIR-System und liefert einen Versandreport

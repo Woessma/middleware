@@ -2,7 +2,7 @@
 
 Stand: 2026-09-09
 
-Diese Checkliste beschreibt den Neuaufbau von HAPI FHIR, Nginx und optional Matrix/Synapse auf einer neuen virtuellen Maschine. Es werden keine Betriebsdaten uebernommen. Die Python-FHIR-Middleware wird ausschliesslich als Quellcode aus diesem Repository weiterverwendet und frisch gebaut. Die bestehende VM bleibt bis zur erfolgreichen Abnahme unveraendert und dient als Rueckfalloption.
+Diese Checkliste beschreibt den Neuaufbau von HAPI FHIR, Nginx und optional Matrix/Synapse auf einer neuen virtuellen Maschine. Es werden keine Betriebsdaten uebernommen. Die Python-Middleware wird ausschliesslich als Quellcode aus diesem Repository weiterverwendet und frisch gebaut. Die bestehende VM bleibt bis zur erfolgreichen Abnahme unveraendert und dient als Rueckfalloption.
 
 ## 1. Planung und Verantwortlichkeiten
 
@@ -41,7 +41,7 @@ Diese Checkliste beschreibt den Neuaufbau von HAPI FHIR, Nginx und optional Matr
     Erklaerung: Nginx mountet HTML-Testseiten relativ zum FHIR-Server-Verzeichnis. Deshalb muss der gesamte Woess_Fhir-Checkout vorhanden sein, nicht nur ein einzelner Container-Ordner.
 
 [ ] Neue, nicht versionierte Konfigurationen erstellen.
-    Erklaerung: Dazu gehoeren insbesondere fhir-middleware/.env mit REFDATA_API_KEY, Matrix-Konfiguration, fhir-server/htpasswd sowie Cron-Konfigurationen. Keine Secrets aus der alten VM kopieren oder in Git ablegen.
+    Erklaerung: Dazu gehoeren insbesondere `/opt/python-middleware/.env` mit REFDATA_API_KEY, Matrix-Konfiguration, fhir-server/htpasswd sowie Cron-Konfigurationen. Keine Secrets aus der alten VM kopieren oder in Git ablegen.
 
 [ ] Alle Zugangsdaten neu erzeugen und ihre Gueltigkeit pruefen.
     Erklaerung: Datenbankpasswoerter, Basic-Auth-Benutzer, Matrix-Secrets und API-Keys werden fuer die neue Umgebung neu angelegt und sicher gespeichert.
@@ -68,7 +68,7 @@ Diese Checkliste beschreibt den Neuaufbau von HAPI FHIR, Nginx und optional Matr
 [ ] FHIR-Server-Container und Healthchecks pruefen: "docker compose ps" sowie "docker compose logs --tail=100".
     Erklaerung: Postgres muss gesund sein, bevor HAPI stabil arbeitet. Die Datenbank muss ein neu angelegtes, leeres Volume verwenden.
 
-[ ] Im Verzeichnis fhir-middleware die Konfiguration mit "docker compose config" pruefen und die Middleware mit "docker compose up -d --build" neu bauen und starten.
+[ ] Im Verzeichnis `/opt/python-middleware` die Konfiguration mit "docker compose config" pruefen und die Middleware mit "docker compose up -d --build" neu bauen und starten.
     Erklaerung: Der Container muss im Netzwerk proxy laufen und HAPI ueber http://hapi-fhir:8080/fhir erreichen.
 
 [ ] "https://fhir.omnilink.ch/fhir/metadata" ueber BridgeLink aufrufen.

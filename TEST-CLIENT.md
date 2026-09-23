@@ -7,16 +7,16 @@ stellt auch EPIC-CDA-, UMZH-, Terminologie- und Smoke-Test-Pfade bereit.
 ## Lokal starten
 
 Die HTML-Datei muss über einen lokalen Webserver geöffnet werden, nicht über
-`file://`. Im Verzeichnis `fhir-middleware` genügt zum Beispiel:
+`file://`. Im Verzeichnis `/opt/python-middleware` genügt zum Beispiel:
 
 ```bash
-python3 -m http.server 8080
+python3 -m http.server 8082
 ```
 
 Danach im Browser öffnen:
 
 ```text
-http://localhost:8080/test-client.html
+http://localhost:8082/test-client.html
 ```
 
 ## Card Analysis Service testen
@@ -26,7 +26,7 @@ Die Seite unterstützt QR-Daten aus der Kamera, Bilddateien, `.pkpass`, MRZ-
 Text und Versicherungs-Kartenfotos per OCR. Dabei werden sichtbare Felder wie
 Name, Vorname, Geburtsdatum, Versicherungsnummer und Krankenkasse erkannt. Im
 Feld **Card Analysis Endpoint** kann lokal
-standardmäßig `http://localhost:8000/card/analyze` oder die erreichbare
+standardmäßig `http://10.20.30.212:8000/card/analyze` oder die erreichbare
 Middleware-Route eingetragen werden.
 
 Die Kamera liest den aufgedruckten Karteninhalt als Bild. Einen elektronischen
@@ -34,7 +34,7 @@ Chip oder NFC-Inhalt kann dieser Browser-Flow nicht auslesen; dafür wäre ein
 separater NFC-Kartenleser mit eigener Geräteintegration erforderlich.
 
 ```text
-http://localhost:8080/card-analysis-test.html
+http://localhost:8082/card-analysis-test.html
 ```
 
 Der verwendete Endpoint ist:
@@ -56,7 +56,7 @@ visualisiert. Nach dem Speichern wird automatisch
 FHIR-Kontakte, PCP-Referenzen und klinische Daten sichtbar werden.
 
 ```text
-http://localhost:8080/echosos-fhir-test.html
+http://localhost:8082/echosos-fhir-test.html
 ```
 
 Der Import verwendet:
@@ -100,7 +100,7 @@ Nach Eingabe einer Patient-ID und Klick auf **Abfrage ausfuehren** laedt die
 voreingestellte Abfrage beispielsweise:
 
 ```text
-https://fhir.omnilink.ch/fhir/Patient/123/$everything?_count=500
+http://10.20.30.212:9080/fhir/Patient/123/$everything?_count=500
 ```
 
 Der Platzhalter `{patientId}` im Abfragepfad wird ersetzt. Die Auswahl
@@ -116,16 +116,22 @@ Username und Passwort beziehungsweise Token in diesem Browser; der Button
 Lokal öffnen:
 
 ```text
-http://localhost:8080/fhir-query-client.html
+http://localhost:8082/fhir-query-client.html
 ```
 
 ## Konfiguration
 
-- **BridgeLink Middleware Route**: Standard ist `https://fhir.omnilink.ch/middleware/`.
-- **BridgeLink FHIR Route**: Standard ist `https://fhir.omnilink.ch/fhir/`.
+- **BridgeLink Middleware Route**: Lokal standardmäßig `http://10.20.30.212:9080/middleware/`.
+- **BridgeLink FHIR Route**: Lokal standardmäßig `http://10.20.30.212:9080/fhir/`.
 - **Auth Typ**: Standard ist Basic Auth; alternativ keine Authentifizierung oder Bearer Token.
 - **Username**: wird nur für Basic Auth verwendet.
-- **Password / Token**: Passwort für Basic Auth oder Bearer Token.
+- **Password / Token**: Fallback für Basic Auth oder manuellen Bearer Token.
+
+Für den bevorzugten Login wird die Client-ID im Feld **Keycloak Client-ID**
+eingegeben. **Mit Keycloak anmelden** verwendet den Realm `omnilink` mit
+Authorization Code und PKCE `S256`; das Access-Token wird nur in der Browser-
+Session gehalten und als Bearer-Token an BridgeLink gesendet. Ein Client Secret
+gehört nicht in HTML und wird deshalb nicht abgefragt.
 
 Zugangsdaten werden nur für den jeweiligen Browser-Request verwendet. Die Seite
 speichert sie nicht dauerhaft.

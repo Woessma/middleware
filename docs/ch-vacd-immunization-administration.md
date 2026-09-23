@@ -1,6 +1,6 @@
 # CH VACD Immunization Administration
 
-Stand: 2026-08-27
+Stand: 2026-09-23
 
 ## Zweck
 
@@ -18,7 +18,7 @@ Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt n
 Beispiel mit cURL:
 
 ```bash
-curl -X POST "http://192.168.167.212:9080/middleware/cda/vacd/convert" \
+curl -X POST "http://10.20.30.212:9080/middleware/cda/vacd/convert" \
   -H "Accept: application/fhir+json" \
   -F "file=@app/tests/data/CDA-EPIC.xml"
 ```

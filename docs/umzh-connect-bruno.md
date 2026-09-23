@@ -1,6 +1,6 @@
 # CH UMZH Connect per Bruno oder API Call
 
-Stand: 2026-08-19
+Stand: 2026-09-23
 
 Diese Vorlagen erzeugen einen minimalen CH UMZH Connect Ablauf:
 1. ServiceRequest (Placer)
@@ -69,7 +69,7 @@ Dieser erzeugt aus einer CDA-Datei ein UMZH-Convert-Bundle passend zum Referral-
 ### Bruno Beispiel
 
 1. URL:
-  `http://192.168.167.212:9080/middleware/cda/umzh/convert?workflow_stage=initial`
+  `http://10.20.30.212:9080/middleware/cda/umzh/convert?workflow_stage=initial`
 2. Methode: `POST`
 3. Auth: Bearer-JWT ueber BridgeLink
 4. Body: `multipart/form-data` mit `file=@<deine-cda>.xml`
@@ -104,7 +104,7 @@ Query Parameter:
 
 Beispiel:
 
-`http://192.168.167.212:9080/middleware/cda/umzh/send?workflow_stage=initial&target=sandbox-placer&destination_base_url=http://localhost:8080/fhir`
+`http://10.20.30.212:9080/middleware/cda/umzh/send?workflow_stage=initial&target=sandbox-placer&destination_base_url=http://localhost:8080/fhir`
 
 Body:
 
@@ -149,7 +149,7 @@ von Ressourcentyp und ID (`PUT` bei vorhandener ID, sonst `POST`).
 
 ### Bruno-Aufruf
 
-1. URL: `http://192.168.167.212:9080/middleware/cda/vacd/convert`
+1. URL: `http://10.20.30.212:9080/middleware/cda/vacd/convert`
 2. Methode: `POST`
 3. Auth: Bearer-JWT ueber BridgeLink
 4. Body: `multipart/form-data` mit Feld `file=@<deine-cda>.xml`
@@ -157,7 +157,7 @@ von Ressourcentyp und ID (`PUT` bei vorhandener ID, sonst `POST`).
 ### cURL-Aufruf
 
 ```bash
-curl -X POST "http://192.168.167.212:9080/middleware/cda/vacd/convert" \
+curl -X POST "http://10.20.30.212:9080/middleware/cda/vacd/convert" \
   -H "Accept: application/fhir+json" \
   -F "file=@app/tests/data/CDA-EPIC.xml"
 ```

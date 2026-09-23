@@ -4,21 +4,22 @@
 
 - BridgeLink FHIR Route: https://fhir.omnilink.ch/fhir/
 - BridgeLink Middleware Route: https://fhir.omnilink.ch/middleware/
-- Aktuelle BridgeLink-Testadresse im LAN: http://192.168.167.212:9080/
+- Aktuelle BridgeLink-Testadresse auf `001-l-hlt01`: http://10.20.30.212:9080/
+- Direkte Middleware-Adresse auf der HLT-VM: http://10.20.30.212:8000/
 
 ### Bruno / aktueller Live-Aufruf
 
 Für Requests aus Bruno wird aktuell die BridgeLink-Adresse im LAN verwendet:
 
 ```text
-http://192.168.167.212:9080/middleware/
+http://10.20.30.212:9080/middleware/
 ```
 
 Beispiele:
 
 ```text
-POST http://192.168.167.212:9080/middleware/cda/convert?bundle_type=transaction
-POST http://192.168.167.212:9080/middleware/cda/import
+POST http://10.20.30.212:9080/middleware/cda/convert?bundle_type=transaction
+POST http://10.20.30.212:9080/middleware/cda/import
 ```
 
 Die öffentliche Route `https://fhir.omnilink.ch/cda/convert` ist nicht der
@@ -32,6 +33,20 @@ Ohne gueltige BridgeLink-Authentifizierung antworten geschuetzte Endpunkte mit:
 
 - HTTP Status: 401 Unauthorized
 - Fehlerantwort von BridgeLink mit `401 Unauthorized` oder `403 Forbidden`
+
+### Browser-Testclients und Keycloak
+
+Die HTML-Testclients werden lokal über Port `8082` ausgeliefert:
+
+```text
+http://localhost:8082/test-client.html
+```
+
+Die Clients unterstützen Keycloak Authorization Code mit PKCE `S256`.
+Issuer: `https://idp.omnilink.ch/realms/omnilink`. Im HTML wird die
+öffentliche Client-ID eingegeben; ein Client Secret wird im Browser nicht
+verwendet. Die jeweilige Redirect-URI, zum Beispiel
+`http://localhost:8082/test-client.html`, muss im Keycloak-Client freigeschaltet sein.
 
 Das bedeutet: Die Root-URLs selbst sind nicht öffentlich erreichbar und müssen mit gültigen Zugangsdaten aufgerufen werden.
 
@@ -435,7 +450,7 @@ Beispiel-JSON:
 ### Beispiel für den Middleware-Weg
 
 ```http
-POST http://192.168.167.212:9080/middleware/cda/import
+POST http://10.20.30.212:9080/middleware/cda/import
 Authorization: Bearer <JWT>
 Content-Type: multipart/form-data
 ```
