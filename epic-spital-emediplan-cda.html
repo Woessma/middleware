@@ -57,16 +57,20 @@
     <details id="connectionSettings" class="panel url-panel" hidden>
       <summary>Verbindungseinstellungen (Middleware-URL)</summary>
       <div class="url-grid">
-        <div><label for="middlewareUrl">BridgeLink Middleware Route</label><input id="middlewareUrl" value="https://fhir.omnilink.ch/middleware/" /></div>
+        <div><label for="middlewareUrl">BridgeLink Middleware Route</label><input id="middlewareUrl" value="http://10.20.30.212:9080/middleware/" /></div>
       </div>
     </details>
     <section class="panel connection" aria-label="Verbindung und Authentifizierung">
       <div><label for="authType">Auth Typ</label><select id="authType"><option value="none">Keine</option><option value="basic" selected>Basic Auth</option><option value="bearer">Bearer Token</option></select></div>
       <div><label for="authUsername">Username</label><input id="authUsername" autocomplete="username" placeholder="EPIC-Spital" /></div>
       <div><label for="authPassword">Passwort / Token</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="nur für diesen Request" /></div>
+      <div><label for="keycloakClientId">Keycloak Client-ID</label><input id="keycloakClientId" placeholder="Public OIDC Client-ID" /></div>
       <div class="actions">
         <button id="saveCredentialsBtn" class="secondary" type="button">Zugangsdaten speichern</button>
         <button id="clearCredentialsBtn" class="quiet" type="button">Zugangsdaten löschen</button>
+        <button id="keycloakLoginBtn" type="button">Mit Keycloak anmelden</button>
+        <button id="keycloakLogoutBtn" class="quiet" type="button">Token löschen</button>
+        <span id="keycloakStatus" class="status">Kein Keycloak-Token aktiv.</span>
       </div>
     </section>
     <div class="workspace">
@@ -87,6 +91,7 @@
       </section>
     </div>
   </main>
+  <script src="keycloak-auth.js"></script>
   <script>
     const el = Object.fromEntries(['payload','fileInput','runBtn','clearBtn','status','output','responseMeta','downloadBtn'].map(id => [id, document.getElementById(id)]));
     const credentialsStorageKey = 'epic-spital-emediplan-cda-credentials';
@@ -119,6 +124,8 @@
     }
 
     function auth(legacy = false) {
+      const keycloakHeaders = window.keycloakAuthHeaders();
+      if (Object.keys(keycloakHeaders).length) return keycloakHeaders;
       const type = document.getElementById('authType').value;
       const user = document.getElementById('authUsername').value.trim();
       const secret = document.getElementById('authPassword').value;

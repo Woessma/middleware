@@ -67,7 +67,7 @@
           <div class="form-grid">
             <div class="field-wide">
               <label for="fhirUrl">BridgeLink FHIR Route</label>
-              <input id="fhirUrl" type="text" value="https://fhir.omnilink.ch/fhir/" />
+              <input id="fhirUrl" type="text" value="http://10.20.30.212:9080/fhir/" />
             </div>
             <div class="field-wide">
               <label for="queryPath">Abfragepfad</label>
@@ -108,13 +108,20 @@
             <label for="authPassword">Password / Token</label>
             <input id="authPassword" type="password" autocomplete="current-password" placeholder="nur für den aktuellen Request" />
           </div>
+          <div class="field-wide">
+            <label for="keycloakClientId">Keycloak Client-ID</label>
+            <input id="keycloakClientId" type="text" placeholder="Public OIDC Client-ID" />
+          </div>
         </div>
         <div class="actions">
           <button id="queryButton" type="button">Abfrage ausfuehren</button>
+          <button id="keycloakLoginBtn" class="secondary" type="button">Mit Keycloak anmelden</button>
+          <button id="keycloakLogoutBtn" class="secondary" type="button">Token löschen</button>
           <button id="saveCredentialsButton" class="secondary" type="button">Zugangsdaten speichern</button>
           <button id="clearCredentialsButton" class="secondary" type="button">Gespeicherte Zugangsdaten loeschen</button>
         </div>
         <div id="status" class="status" role="status"></div>
+        <div id="keycloakStatus" class="status" role="status">Kein Keycloak-Token aktiv.</div>
       </section>
 
       <section id="result" hidden>
@@ -132,6 +139,7 @@
         </details>
       </section>
     </main>
+    <script src="keycloak-auth.js"></script>
     <script>
       const statusBox = document.getElementById('status');
       const resultBox = document.getElementById('result');
@@ -147,6 +155,8 @@
         return username + ':' + secret;
       }
       function getAuthHeaders(useLegacyBasicEncoding = false) {
+        const keycloakHeaders = window.keycloakAuthHeaders();
+        if (Object.keys(keycloakHeaders).length) return keycloakHeaders;
         const type = document.getElementById('authType').value;
         const secret = document.getElementById('authPassword').value;
         if (type === 'basic') {

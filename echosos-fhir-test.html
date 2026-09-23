@@ -22,8 +22,10 @@
     <div><label for="username">Username</label><input id="username" autocomplete="username"></div>
     <div><label for="secret">Passwort / Token</label><input id="secret" type="password" autocomplete="current-password"></div>
     <button id="saveLogin" class="secondary" type="button">Login speichern</button>
-    <div class="wide"><label for="middlewareUrl">BridgeLink Middleware Route</label><input id="middlewareUrl" value="https://fhir.omnilink.ch/middleware/"></div>
-    <div class="wide"><label for="fhirUrl">BridgeLink FHIR Route</label><input id="fhirUrl" value="https://fhir.omnilink.ch/fhir/"></div>
+    <div class="wide"><label for="keycloakClientId">Keycloak Client-ID</label><input id="keycloakClientId" placeholder="Public OIDC Client-ID"></div>
+    <div class="wide"><button id="keycloakLoginBtn" type="button">Mit Keycloak anmelden</button> <button id="keycloakLogoutBtn" class="quiet" type="button">Token löschen</button> <span id="keycloakStatus" class="muted">Kein Keycloak-Token aktiv.</span></div>
+    <div class="wide"><label for="middlewareUrl">BridgeLink Middleware Route</label><input id="middlewareUrl" value="http://10.20.30.212:9080/middleware/"></div>
+    <div class="wide"><label for="fhirUrl">BridgeLink FHIR Route</label><input id="fhirUrl" value="http://10.20.30.212:9080/fhir/"></div>
   </section>
   <div id="status" class="status" role="status"></div>
   <div class="workspace">
@@ -43,11 +45,12 @@
   <div class="camera-head"><h2>QR mit Kamera lesen</h2><button id="closeCamera" class="quiet" type="button">Schliessen</button></div>
   <div class="camera-body"><video id="cameraVideo" class="camera-video" autoplay playsinline muted></video><p id="cameraHelp" class="camera-help">Kamera wird gestartet. Halte den EchoSOS-QR-Code vor die Kamera.</p><div class="camera-actions"><button id="stopCamera" class="secondary" type="button">Abbrechen</button></div></div>
 </dialog>
+<script src="keycloak-auth.js"></script>
 <script>
 const $=id=>document.getElementById(id), storageKey='echosos-fhir-login';
 const qrFallbackScript='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
 function base(id){return $(id).value.trim().replace(/\/+$/,'')}
-function headers(){const type=$('authType').value,secret=$('secret').value;if(type==='none')return{};if(type==='bearer')return{Authorization:'Bearer '+secret};const raw=$('username').value.trim()+':'+secret;return{Authorization:'Basic '+btoa(unescape(encodeURIComponent(raw)))} }
+function headers(){const keycloakHeaders=window.keycloakAuthHeaders();if(Object.keys(keycloakHeaders).length)return keycloakHeaders;const type=$('authType').value,secret=$('secret').value;if(type==='none')return{};if(type==='bearer')return{Authorization:'Bearer '+secret};const raw=$('username').value.trim()+':'+secret;return{Authorization:'Basic '+btoa(unescape(encodeURIComponent(raw)))} }
 function show(message,error=false){$('status').textContent=message;$('status').className='status show'+(error?' error':'')}
 function restore(){try{const x=JSON.parse(localStorage.getItem(storageKey)||'null');if(!x)return;$('authType').value=x.type||'basic';$('username').value=x.username||'';$('secret').value=x.secret||''}catch{localStorage.removeItem(storageKey)}}
 $('saveLogin').onclick=()=>{localStorage.setItem(storageKey,JSON.stringify({type:$('authType').value,username:$('username').value,secret:$('secret').value}));show('Login gespeichert.')};

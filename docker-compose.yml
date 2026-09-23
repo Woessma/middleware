@@ -7,9 +7,9 @@ services:
       - FHIR_BASE=http://hapi-fhir:8080/fhir
       - TERMINOLOGY_BASE_URL=https://tx.fhir.ch/r4
       - REFDATA_API_KEY=${REFDATA_API_KEY:-}
-    container_name: fhir-middleware
-    expose:
-      - "8000"
+    container_name: python-middleware
+    ports:
+      - "8000:8000"
     networks:
       - default
       - proxy
