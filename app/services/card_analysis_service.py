@@ -516,6 +516,15 @@ def _parse_mrz_text(text):
 
     birth_date = None
     date_match = re.match(r"^(\d{6})[0-9<][A-Z<]", second_line)
+    if not date_match:
+        date_match = next(
+            (
+                match
+                for match in re.finditer(r"(?<!\d)(\d{6})(?=[A-Z<])", second_line)
+                if 1 <= int(match.group(1)[2:4]) <= 12 and 1 <= int(match.group(1)[4:6]) <= 31
+            ),
+            None,
+        )
     if date_match:
         candidate = date_match.group(1)
         yy, mm, dd = candidate[0:2], candidate[2:4], candidate[4:6]

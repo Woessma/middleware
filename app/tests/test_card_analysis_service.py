@@ -89,6 +89,16 @@ class CardAnalysisServiceTests(unittest.TestCase):
         self.assertEqual(result["person"]["birth_date"], "1966-09-07")
         self.assertEqual(result["identifiers"][0]["value"], "E5927398")
 
+    def test_parses_driver_license_ocr_date_after_document_number(self):
+        payload = "FACHE004660294003<<660907<<<<<\nWOESS<<MARKUS<<<CSLS<CLELLLELE"
+
+        result = analyze_card(payload.encode("utf-8"))
+
+        self.assertEqual(result["card_type"], "mrz_card")
+        self.assertEqual(result["person"]["family"], "Wöss")
+        self.assertEqual(result["person"]["birth_date"], "1966-09-07")
+        self.assertEqual(result["identifiers"][0]["value"], "FACHE0046")
+
     def test_classifies_swiss_id_front_ocr_without_mrz(self):
         payload = "SCHWEIZERISCHE EIDGENOSSENSCHAFT\nCONFEDERATION SUISSE\nSWISS CONFEDERATION\nCARTE D'IDENTITE\nE5927398"
 
