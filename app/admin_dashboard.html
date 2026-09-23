@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Middleware Admin</title>
+  <style>
+    :root { --ink: #17212b; --muted: #66727d; --line: #dce3e8; --paper: #f4f7f8; --blue: #0c6478; --teal: #18a999; --red: #c84c4c; --amber: #c38128; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--paper); font: 15px/1.5 Georgia, serif; }
+    header { padding: 32px clamp(22px, 6vw, 88px) 28px; background: #12343b; color: #f8fbfa; }
+    header div { max-width: 1180px; margin: auto; }
+    .eyebrow { margin: 0 0 8px; color: #75d7c4; font: 700 12px/1.2 ui-monospace, monospace; letter-spacing: 1.5px; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(32px, 5vw, 54px); font-weight: 400; letter-spacing: -1px; }
+    .subtitle { margin: 8px 0 0; color: #c4d7d8; font-size: 17px; }
+    main { max-width: 1180px; margin: 0 auto; padding: 30px clamp(22px, 6vw, 88px) 56px; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 22px; }
+    #updated { color: var(--muted); font-size: 13px; }
+    button { border: 0; border-radius: 3px; padding: 11px 16px; color: white; background: var(--blue); cursor: pointer; font: 700 13px ui-monospace, monospace; }
+    button:hover { background: #084b5a; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .card { border: 1px solid var(--line); background: white; padding: 18px; box-shadow: 0 2px 0 rgba(18, 52, 59, .04); }
+    .card h2 { margin: 0 0 10px; color: var(--muted); font: 700 12px ui-monospace, monospace; letter-spacing: .4px; text-transform: uppercase; }
+    .value { min-height: 30px; font-size: 25px; }
+    .section { margin-top: 28px; }
+    .section h2 { margin: 0 0 12px; font-size: 21px; font-weight: 400; }
+    .service { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid var(--line); padding: 17px 0; }
+    .service strong { display: block; font-size: 18px; font-weight: 400; }
+    .service small { color: var(--muted); font: 12px ui-monospace, monospace; overflow-wrap: anywhere; }
+    .pill { display: inline-flex; align-items: center; gap: 7px; font: 700 12px ui-monospace, monospace; text-transform: uppercase; }
+    .pill::before { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); content: ''; }
+    .online::before { background: var(--teal); } .degraded::before { background: var(--amber); } .offline::before { background: var(--red); }
+    @media (max-width: 760px) { .grid { grid-template-columns: repeat(2, 1fr); } .toolbar { align-items: flex-start; flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <header><div><p class="eyebrow">Ansible VM / Operations</p><h1>Middleware Admin</h1><p class="subtitle">Betriebsübersicht für FHIR, Terminologie und Konfiguration</p></div></header>
+  <main>
+    <div class="toolbar"><span id="updated">Lade Status ...</span><button type="button" onclick="loadOverview()">Status aktualisieren</button></div>
+    <section class="grid">
+      <article class="card"><h2>Dienst</h2><div id="service" class="value">...</div></article>
+      <article class="card"><h2>Debug-Modus</h2><div id="debug" class="value">...</div></article>
+      <article class="card"><h2>Terminologie</h2><div id="validation" class="value">...</div></article>
+      <article class="card"><h2>Letzte Prüfung</h2><div id="checked" class="value">...</div></article>
+    </section>
+    <section class="section"><h2>Abhängigkeiten</h2><div id="services" class="card"></div></section>
+    <section class="section"><h2>Konfiguration</h2><div id="configuration" class="card"></div></section>
+  </main>
+  <script>
+    const label = value => value ? 'Ja' : 'Nein';
+    async function loadOverview() {
+      const updated = document.getElementById('updated');
+      updated.textContent = 'Prüfe Verbindungen ...';
+      try {
+        const response = await fetch('/admin/api/overview', { cache: 'no-store' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const data = await response.json();
+        document.getElementById('service').textContent = data.service;
+        document.getElementById('debug').textContent = label(data.debug_mode);
+        document.getElementById('validation').textContent = data.configuration.terminology_validation;
+        document.getElementById('checked').textContent = new Date(data.timestamp).toLocaleTimeString('de-CH');
+        document.getElementById('services').innerHTML = Object.entries(data.services).map(([name, service]) => `<div class="service"><div><strong>${name.toUpperCase()}</strong><small>${service.error || service.http_status + ' · ' + service.latency_ms + ' ms'}</small></div><span class="pill ${service.status}">${service.status}</span></div>`).join('');
+        const config = data.configuration;
+        document.getElementById('configuration').innerHTML = `<div class="service"><div><strong>FHIR</strong><small>${config.fhir_base}</small></div></div><div class="service"><div><strong>Terminologie</strong><small>${config.terminology_base}</small></div></div><div class="service"><div><strong>VACD Send</strong></div><span>${label(config.vacd_send_configured)}</span></div><div class="service"><div><strong>Refdata API Key</strong></div><span>${label(config.refdata_configured)}</span></div>`;
+        updated.textContent = 'Aktualisiert um ' + new Date(data.timestamp).toLocaleTimeString('de-CH');
+      } catch (error) { updated.textContent = 'Status konnte nicht geladen werden: ' + error.message; }
+    }
+    loadOverview();
+  </script>
+</body>
+</html>

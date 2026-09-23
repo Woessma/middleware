@@ -78,6 +78,69 @@ Verantwortlich fuer:
 ### Standards
 
 - FHIR
+
+---
+
+## Betriebsnotiz: Middleware, HAPI und PostgreSQL
+
+Stand: 2026-09-23
+
+### Datenfluss
+
+```text
+Python Middleware (001-l-hlt01 / 10.20.30.212)
+  -> http://hapi-fhir:8080/fhir
+HAPI FHIR (001-l-hlt01)
+  -> PostgreSQL auf 001-l-dat01 / 10.20.30.213:5433
+postgres-fhir
+```
+
+Middleware und HAPI teilen das externe Docker-Netzwerk `proxy`. Der PostgreSQL-Container laeuft jedoch auf einer anderen Docker-VM. Deshalb ist `postgres-fhir:5432` von HAPI aus nicht verwendbar.
+
+### Relevante Ports
+
+| Dienst | Host | Port |
+|---|---|---|
+| Middleware | 001-l-hlt01 | 8000, 8082 |
+| HAPI FHIR | 001-l-hlt01 | 8090 -> 8080 |
+| PostgreSQL | 001-l-dat01 | 5433 -> 5432 |
+| BridgeLink | 001-l-hlt01 | 8080, 8081, 8443, 9080 |
+
+### Konfiguration
+
+In `/opt/python-middleware/docker-compose.yml`:
+
+```yaml
+FHIR_BASE=${FHIR_BASE:-http://hapi-fhir:8080/fhir}
+```
+
+In `/opt/docker/hapi-fhir/application.yaml` muss die Datenbankverbindung auf die Datenbank-VM zeigen:
+
+```yaml
+spring:
+  datasource:
+    url: "jdbc:postgresql://10.20.30.213:5433/fhir"
+```
+
+Benutzername und Passwort muessen mit der PostgreSQL-Konfiguration uebereinstimmen. Die Datenbank muss `fhir` heissen und Verbindungen von `10.20.30.212` erlauben.
+
+### Aktueller Fehlerstand
+
+HAPI verwendet derzeit noch `postgres.int.omnilink.ch:5433`. Dieser Name loest im internen Netz falsch auf externe IPv6-Adressen auf. HAPI startet deshalb wiederholt neu und oeffnet Port `8080` nicht. Der Container `postgres-fhir` ist auf der HLT-VM nicht vorhanden, sondern auf `001-l-dat01`.
+
+Nach der Korrektur pruefen:
+
+```bash
+docker restart hapi-fhir
+docker logs -f hapi-fhir
+curl http://127.0.0.1:8090/fhir/metadata
+```
+
+Optional kann spaeter ein interner DNS-A-Record gesetzt werden:
+
+```text
+postgres.int.omnilink.ch. A 10.20.30.213
+```
 - CH Core
 - CDA
 

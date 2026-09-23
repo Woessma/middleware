@@ -35,6 +35,7 @@ from fastapi import (
     Query,
     Response,
 )
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -148,7 +149,13 @@ from parser.cda.helpers import (
     attr_or_none,
 )
 
-from config import FHIR_BASE, TERMINOLOGY_VALIDATION_MODE, VACD_SEND_BASE_URL, VACD_SEND_TIMEOUT
+from config import (
+    FHIR_BASE,
+    TERMINOLOGY_BASE_URL,
+    TERMINOLOGY_VALIDATION_MODE,
+    VACD_SEND_BASE_URL,
+    VACD_SEND_TIMEOUT,
+)
 
 
 UMZH_SEND_BASE_URL = os.getenv("UMZH_SEND_BASE_URL", "")
@@ -309,6 +316,50 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def _check_service(url):
+    started_at = datetime.now(timezone.utc)
+    try:
+        response = requests.get(url, timeout=3)
+        return {
+            "status": "online" if response.ok else "degraded",
+            "http_status": response.status_code,
+            "latency_ms": round((datetime.now(timezone.utc) - started_at).total_seconds() * 1000),
+        }
+    except requests.RequestException as exc:
+        return {
+            "status": "offline",
+            "error": str(exc),
+            "latency_ms": round((datetime.now(timezone.utc) - started_at).total_seconds() * 1000),
+        }
+
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin_dashboard():
+    dashboard_path = os.path.join(os.path.dirname(__file__), "admin_dashboard.html")
+    with open(dashboard_path, encoding="utf-8") as dashboard_file:
+        return dashboard_file.read()
+
+
+@app.get("/admin/api/overview")
+def admin_overview():
+    return {
+        "service": "python-middleware",
+        "debug_mode": DEBUG_MODE,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "services": {
+            "fhir": _check_service(FHIR_BASE),
+            "terminology": _check_service(TERMINOLOGY_BASE_URL),
+        },
+        "configuration": {
+            "fhir_base": FHIR_BASE,
+            "terminology_base": TERMINOLOGY_BASE_URL,
+            "terminology_validation": TERMINOLOGY_VALIDATION_MODE,
+            "vacd_send_configured": bool(VACD_SEND_BASE_URL),
+            "refdata_configured": bool(os.getenv("REFDATA_API_KEY")),
+        },
+    }
 
 
 @app.post("/fhir/stabilize")
