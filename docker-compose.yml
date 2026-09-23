@@ -4,6 +4,7 @@ services:
     build: .
     environment:
       - DEBUG_MODE=true
+      - CORS_ALLOW_ORIGINS=http://localhost:8081,http://127.0.0.1:8081,http://localhost:8082,http://127.0.0.1:8082,http://10.20.30.212:8081,http://10.20.30.212:8082
       - FHIR_BASE=http://hapi-fhir:8080/fhir
       - TERMINOLOGY_BASE_URL=https://tx.fhir.ch/r4
       - REFDATA_API_KEY=${REFDATA_API_KEY:-}
