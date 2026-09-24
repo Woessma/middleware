@@ -296,10 +296,19 @@ def _stabilize_bundle(bundle):
 
 
 app = FastAPI(
+
     docs_url=None,
     redoc_url=None,
     openapi_url=None
 )
+
+
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "service": "OmniLink Python Middleware"
+    }
 
 cors_origins = [
     origin.strip()
