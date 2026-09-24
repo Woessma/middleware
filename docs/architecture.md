@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: 2026-09-10
+Stand: 2026-09-24
 
 ## Zielarchitektur
 
@@ -59,6 +59,15 @@ EPIC CDA
 - EchoSOS-Ansicht gruppiert Observations nach `vital-signs`, `laboratory` und `social-history`; unklassifizierte Observations und Encounter werden ausgeblendet
 - HAPI FHIR: interne HTTP-API ueber `http://hapi-fhir:8080/fhir`
 
+## Aktueller Betriebsstand
+
+- HAPI FHIR: intern erreichbar; `/fhir/metadata` liefert HTTP 200.
+- Terminologie: `https://tx.fhir.ch/r4` liefert HTTP 200 nach Redirect.
+- VACD Send: `https://vaccination-demo.raly.ch/api/fhir/metadata` liefert HTTP 200.
+- Direkte Middleware: `https://middleware.local.omnilink.ch` ist erreichbar.
+- BridgeLink `/middleware/cda/import`: aktuell HTTP 404; der Schreibweg nach
+	HAPI muss noch über die BridgeLink-/Caddy-Konfiguration aktiviert werden.
+
 ## eMediplan-Verordner und GLN
 
 `Medicaments[].PrscbBy` enthaelt nach CHMED16A entweder die GLN oder die
@@ -85,9 +94,9 @@ Self-Service-API `GET/PUT /api/identity` gepflegt werden.
 - Externes Docker-Netzwerk `proxy`
 - Interner Port `8000`
 - Containername `python-middleware`
-- Lokaler VM-Zugriff: `http://10.20.30.212:8000`
+- Direkter Zugriff: `https://middleware.local.omnilink.ch`
 - BridgeLink auf der HLT-VM: `http://10.20.30.212:9080`
-- Externer Zugriff ueber Cloudflare, cloudflared, Caddy und BridgeLink
+- Zugriff im Testlab ueber Forti-VPN, Technitium DNS und Caddy
 - Middleware schreibt bei Standard-Importpfaden nicht direkt nach HAPI FHIR
 
 ## CH VACD

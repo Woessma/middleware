@@ -2,30 +2,36 @@
 
 ## Basis-URLs
 
-- BridgeLink FHIR Route: https://fhir.omnilink.ch/fhir/
-- BridgeLink Middleware Route: https://fhir.omnilink.ch/middleware/
-- Aktuelle BridgeLink-Testadresse auf `001-l-hlt01`: http://10.20.30.212:9080/
-- Direkte Middleware-Adresse auf der HLT-VM: http://10.20.30.212:8000/
+- BridgeLink FHIR Route (Proxy-Ziel noch offen): https://fhir.omnilink.ch/fhir/
+- BridgeLink Middleware Route (Proxy-Ziel noch offen): https://fhir.omnilink.ch/middleware/
+- BridgeLink intern auf `001-l-hlt01`: http://10.20.30.212:9080/
+- Direkte Middleware-Adresse: https://middleware.local.omnilink.ch/
+- HAPI intern aus der Middleware: http://hapi-fhir:8080/fhir
+- Terminologie: https://tx.fhir.ch/r4
+- VACD Send: https://vaccination-demo.raly.ch/api/fhir
 
 ### Bruno / aktueller Live-Aufruf
 
-Für Requests aus Bruno wird aktuell die BridgeLink-Adresse im LAN verwendet:
+Für direkte Middleware-Requests wird aktuell die HTTPS-Adresse verwendet:
 
 ```text
-http://10.20.30.212:9080/middleware/
+https://middleware.local.omnilink.ch/
 ```
 
 Beispiele:
 
 ```text
-POST http://10.20.30.212:9080/middleware/cda/convert?bundle_type=transaction
-POST http://10.20.30.212:9080/middleware/cda/import
+POST https://middleware.local.omnilink.ch/cda/convert?bundle_type=transaction
+POST https://middleware.local.omnilink.ch/cda/import
 ```
 
-Die öffentliche Route `https://fhir.omnilink.ch/cda/convert` ist nicht der
-konfigurierte Middleware-Pfad und liefert derzeit `404`. Auch die öffentliche
-Route unter `/middleware/` muss separat durch den Reverse Proxy geroutet werden;
-für den aktuellen Test daher die LAN-Adresse oben verwenden.
+Der direkte CDA-Import wurde mit `app/tests/data/CDA-AT.xml` erfolgreich
+verarbeitet (`HTTP 200`, Transaction-Bundle mit 43 Einträgen). Dieser direkte
+Aufruf konvertiert und validiert nur; er schreibt nicht nach HAPI.
+
+Der vorgesehene BridgeLink-Pfad
+`http://10.20.30.212:9080/middleware/cda/import` liefert aktuell `HTTP 404`.
+Dadurch ist der Persistenzweg BridgeLink -> HAPI noch nicht aktiv.
 
 ## Beobachtung aus dem Live-System
 
@@ -36,17 +42,26 @@ Ohne gueltige BridgeLink-Authentifizierung antworten geschuetzte Endpunkte mit:
 
 ### Browser-Testclients und Keycloak
 
-Die HTML-Testclients werden lokal über Port `8082` ausgeliefert:
+Die HTML-Testclients werden direkt über die Middleware-Domain ausgeliefert:
 
 ```text
-http://localhost:8082/test-client.html
+https://middleware.local.omnilink.ch/test-client.html
+```
+
+Weitere Clients:
+
+```text
+https://middleware.local.omnilink.ch/echosos-fhir-test.html
+https://middleware.local.omnilink.ch/fhir-query-client.html
+https://middleware.local.omnilink.ch/epic-spital-emediplan-cda.html
+https://middleware.local.omnilink.ch/card-analysis-test.html
 ```
 
 Die Clients unterstützen Keycloak Authorization Code mit PKCE `S256`.
 Issuer: `https://idp.omnilink.ch/realms/omnilink`. Im HTML wird die
 öffentliche Client-ID eingegeben; ein Client Secret wird im Browser nicht
 verwendet. Die jeweilige Redirect-URI, zum Beispiel
-`http://localhost:8082/test-client.html`, muss im Keycloak-Client freigeschaltet sein.
+`https://middleware.local.omnilink.ch/test-client.html`, muss im Keycloak-Client freigeschaltet sein.
 
 Das bedeutet: Die Root-URLs selbst sind nicht öffentlich erreichbar und müssen mit gültigen Zugangsdaten aufgerufen werden.
 

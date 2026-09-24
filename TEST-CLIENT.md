@@ -4,16 +4,22 @@
 Use-Cases. Sie verarbeitet FHIR JSON, CDA XML, HL7v2 und eMediplan-Payloads und
 stellt auch EPIC-CDA-, UMZH-, Terminologie- und Smoke-Test-Pfade bereit.
 
-## Lokal starten
+## Auf der Testlab-VM öffnen
 
-Die HTML-Datei muss über einen lokalen Webserver geöffnet werden, nicht über
-`file://`. Im Verzeichnis `/opt/python-middleware` genügt zum Beispiel:
+Die HTML-Dateien werden vom Middleware-Service ausgeliefert und müssen nicht
+mehr separat über `python3 -m http.server` gestartet werden:
 
 ```bash
-python3 -m http.server 8082
+curl -I https://middleware.local.omnilink.ch/test-client.html
 ```
 
 Danach im Browser öffnen:
+
+```text
+https://middleware.local.omnilink.ch/test-client.html
+```
+
+Alternativ ist der lokale Port `8082` verfügbar:
 
 ```text
 http://localhost:8082/test-client.html
@@ -26,7 +32,7 @@ Die Seite unterstützt QR-Daten aus der Kamera, Bilddateien, `.pkpass`, MRZ-
 Text und Versicherungs-Kartenfotos per OCR. Dabei werden sichtbare Felder wie
 Name, Vorname, Geburtsdatum, Versicherungsnummer und Krankenkasse erkannt. Im
 Feld **Card Analysis Endpoint** kann lokal
-standardmäßig `http://10.20.30.212:8000/card/analyze` oder die erreichbare
+standardmäßig `https://middleware.local.omnilink.ch/card/analyze` oder die erreichbare
 Middleware-Route eingetragen werden.
 
 Die Kamera liest den aufgedruckten Karteninhalt als Bild. Einen elektronischen
@@ -34,7 +40,7 @@ Chip oder NFC-Inhalt kann dieser Browser-Flow nicht auslesen; dafür wäre ein
 separater NFC-Kartenleser mit eigener Geräteintegration erforderlich.
 
 ```text
-http://localhost:8082/card-analysis-test.html
+https://middleware.local.omnilink.ch/card-analysis-test.html
 ```
 
 Der verwendete Endpoint ist:
@@ -56,7 +62,7 @@ visualisiert. Nach dem Speichern wird automatisch
 FHIR-Kontakte, PCP-Referenzen und klinische Daten sichtbar werden.
 
 ```text
-http://localhost:8082/echosos-fhir-test.html
+https://middleware.local.omnilink.ch/echosos-fhir-test.html
 ```
 
 Der Import verwendet:

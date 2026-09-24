@@ -83,7 +83,7 @@ Verantwortlich fuer:
 
 ## Betriebsnotiz: Middleware, HAPI und PostgreSQL
 
-Stand: 2026-09-23
+Stand: 2026-09-24
 
 ### Datenfluss
 
@@ -124,17 +124,27 @@ spring:
 
 Benutzername und Passwort muessen mit der PostgreSQL-Konfiguration uebereinstimmen. Die Datenbank muss `fhir` heissen und Verbindungen von `10.20.30.212` erlauben.
 
-### Aktueller Fehlerstand
+### Aktueller Betriebsstand
 
-HAPI verwendet derzeit noch `postgres.int.omnilink.ch:5433`. Dieser Name loest im internen Netz falsch auf externe IPv6-Adressen auf. HAPI startet deshalb wiederholt neu und oeffnet Port `8080` nicht. Der Container `postgres-fhir` ist auf der HLT-VM nicht vorhanden, sondern auf `001-l-dat01`.
+HAPI laeuft stabil auf `001-l-hlt01`; `http://127.0.0.1:8090/fhir/metadata`
+liefert HTTP 200. Die Datenbank liegt weiterhin auf `001-l-dat01`.
 
-Nach der Korrektur pruefen:
+Nach Neustarts pruefen:
 
 ```bash
 docker restart hapi-fhir
 docker logs -f hapi-fhir
 curl http://127.0.0.1:8090/fhir/metadata
 ```
+
+Die direkte Middleware-Domain `https://middleware.local.omnilink.ch` liefert
+Dashboard, Testclients und Middleware-Endpunkte. Terminologie und der VACD-
+Referenzserver liefern HTTP 200 über ihre jeweiligen `/metadata`-Pfade.
+
+Der BridgeLink-Pfad `/middleware/cda/import` liefert auf Port 9080 aktuell
+HTTP 404. Ein direkter `POST /cda/import` an die Middleware konvertiert und
+validiert CDA, schreibt aber nicht nach HAPI. Der Persistenzweg BridgeLink ->
+HAPI ist deshalb noch offen.
 
 Optional kann spaeter ein interner DNS-A-Record gesetzt werden:
 
