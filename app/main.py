@@ -35,7 +35,7 @@ from fastapi import (
     Query,
     Response,
 )
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -351,6 +351,40 @@ def admin_dashboard():
         return dashboard_file.read()
 
 
+def _app_file(filename):
+    return os.path.join(os.path.dirname(__file__), filename)
+
+
+@app.get("/test-client.html", response_class=FileResponse)
+def test_client():
+    return FileResponse(_app_file("test-client.html"), media_type="text/html")
+
+
+@app.get("/echosos-fhir-test.html", response_class=FileResponse)
+def echosos_fhir_test():
+    return FileResponse(_app_file("echosos-fhir-test.html"), media_type="text/html")
+
+
+@app.get("/fhir-query-client.html", response_class=FileResponse)
+def fhir_query_client():
+    return FileResponse(_app_file("fhir-query-client.html"), media_type="text/html")
+
+
+@app.get("/epic-spital-emediplan-cda.html", response_class=FileResponse)
+def epic_spital_emediplan_cda():
+    return FileResponse(_app_file("epic-spital-emediplan-cda.html"), media_type="text/html")
+
+
+@app.get("/card-analysis-test.html", response_class=FileResponse)
+def card_analysis_test():
+    return FileResponse(_app_file("card-analysis-test.html"), media_type="text/html")
+
+
+@app.get("/keycloak-auth.js", response_class=FileResponse)
+def keycloak_auth():
+    return FileResponse(_app_file("keycloak-auth.js"), media_type="application/javascript")
+
+
 @app.get("/admin/api/overview")
 def admin_overview():
     return {
@@ -358,7 +392,7 @@ def admin_overview():
         "debug_mode": DEBUG_MODE,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "services": {
-            "fhir": _check_service(FHIR_BASE),
+            "fhir": _check_service(f"{FHIR_BASE.rstrip('/')}/metadata"),
             "terminology": _check_service(TERMINOLOGY_BASE_URL),
         },
         "configuration": {
@@ -398,9 +432,9 @@ async def fhir_convert(request: Request):
     except Exception as exc:
         logger.exception("FHIR convert failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
-    raise HTTPException(status_code=404)
+    return admin_dashboard()
  
  
 @app.get("/metadata")

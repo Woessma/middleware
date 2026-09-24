@@ -24,7 +24,7 @@
     <section class="panel">
       <h2>Input auswählen</h2>
       <p class="muted">Die Kamera liefert einen QR-Wert. Dateien werden als Bild oder PKPass an die Middleware gesendet.</p>
-      <div class="field"><label for="endpoint">Card Analysis Endpoint</label><input id="endpoint" value="http://10.20.30.212:8000/card/analyze" spellcheck="false"></div>
+      <div class="field"><label for="endpoint">Card Analysis Endpoint</label><input id="endpoint" value="https://middleware.local.omnilink.ch/card/analyze" spellcheck="false"></div>
       <div class="field"><label for="keycloakClientId">Keycloak Client-ID</label><input id="keycloakClientId" placeholder="Public OIDC Client-ID"><div class="actions"><button id="keycloakLoginBtn" type="button">Mit Keycloak anmelden</button><button id="keycloakLogoutBtn" class="quiet" type="button">Token löschen</button><span id="keycloakStatus" class="muted">Kein Keycloak-Token aktiv.</span></div></div>
       <div class="field"><label>Aufnahme auswählen</label><div class="actions mode-actions"><button class="secondary" data-mode="qr" type="button">QR / EchoSOS</button><button class="secondary" data-mode="insurance" type="button">Versicherungskarte</button><button class="secondary" data-mode="swissid" type="button">SwissID</button></div><button id="camera" hidden type="button"></button><input id="cardFile" type="file" hidden><div class="actions"><button id="chooseFile" class="quiet" type="button">Datei auswählen</button><button id="analyzeFile" type="button">Datei analysieren</button></div><p id="modeHint" class="hint">Modus auswählen. Die Kamera wird direkt geöffnet.</p></div>
       <div class="divider"></div>
