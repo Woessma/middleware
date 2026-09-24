@@ -61,7 +61,7 @@
         document.getElementById('checked').textContent = new Date(data.timestamp).toLocaleTimeString('de-CH');
         document.getElementById('services').innerHTML = Object.entries(data.services).map(([name, service]) => `<div class="service"><div><strong>${name.toUpperCase()}</strong><small>${service.error || service.http_status + ' · ' + service.latency_ms + ' ms'}</small></div><span class="pill ${service.status}">${service.status}</span></div>`).join('');
         const config = data.configuration;
-        document.getElementById('configuration').innerHTML = `<div class="service"><div><strong>FHIR</strong><small>${config.fhir_base}</small></div></div><div class="service"><div><strong>Terminologie</strong><small>${config.terminology_base}</small></div></div><div class="service"><div><strong>VACD Send</strong></div><span>${label(config.vacd_send_configured)}</span></div><div class="service"><div><strong>Refdata API Key</strong></div><span>${label(config.refdata_configured)}</span></div>`;
+        document.getElementById('configuration').innerHTML = `<div class="service"><div><strong>FHIR</strong><small>${config.fhir_base}</small></div></div><div class="service"><div><strong>Terminologie</strong><small>${config.terminology_base}</small></div></div><div class="service"><div><strong>VACD Send</strong><small>${config.vacd_send_base}</small></div><span>${label(config.vacd_send_configured)}</span></div><div class="service"><div><strong>Refdata API Key</strong></div><span>${label(config.refdata_configured)}</span></div>`;
         updated.textContent = 'Aktualisiert um ' + new Date(data.timestamp).toLocaleTimeString('de-CH');
       } catch (error) { updated.textContent = 'Status konnte nicht geladen werden: ' + error.message; }
     }

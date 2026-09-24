@@ -394,10 +394,12 @@ def admin_overview():
         "services": {
             "fhir": _check_service(f"{FHIR_BASE.rstrip('/')}/metadata"),
             "terminology": _check_service(TERMINOLOGY_BASE_URL),
+            "vacd_send": _check_service(f"{VACD_SEND_BASE_URL.rstrip('/')}/metadata"),
         },
         "configuration": {
             "fhir_base": FHIR_BASE,
             "terminology_base": TERMINOLOGY_BASE_URL,
+            "vacd_send_base": VACD_SEND_BASE_URL,
             "terminology_validation": TERMINOLOGY_VALIDATION_MODE,
             "vacd_send_configured": bool(VACD_SEND_BASE_URL),
             "refdata_configured": bool(os.getenv("REFDATA_API_KEY")),
