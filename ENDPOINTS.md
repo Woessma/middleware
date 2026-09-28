@@ -133,33 +133,30 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 
 | Methode | Pfad | Verhalten | Zweck |
 |---|---|---|---|
-| `GET` | `/middleware/` | Gibt `404` zurück | Root-Endpunkt der App |
-| `GET` | `/middleware/metadata` | Nur im Debug-Modus aktiv; sonst `404` | Debug-Info |
-| `POST` | `/cda/debug` | XML-Datei akzeptiert, parst CDA und gibt Profil/Patient/Header/Sections zurück | CDA-Diagnose/Debug |
-| `GET` | `/middleware/test/patient` | Erstellt einen Test-Patienten | Test-/Smoke-Setup |
-| `GET` | `/middleware/test/organization` | Erstellt eine Test-Organisation | Test-/Smoke-Setup |
-| `POST` | `/cda/convert` | Erwartet CDA-XML; gibt FHIR Bundle JSON zurück | CDA -> FHIR Bundle |
-| `POST` | `/cda/vacd/convert` | Erwartet CDA-XML; gibt VACD-optimiertes Bundle zurück | CH-VACD-Workflow |
-| `POST` | `/cda/vacd/send` | Erwartet CDA-XML; konvertiert zu CH-VACD-Bundle, legt den Patienten beim Zielserver an und sendet das Bundle mit dessen zugewiesener ID | CH-VACD -> openEHR-FHIR-Referenzserver |
-| `POST` | `/cda/import` | Erwartet CDA-XML; erzeugt und validiert ein Transaction-Bundle | CDA -> BridgeLink -> FHIR |
-| `POST` | `/middleware/emediplan/convert` | Erwartet eMediplan-Text oder PDF/Bild mit QR-Code; gibt FHIR Bundle JSON zurück | eMediplan -> FHIR |
-| `POST` | `/middleware/emediplan/import` | Erwartet eMediplan-Text oder PDF/Bild mit QR-Code; erzeugt und validiert ein Transaction-Bundle | eMediplan -> BridgeLink -> FHIR |
-| `POST` | `/middleware/emediplan/import-bundle` | Erwartet JSON-Bundle; validiert und gibt es an BridgeLink zurück | Bundle -> BridgeLink -> FHIR |
-| `POST` | `/middleware/emediplan/qr/convert` | Erwartet PDF oder Bild mit eMediplan-QR-Code; liest den QR-Code und gibt FHIR Bundle JSON zurück | eMediplan-QR (PDF/Bild) -> FHIR |
-| `POST` | `/middleware/emediplan/qr/import` | Wie oben, erzeugt und validiert ein Transaction-Bundle | eMediplan-QR -> BridgeLink -> FHIR |
-| `POST` | `/middleware/fhir/medications/epic-cda` | Erwartet FHIR Bundle JSON; liefert CDA-XML zurück | FHIR Bundle -> Epic CDA |
-| `POST` | `/middleware/emediplan/epic-cda` | Erwartet eMediplan-Daten; konvertiert erst zu Bundle und dann zu CDA | eMediplan -> Epic CDA |
-| `GET` | `/middleware/fhir/medications/epic-cda/from-server` | Holt Medikamente aus FHIR-Server und liefert CDA-XML zurück | FHIR -> Epic CDA |
-| `POST` | `/cda/umzh/convert` | Erwartet CDA-XML; gibt UMZH-FHIR-Bundle zurück | UMZH-CDA -> Bundle |
-| `POST` | `/cda/umzh/send` | Erwartet CDA-XML; konvertiert, sendet dann an Zielsystem | UMZH-Sendefluss |
-| `POST` | `/middleware/hl7v2/convert` | Erwartet HL7v2 `ORU^R01`; gibt ein FHIR-Bundle mit Patient und Observations zurück | HL7v2 -> FHIR |
-| `POST` | `/middleware/hl7v2/import` | Erwartet HL7v2 `ORU^R01`; konvertiert und importiert das FHIR-Bundle in den FHIR-Server | HL7v2-Import |
-| `POST` | `/middleware/echosos/qr/import` | Erwartet EchoSOS-QR-Text, QR-Bild oder PKPass; erstellt/aktualisiert den Patienten und liefert danach `$everything` zurück | EchoSOS-Notfallpass-Import |
-| `POST` | `/middleware/terminology/ValueSet/$expand` | Leitet FHIR-Parameters an `TERMINOLOGY_BASE_URL` weiter | ValueSet expandieren |
-| `POST` | `/middleware/terminology/ValueSet/$validate-code` | Leitet FHIR-Parameters an `TERMINOLOGY_BASE_URL` weiter | Code validieren |
-| `POST` | `/middleware/terminology/ConceptMap/$translate` | Leitet FHIR-Parameters an `TERMINOLOGY_BASE_URL` weiter | Codes übersetzen |
-| `POST` | `/middleware/terminology/CodeSystem/$subsumes` | Leitet FHIR-Parameters an `TERMINOLOGY_BASE_URL` weiter | Codehierarchie prüfen |
-| `POST` | `/middleware/terminology/ConceptMap/$closure` | Leitet FHIR-Parameters an `TERMINOLOGY_BASE_URL` weiter | Terminologie-Abschluss verarbeiten |
+| `GET` | `/health` | Liefert den technischen Health-Status | Betrieb/Monitoring |
+| `GET` | `/metadata` | Liefert CapabilityStatement im Debug-Modus | FHIR-Metadaten |
+| `POST` | `/cda/debug` | Parst CDA und liefert Profil, Patient, Header und Sections | CDA-Diagnose |
+| `POST` | `/cda/convert` | Konvertiert CDA in ein FHIR-Bundle | CDA -> FHIR |
+| `POST` | `/cda/import` | Erzeugt und validiert ein Transaction-Bundle für den BridgeLink-Import | CDA -> BridgeLink -> HAPI |
+| `POST` | `/cda/etoc/convert` | Erzeugt ein CH-eTOC-Dokumentbundle | CDA -> CH-eTOC |
+| `POST` | `/cda/umzh/convert` | Erzeugt ein UMZH-FHIR-Bundle | CDA -> UMZH |
+| `POST` | `/cda/umzh/send` | Konvertiert CDA und versendet den UMZH-Workflow | UMZH-Sendefluss |
+| `POST` | `/cda/vacd/convert` | Erzeugt ein CH-VACD-Dokumentbundle | CDA -> CH-VACD |
+| `POST` | `/cda/vacd/send` | Konvertiert CDA und versendet an den VACD-Zielserver | CH-VACD-Sendefluss |
+| `POST` | `/emediplan/convert` | Konvertiert Text, PDF oder QR-Bild in ein FHIR-Bundle | eMediplan -> FHIR |
+| `POST` | `/emediplan/import` | Erzeugt und validiert ein Transaction-Bundle | eMediplan -> BridgeLink -> HAPI |
+| `POST` | `/emediplan/import-bundle` | Validiert ein FHIR-Resource-Objekt oder Bundle | Bundle -> BridgeLink -> HAPI |
+| `POST` | `/emediplan/qr/convert` | Liest einen eMediplan-QR-Code und konvertiert ihn | eMediplan-QR -> FHIR |
+| `POST` | `/emediplan/qr/import` | Liest einen eMediplan-QR-Code und erzeugt ein Transaction-Bundle | eMediplan-QR -> BridgeLink -> HAPI |
+| `POST` | `/emediplan/epic-cda` | Konvertiert eMediplan-Daten in Epic-CDA-XML | eMediplan -> Epic CDA |
+| `POST` | `/fhir/medications/epic-cda` | Konvertiert ein FHIR-Bundle in Epic-CDA-XML | FHIR -> Epic CDA |
+| `GET` | `/fhir/medications/epic-cda/from-server` | Liest Medikamente aus FHIR und liefert Epic-CDA-XML | FHIR -> Epic CDA |
+| `POST` | `/hl7v2/convert` | Konvertiert ORU^R01 in ein FHIR-Bundle | HL7v2 -> FHIR |
+| `POST` | `/hl7v2/import` | Konvertiert ORU^R01 und importiert das Bundle | HL7v2 -> BridgeLink -> HAPI |
+| `POST` | `/echosos/qr/import` | Importiert EchoSOS-QR/PKPass und liefert `$everything` | EchoSOS -> FHIR |
+| `POST` | `/fhir/stabilize` | Stabilisiert ein FHIR-Resource-Objekt oder Bundle | FHIR-Importvorbereitung |
+| `POST` | `/fhir/convert` | Stabilisiert, validiert und verarbeitet ein FHIR-Bundle | FHIR-Import |
+| `POST` | `/terminology/{resource_type}/{operation}` | Leitet Terminologieoperationen an TX weiter | Terminologie |
 
 ### eMediplan-Verordner und refdata.ch
 
@@ -184,7 +181,7 @@ Verordner-GLN verwendet.
 
 ### HL7v2-Convert
 
-`POST /middleware/hl7v2/convert` verarbeitet HL7v2-Nachrichten vom Typ `ORU^R01`.
+`POST /hl7v2/convert` verarbeitet HL7v2-Nachrichten vom Typ `ORU^R01`.
 Unterstützt werden:
 
 - direkter Raw-Body mit `Content-Type: text/plain`
@@ -204,7 +201,7 @@ Verarbeitete Segmente:
 LOINC-Codes werden automatisch zentral über TX validiert. Lokale Codes werden
 übernommen, aber nicht gegen TX validiert.
 
-`POST /middleware/hl7v2/import` verwendet dieselben Eingabeformen und gibt das
+`POST /hl7v2/import` verwendet dieselben Eingabeformen und gibt das
 erzeugte Transaction-Bundle an BridgeLink zurück. BridgeLink schreibt es an den
 FHIR-Server.
 
@@ -270,7 +267,7 @@ Beispiele:
 
 - `POST /cda/convert`
 - `POST /cda/vacd/convert`
-- `POST /middleware/emediplan/convert`
+- `POST /emediplan/convert`
 - `POST /cda/umzh/convert`
 
 Erwartung:
@@ -303,8 +300,8 @@ das Bundle anschließend in den FHIR-Server.
 Beispiele:
 
 - `POST /cda/import`
-- `POST /middleware/emediplan/import`
-- `POST /middleware/emediplan/import-bundle`
+- `POST /emediplan/import`
+- `POST /emediplan/import-bundle`
 
 Erwartung:
 
@@ -317,9 +314,9 @@ Diese Endpunkte liefern als Output XML statt JSON.
 
 Beispiele:
 
-- `POST /middleware/fhir/medications/epic-cda`
-- `POST /middleware/emediplan/epic-cda`
-- `GET /middleware/fhir/medications/epic-cda/from-server`
+- `POST /fhir/medications/epic-cda`
+- `POST /emediplan/epic-cda`
+- `GET /fhir/medications/epic-cda/from-server`
 
 Erwartung:
 
