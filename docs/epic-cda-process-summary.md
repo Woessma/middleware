@@ -9,7 +9,7 @@ Dieses Dokument beschreibt den aktuellen End-to-End Prozess fuer:
 
 Referenz-Testpfad:
 
-`app/tests/data/CDA-EPIC.xml` -> `POST https://bridge.omnilink.ch/cda/import` -> `GET https://fhir.omnilink.ch/fhir/medications/epic-cda/from-server?patient_id=<id>&count=100`
+`app/tests/data/CDA-EPIC.xml` -> `POST https://bridge.omnilink.ch/cda` -> `GET https://fhir.omnilink.ch/fhir/medications/epic-cda/from-server?patient_id=<id>&count=100`
 
 Externer CDA-Endpunkt:
 
@@ -20,7 +20,7 @@ https://bridge.omnilink.ch/cda
 Damit lautet der Import-Aufruf vollständig:
 
 ```text
-POST https://bridge.omnilink.ch/cda/import
+POST https://bridge.omnilink.ch/cda
 ```
 
 Die Referenzen nutzen die Kommentar-IDs in den Python-Dateien.

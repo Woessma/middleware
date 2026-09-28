@@ -13,7 +13,7 @@
 ## Status
 
 ✅ **Getestet und freigegeben:** CDA-Import über
-`https://bridge.omnilink.ch/cda/import`
+`https://bridge.omnilink.ch/cda`
 
 Der Endpunkt akzeptiert CDA-XML in beiden Formen:
 
@@ -33,20 +33,18 @@ Für Bruno wird der externe BridgeLink-CDA-Endpunkt verwendet:
 https://bridge.omnilink.ch/cda
 ```
 
-Beispiele:
+Import-Aufruf:
 
 ```text
-POST https://bridge.omnilink.ch/cda/convert?bundle_type=transaction
-POST https://bridge.omnilink.ch/cda/import
+POST https://bridge.omnilink.ch/cda
 ```
 
 Der interne FastAPI-Testpfad `/cda/import` wurde mit `app/tests/data/CDA-AT.xml`
 erfolgreich verarbeitet (`HTTP 200`, Transaction-Bundle mit 43 Einträgen).
 Dieser interne Aufruf konvertiert und validiert nur; er schreibt nicht nach HAPI.
 
-Der externe CDA-Endpunkt
-`https://bridge.omnilink.ch/cda/import` ist der dokumentierte BridgeLink-Aufruf.
-Dadurch ist der Persistenzweg BridgeLink -> HAPI noch nicht aktiv.
+Der externe CDA-Endpunkt `https://bridge.omnilink.ch/cda` ist der dokumentierte
+BridgeLink-Aufruf. BridgeLink leitet das Ergebnis an HAPI FHIR weiter.
 
 ## Beobachtung aus dem Live-System
 
@@ -476,7 +474,7 @@ Beispiel-JSON:
 ### Beispiel für den Middleware-Weg
 
 ```http
-POST https://bridge.omnilink.ch/cda/import
+POST https://bridge.omnilink.ch/cda
 Authorization: Bearer <JWT>
 Content-Type: multipart/form-data
 ```

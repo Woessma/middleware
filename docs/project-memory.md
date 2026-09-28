@@ -141,10 +141,9 @@ Die direkte Middleware-Domain `https://middleware.local.omnilink.ch` liefert
 Dashboard, Testclients und Middleware-Endpunkte. Terminologie und der VACD-
 Referenzserver liefern HTTP 200 über ihre jeweiligen `/metadata`-Pfade.
 
-Der externe BridgeLink-CDA-Aufruf `https://bridge.omnilink.ch/cda/import`
-liefert aktuell HTTP 404. Ein direkter interner `POST /cda/import` an die Middleware konvertiert und
-validiert CDA, schreibt aber nicht nach HAPI. Der Persistenzweg BridgeLink ->
-HAPI ist deshalb noch offen.
+Der externe BridgeLink-CDA-Aufruf `https://bridge.omnilink.ch/cda` importiert
+CDA nach HAPI. Ein direkter interner `POST /cda/import` an die Middleware konvertiert und
+validiert CDA, schreibt aber nicht direkt nach HAPI.
 
 Optional kann spaeter ein interner DNS-A-Record gesetzt werden:
 
@@ -295,7 +294,7 @@ Vermeidung doppelter Ressourcen und idempotente FHIR-Imports.
 - `POST /cda/debug` — detaillierte CDA-Analyse im Debug-Modus
 - Intern: `POST /cda/convert` — konvertiert CDA zu einem FHIR-Transaction-Bundle
 - Intern: `POST /cda/import` — erzeugt und validiert ein Bundle fuer BridgeLink
-- Extern ueber BridgeLink: `POST https://bridge.omnilink.ch/cda/convert` bzw. `POST https://bridge.omnilink.ch/cda/import`
+- Extern ueber BridgeLink: `POST https://bridge.omnilink.ch/cda` (CDA-Import)
 - Externer CDA-Endpunkt: `https://bridge.omnilink.ch/cda`
 - `POST /emediplan/import-bundle` — stabilisiert und validiert ein FHIR-Resource-Objekt oder Bundle fuer BridgeLink
 - `POST /cda/umzh/convert` — konvertiert CDA in UMZH-Workflow-Bundle mit Stages `initial|updated|completed`

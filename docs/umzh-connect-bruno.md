@@ -57,7 +57,7 @@ curl -X POST "https://fhir.omnilink.ch/fhir/Task" \
 
 Neuer Middleware Endpoint:
 
-- `POST https://bridge.omnilink.ch/cda/umzh/convert?workflow_stage=initial|updated|completed`
+- Intern, in Konstruktion: `POST /cda/umzh/convert?workflow_stage=initial|updated|completed`
 - Optional: `&target=default|sandbox-placer`
 
 Dieser erzeugt aus einer CDA-Datei ein UMZH-Convert-Bundle passend zum Referral-Ablauf:
@@ -69,7 +69,7 @@ Dieser erzeugt aus einer CDA-Datei ein UMZH-Convert-Bundle passend zum Referral-
 ### Bruno Beispiel
 
 1. URL:
-  `https://bridge.omnilink.ch/cda/umzh/convert?workflow_stage=initial`
+  `http://localhost:8000/cda/umzh/convert?workflow_stage=initial`
 2. Methode: `POST`
 3. Auth: Bearer-JWT ueber BridgeLink
 4. Body: `multipart/form-data` mit `file=@<deine-cda>.xml`
@@ -93,7 +93,7 @@ Dann werden absolute Referenzen auf Sandbox-URLs ausgerichtet:
 
 Neuer Middleware Endpoint:
 
-- `POST https://bridge.omnilink.ch/cda/umzh/send`
+- Intern, in Konstruktion: `POST /cda/umzh/send`
 
 Query Parameter:
 
@@ -104,7 +104,7 @@ Query Parameter:
 
 Beispiel:
 
-`https://bridge.omnilink.ch/cda/umzh/send?workflow_stage=initial&target=sandbox-placer&destination_base_url=http://localhost:8080/fhir`
+`http://localhost:8000/cda/umzh/send?workflow_stage=initial&target=sandbox-placer&destination_base_url=http://localhost:8080/fhir`
 
 Body:
 
@@ -133,7 +133,7 @@ Die juengsten EPIC-Aenderungen betreffen primär:
 
 Der Middleware-Endpoint fuer das CH VACD Immunization Administration Document ist:
 
-- `POST https://bridge.omnilink.ch/cda/vacd/convert`
+- Intern, in Konstruktion: `POST /cda/vacd/convert`
 
 Der Endpoint liefert immer ein FHIR-R4-Dokumentbundle mit:
 
@@ -149,7 +149,7 @@ von Ressourcentyp und ID (`PUT` bei vorhandener ID, sonst `POST`).
 
 ### Bruno-Aufruf
 
-1. URL: `https://bridge.omnilink.ch/cda/vacd/convert`
+1. URL: `http://localhost:8000/cda/vacd/convert`
 2. Methode: `POST`
 3. Auth: Bearer-JWT ueber BridgeLink
 4. Body: `multipart/form-data` mit Feld `file=@<deine-cda>.xml`
@@ -157,7 +157,7 @@ von Ressourcentyp und ID (`PUT` bei vorhandener ID, sonst `POST`).
 ### cURL-Aufruf
 
 ```bash
-curl -X POST "https://bridge.omnilink.ch/cda/vacd/convert" \
+curl -X POST "http://localhost:8000/cda/vacd/convert" \
   -H "Accept: application/fhir+json" \
   -F "file=@app/tests/data/CDA-EPIC.xml"
 ```

@@ -11,14 +11,14 @@ Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt n
 ## Endpoint
 
 - Intern: `POST /cda/vacd/convert`
-- Über BridgeLink: `POST https://bridge.omnilink.ch/cda/vacd/convert`
+- Intern, in Konstruktion: `POST /cda/vacd/convert`
 - Eingabe: CDA als Multipart-Datei `file`, Formularfeld `raw_xml` oder Raw-Body
 - Bundle-Typ: immer `document`
 
 Beispiel mit cURL:
 
 ```bash
-curl -X POST "https://bridge.omnilink.ch/cda/vacd/convert" \
+curl -X POST "http://localhost:8000/cda/vacd/convert" \
   -H "Accept: application/fhir+json" \
   -F "file=@app/tests/data/CDA-EPIC.xml"
 ```
