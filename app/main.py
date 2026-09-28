@@ -355,6 +355,26 @@ def _app_file(filename):
     return os.path.join(os.path.dirname(__file__), filename)
 
 
+ADMIN_DOCUMENTS = {
+    "endpoints": {
+        "title": "API-Endpunkte",
+        "filename": "ENDPOINTS.md",
+    },
+    "architecture": {
+        "title": "Technische Architektur",
+        "filename": "architecture.md",
+    },
+}
+
+
+def _documentation_file(filename):
+    app_docs_path = os.path.join(os.path.dirname(__file__), "docs", filename)
+    if os.path.isfile(app_docs_path):
+        return app_docs_path
+
+    return os.path.join(os.path.dirname(__file__), "..", "docs", filename)
+
+
 @app.get("/test-client.html", response_class=FileResponse)
 def test_client():
     return FileResponse(_app_file("test-client.html"), media_type="text/html")
@@ -404,6 +424,40 @@ def admin_overview():
             "vacd_send_configured": bool(VACD_SEND_BASE_URL),
             "refdata_configured": bool(os.getenv("REFDATA_API_KEY")),
         },
+    }
+
+
+@app.get("/admin/api/docs")
+def admin_documents():
+    return [
+        {
+            "id": document_id,
+            "title": document["title"],
+            "filename": document["filename"],
+        }
+        for document_id, document in ADMIN_DOCUMENTS.items()
+    ]
+
+
+@app.get("/admin/api/docs/{document_id}")
+def admin_document(document_id: str):
+    document = ADMIN_DOCUMENTS.get(document_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="Dokument nicht gefunden")
+
+    document_path = _documentation_file(document["filename"])
+    try:
+        with open(document_path, encoding="utf-8") as document_file:
+            content = document_file.read()
+    except OSError as exc:
+        logger.exception("Admin documentation unavailable: %s", document["filename"])
+        raise HTTPException(status_code=404, detail="Dokument nicht verfügbar") from exc
+
+    return {
+        "id": document_id,
+        "title": document["title"],
+        "filename": document["filename"],
+        "content": content,
     }
 
 

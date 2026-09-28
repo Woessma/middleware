@@ -24,6 +24,9 @@
     .value { min-height: 30px; font-size: 25px; }
     .section { margin-top: 28px; }
     .section h2 { margin: 0 0 12px; font-size: 21px; font-weight: 400; }
+    .documentation-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    select { border: 1px solid var(--line); background: white; color: var(--ink); padding: 10px 12px; font: 14px Georgia, serif; }
+    #documentationContent { margin: 0; max-height: 620px; overflow: auto; padding: 20px; background: #16202d; color: #eaf1f8; font: 13px/1.55 ui-monospace, monospace; white-space: pre-wrap; }
     .service { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid var(--line); padding: 17px 0; }
     .service strong { display: block; font-size: 18px; font-weight: 400; }
     .service small { color: var(--muted); font: 12px ui-monospace, monospace; overflow-wrap: anywhere; }
@@ -45,9 +48,44 @@
     </section>
     <section class="section"><h2>Abhängigkeiten</h2><div id="services" class="card"></div></section>
     <section class="section"><h2>Konfiguration</h2><div id="configuration" class="card"></div></section>
+    <section class="section">
+      <h2>Dokumentation</h2>
+      <div class="card">
+        <div class="documentation-toolbar">
+          <label for="documentationSelect">Dokument</label>
+          <select id="documentationSelect"></select>
+        </div>
+        <pre id="documentationContent">Dokumentation wird geladen ...</pre>
+      </div>
+    </section>
   </main>
   <script>
     const label = value => value ? 'Ja' : 'Nein';
+    async function loadDocumentationList() {
+      const select = document.getElementById('documentationSelect');
+      try {
+        const response = await fetch('/admin/api/docs', { cache: 'no-store' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const documents = await response.json();
+        select.innerHTML = documents.map(document => `<option value="${document.id}">${document.title} · ${document.filename}</option>`).join('');
+        select.addEventListener('change', () => loadDocumentation(select.value));
+        if (documents.length) await loadDocumentation(documents[0].id);
+      } catch (error) {
+        document.getElementById('documentationContent').textContent = 'Dokumentation konnte nicht geladen werden: ' + error.message;
+      }
+    }
+    async function loadDocumentation(documentId) {
+      const content = document.getElementById('documentationContent');
+      content.textContent = 'Dokumentation wird geladen ...';
+      try {
+        const response = await fetch('/admin/api/docs/' + encodeURIComponent(documentId), { cache: 'no-store' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const document = await response.json();
+        content.textContent = document.content;
+      } catch (error) {
+        content.textContent = 'Dokumentation konnte nicht geladen werden: ' + error.message;
+      }
+    }
     async function loadOverview() {
       const updated = document.getElementById('updated');
       updated.textContent = 'Prüfe Verbindungen ...';
@@ -66,6 +104,7 @@
       } catch (error) { updated.textContent = 'Status konnte nicht geladen werden: ' + error.message; }
     }
     loadOverview();
+    loadDocumentationList();
   </script>
 </body>
 </html>
