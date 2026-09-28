@@ -46,6 +46,7 @@ EPIC CDA
 
 - CDA-API intern: `/cda/debug`, `/cda/convert`, `/cda/import`, `/cda/umzh/convert`, `/cda/umzh/send`
 - Externer CDA-Import ueber BridgeLink: `POST https://bridge.omnilink.ch/cda`
+- Interner Browser-Relay: `POST /_proxy/bridge/cda` leitet CDA-Requests mit Bearer-Token an den festen BridgeLink-Endpunkt weiter; dies ist kein zusaetzlicher externer CDA-Endpunkt.
 - Weitere CDA-Funktionen intern: `/cda/debug`, `/cda/convert`, `/cda/etoc/convert`, `/cda/umzh/convert`, `/cda/umzh/send`, `/cda/vacd/convert`, `/cda/vacd/send` (in Konstruktion)
 - CH-VACD-API: `/cda/vacd/convert` fuer CH-VACD Immunization Administration Documents
 - eMediplan-API: `/emediplan/convert`, `/emediplan/import`, `/emediplan/import-bundle`, `/emediplan/qr/convert`, `/emediplan/qr/import`, `/emediplan/epic-cda`

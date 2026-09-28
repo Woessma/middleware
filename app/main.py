@@ -37,6 +37,7 @@ from fastapi import (
 )
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.concurrency import run_in_threadpool
 
 
 # CDA Constants
@@ -160,6 +161,7 @@ from config import (
 
 UMZH_SEND_BASE_URL = os.getenv("UMZH_SEND_BASE_URL", "")
 UMZH_SEND_TIMEOUT = int(os.getenv("UMZH_SEND_TIMEOUT", "60"))
+BRIDGELINK_CDA_URL = "https://bridge.omnilink.ch/cda"
 
 def _validate_bundle(bundle):
     enrichment_report = enrich_bundle_terminology(bundle)
@@ -459,6 +461,50 @@ def admin_document(document_id: str):
         "filename": document["filename"],
         "content": content,
     }
+
+
+@app.post("/_proxy/bridge/cda")
+async def bridge_link_cda_proxy(request: Request):
+    authorization = request.headers.get("authorization", "")
+    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
+        raise HTTPException(
+            status_code=401,
+            detail="A Keycloak Bearer token is required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    headers = {"Authorization": authorization}
+    for header_name in ("accept", "content-type"):
+        header_value = request.headers.get(header_name)
+        if header_value:
+            headers[header_name.title()] = header_value
+
+    body = await request.body()
+    try:
+        upstream = await run_in_threadpool(
+            requests.post,
+            BRIDGELINK_CDA_URL,
+            data=body,
+            headers=headers,
+            timeout=300,
+        )
+    except requests.RequestException as exc:
+        logger.warning("BridgeLink CDA request failed: %s", exc)
+        raise HTTPException(
+            status_code=502,
+            detail="BridgeLink CDA endpoint unavailable",
+        ) from exc
+
+    response_headers = {
+        header_name: upstream.headers[header_name]
+        for header_name in ("Content-Type", "WWW-Authenticate", "Retry-After", "Location")
+        if header_name in upstream.headers
+    }
+    return Response(
+        content=upstream.content,
+        status_code=upstream.status_code,
+        headers=response_headers,
+    )
 
 
 @app.post("/fhir/stabilize")
