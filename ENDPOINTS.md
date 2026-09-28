@@ -2,7 +2,7 @@
 
 ## Basis-URLs
 
-- BridgeLink FHIR Route (Proxy-Ziel noch offen): https://fhir.omnilink.ch/fhir/
+- BridgeLink FHIR Route: https://fhir.local.omnilink.ch/fhir/
 - Externer CDA-Endpunkt: https://bridge.omnilink.ch/cda
 - BridgeLink intern auf `001-l-hlt01`: http://10.20.30.212:9080/
 - Direkte Middleware-Adresse: https://middleware.local.omnilink.ch/
@@ -80,7 +80,7 @@ Das bedeutet: Die Root-URLs selbst sind nicht öffentlich erreichbar und müssen
 
 ---
 
-## 1) FHIR ueber BridgeLink: https://fhir.omnilink.ch/fhir/
+## 1) FHIR ueber BridgeLink: https://fhir.local.omnilink.ch/fhir/
 
 Dieser Basis-Endpunkt ist der FHIR REST-API-Basispfad. Erwartet wird:
 
@@ -88,8 +88,10 @@ Dieser Basis-Endpunkt ist der FHIR REST-API-Basispfad. Erwartet wird:
 - FHIR-typische REST-Aufrufe wie z. B.:
   - `GET /fhir/Patient/...`
   - `GET /fhir/Observation/...`
-  - `POST /fhir`
+  - `POST /fhir/ResourceType`
   - `PUT /fhir/ResourceType/id`
+  - `PATCH /fhir/ResourceType/id`
+  - `DELETE /fhir/ResourceType/id`
   - `GET /fhir/metadata`
 
 ### Erwartetes Verhalten
@@ -103,7 +105,7 @@ Dieser Basis-Endpunkt ist der FHIR REST-API-Basispfad. Erwartet wird:
 ### Beispiel
 
 ```http
-GET https://fhir.omnilink.ch/fhir/Patient
+GET https://fhir.local.omnilink.ch/fhir/Patient
 Authorization: Bearer <JWT>
 Accept: application/fhir+json
 ```
@@ -224,7 +226,7 @@ Beispiel Raw-Body:
 curl -X POST \
   -H "Content-Type: text/plain" \
   --data-binary @message.hl7 \
-  https://fhir.omnilink.ch/middleware/hl7v2/convert
+  https://fhir.local.omnilink.ch/middleware/hl7v2/convert
 ```
 
 Beispiel Datei-Upload:
@@ -232,7 +234,7 @@ Beispiel Datei-Upload:
 ```bash
 curl -X POST \
   -F "file=@message.hl7" \
-  https://fhir.omnilink.ch/middleware/hl7v2/convert
+  https://fhir.local.omnilink.ch/middleware/hl7v2/convert
 ```
 
 ### Terminologie-Service
@@ -440,7 +442,7 @@ Diese Eingabe wird intern zu einem Transaction-Entry mit `PUT Patient/p1`.
 curl -u "USERNAME:PASSWORD" \
   -H "Content-Type: application/fhir+json" \
   -H "Accept: application/fhir+json" \
-  -X POST "https://fhir.omnilink.ch/fhir" \
+  -X POST "https://fhir.local.omnilink.ch/fhir" \
   --data @bundle.json
 ```
 
@@ -497,7 +499,7 @@ Erwartung:
 
 ## Kurzfassung
 
-- `https://fhir.omnilink.ch/fhir/` = FHIR-Route ueber BridgeLink, Read und FHIR-Write
+- `https://fhir.local.omnilink.ch/fhir/` = FHIR-Route ueber BridgeLink mit GET, POST, PUT, PATCH und DELETE
 - `https://bridge.omnilink.ch/cda` = einziger externer CDA-Endpunkt ueber BridgeLink
 
 Wenn du möchtest, kann ich daraus auch noch eine sauberere Version mit Swagger-ähnlicher Tabellenstruktur oder eine Version für externe Stakeholder im Projekt-Style machen.
