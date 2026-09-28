@@ -9,7 +9,7 @@ Dieses Dokument beschreibt den aktuellen End-to-End Prozess fuer:
 
 Referenz-Testpfad:
 
-`app/tests/data/CDA-EPIC.xml` -> `POST /middleware/cda/import` via BridgeLink -> `GET /middleware/fhir/medications/epic-cda/from-server?patient_id=<id>&count=100` via BridgeLink
+`app/tests/data/CDA-EPIC.xml` -> `POST https://bridge.omnilink.ch/cda/import` -> `GET https://fhir.omnilink.ch/fhir/medications/epic-cda/from-server?patient_id=<id>&count=100`
 
 Externer CDA-Endpunkt:
 

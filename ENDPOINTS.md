@@ -10,24 +10,24 @@
 - Terminologie: https://tx.fhir.ch/r4
 - VACD Send: https://vaccination-demo.raly.ch/api/fhir
 
-### Bruno / aktueller Live-Aufruf
+### Bruno / aktueller BridgeLink-Aufruf
 
-Für direkte Middleware-Requests wird aktuell die HTTPS-Adresse verwendet:
+Für Bruno wird der externe BridgeLink-CDA-Endpunkt verwendet:
 
 ```text
-https://middleware.local.omnilink.ch/
+https://bridge.omnilink.ch/cda
 ```
 
 Beispiele:
 
 ```text
-POST /cda/convert?bundle_type=transaction (intern)
-POST /cda/import (intern)
+POST https://bridge.omnilink.ch/cda/convert?bundle_type=transaction
+POST https://bridge.omnilink.ch/cda/import
 ```
 
-Der direkte CDA-Import wurde mit `app/tests/data/CDA-AT.xml` erfolgreich
-verarbeitet (`HTTP 200`, Transaction-Bundle mit 43 Einträgen). Dieser direkte
-Aufruf konvertiert und validiert nur; er schreibt nicht nach HAPI.
+Der interne FastAPI-Testpfad `/cda/import` wurde mit `app/tests/data/CDA-AT.xml`
+erfolgreich verarbeitet (`HTTP 200`, Transaction-Bundle mit 43 Einträgen).
+Dieser interne Aufruf konvertiert und validiert nur; er schreibt nicht nach HAPI.
 
 Der externe CDA-Endpunkt
 `https://bridge.omnilink.ch/cda/import` ist der dokumentierte BridgeLink-Aufruf.
@@ -115,7 +115,7 @@ Dieser Endpunkt ist der externe CDA-Basispfad der Middleware, nicht der FHIR-Ser
 
 Der derzeitige Arbeitsweg ist:
 
-- CDA wird per `POST /middleware/cda/import` an die Middleware gesendet
+- CDA wird per `POST /cda/import` an die Middleware über BridgeLink gesendet
 - Die Middleware wandelt das CDA in ein FHIR Bundle mit einer CH IPS Composition um. Die
   klinischen Ressourcen werden in den zugehörigen Composition-Sections referenziert.
 - Import-Bundles ergänzen für FHIR-DomainResources eine generierte `Narrative`
@@ -124,9 +124,8 @@ Der derzeitige Arbeitsweg ist:
 - Das Bundle wird an BridgeLink zur Weiterleitung an den FHIR-Server zurückgegeben
 - BridgeLink schreibt das Bundle an den FHIR-Server und gibt dessen Ergebnis an den Client zurück
 
-Die Python-Middleware selbst verwendet intern die Route `/cda/...`. Der Prefix
-`/middleware` wird beim Aufruf über BridgeLink verwendet und ist nicht Teil der
-internen FastAPI-Route.
+Die Python-Middleware selbst verwendet intern die Route `/cda/...`. Der externe
+BridgeLink-CDA-Basispfad ist `https://bridge.omnilink.ch/cda`.
 
 Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server importieren wollen.
 
@@ -136,13 +135,13 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 |---|---|---|---|
 | `GET` | `/middleware/` | Gibt `404` zurück | Root-Endpunkt der App |
 | `GET` | `/middleware/metadata` | Nur im Debug-Modus aktiv; sonst `404` | Debug-Info |
-| `POST` | `/middleware/cda/debug` | XML-Datei akzeptiert, parst CDA und gibt Profil/Patient/Header/Sections zurück | CDA-Diagnose/Debug |
+| `POST` | `/cda/debug` | XML-Datei akzeptiert, parst CDA und gibt Profil/Patient/Header/Sections zurück | CDA-Diagnose/Debug |
 | `GET` | `/middleware/test/patient` | Erstellt einen Test-Patienten | Test-/Smoke-Setup |
 | `GET` | `/middleware/test/organization` | Erstellt eine Test-Organisation | Test-/Smoke-Setup |
-| `POST` | `/middleware/cda/convert` | Erwartet CDA-XML; gibt FHIR Bundle JSON zurück | CDA -> FHIR Bundle |
-| `POST` | `/middleware/cda/vacd/convert` | Erwartet CDA-XML; gibt VACD-optimiertes Bundle zurück | CH-VACD-Workflow |
-| `POST` | `/middleware/cda/vacd/send` | Erwartet CDA-XML; konvertiert zu CH-VACD-Bundle, legt den Patienten beim Zielserver an und sendet das Bundle mit dessen zugewiesener ID | CH-VACD -> openEHR-FHIR-Referenzserver |
-| `POST` | `/middleware/cda/import` | Erwartet CDA-XML; erzeugt und validiert ein Transaction-Bundle | CDA -> BridgeLink -> FHIR |
+| `POST` | `/cda/convert` | Erwartet CDA-XML; gibt FHIR Bundle JSON zurück | CDA -> FHIR Bundle |
+| `POST` | `/cda/vacd/convert` | Erwartet CDA-XML; gibt VACD-optimiertes Bundle zurück | CH-VACD-Workflow |
+| `POST` | `/cda/vacd/send` | Erwartet CDA-XML; konvertiert zu CH-VACD-Bundle, legt den Patienten beim Zielserver an und sendet das Bundle mit dessen zugewiesener ID | CH-VACD -> openEHR-FHIR-Referenzserver |
+| `POST` | `/cda/import` | Erwartet CDA-XML; erzeugt und validiert ein Transaction-Bundle | CDA -> BridgeLink -> FHIR |
 | `POST` | `/middleware/emediplan/convert` | Erwartet eMediplan-Text oder PDF/Bild mit QR-Code; gibt FHIR Bundle JSON zurück | eMediplan -> FHIR |
 | `POST` | `/middleware/emediplan/import` | Erwartet eMediplan-Text oder PDF/Bild mit QR-Code; erzeugt und validiert ein Transaction-Bundle | eMediplan -> BridgeLink -> FHIR |
 | `POST` | `/middleware/emediplan/import-bundle` | Erwartet JSON-Bundle; validiert und gibt es an BridgeLink zurück | Bundle -> BridgeLink -> FHIR |
@@ -151,8 +150,8 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/middleware/fhir/medications/epic-cda` | Erwartet FHIR Bundle JSON; liefert CDA-XML zurück | FHIR Bundle -> Epic CDA |
 | `POST` | `/middleware/emediplan/epic-cda` | Erwartet eMediplan-Daten; konvertiert erst zu Bundle und dann zu CDA | eMediplan -> Epic CDA |
 | `GET` | `/middleware/fhir/medications/epic-cda/from-server` | Holt Medikamente aus FHIR-Server und liefert CDA-XML zurück | FHIR -> Epic CDA |
-| `POST` | `/middleware/cda/umzh/convert` | Erwartet CDA-XML; gibt UMZH-FHIR-Bundle zurück | UMZH-CDA -> Bundle |
-| `POST` | `/middleware/cda/umzh/send` | Erwartet CDA-XML; konvertiert, sendet dann an Zielsystem | UMZH-Sendefluss |
+| `POST` | `/cda/umzh/convert` | Erwartet CDA-XML; gibt UMZH-FHIR-Bundle zurück | UMZH-CDA -> Bundle |
+| `POST` | `/cda/umzh/send` | Erwartet CDA-XML; konvertiert, sendet dann an Zielsystem | UMZH-Sendefluss |
 | `POST` | `/middleware/hl7v2/convert` | Erwartet HL7v2 `ORU^R01`; gibt ein FHIR-Bundle mit Patient und Observations zurück | HL7v2 -> FHIR |
 | `POST` | `/middleware/hl7v2/import` | Erwartet HL7v2 `ORU^R01`; konvertiert und importiert das FHIR-Bundle in den FHIR-Server | HL7v2-Import |
 | `POST` | `/middleware/echosos/qr/import` | Erwartet EchoSOS-QR-Text, QR-Bild oder PKPass; erstellt/aktualisiert den Patienten und liefert danach `$everything` zurück | EchoSOS-Notfallpass-Import |
@@ -269,10 +268,10 @@ Diese Endpunkte wandeln Input in ein FHIR Bundle oder in XML um, aber sie import
 
 Beispiele:
 
-- `POST /middleware/cda/convert`
-- `POST /middleware/cda/vacd/convert`
+- `POST /cda/convert`
+- `POST /cda/vacd/convert`
 - `POST /middleware/emediplan/convert`
-- `POST /middleware/cda/umzh/convert`
+- `POST /cda/umzh/convert`
 
 Erwartung:
 
@@ -280,7 +279,7 @@ Erwartung:
 - `400 Bad Request` bei fehlendem Input oder ungültigem Format
 - `500 Internal Server Error` für interne Fehler
 
-Wichtig: `POST /middleware/cda/convert` liefert ein Bundle zurück. BridgeLink kann dieses Bundle als separaten Schritt an den FHIR-Server senden:
+Wichtig: `POST /cda/convert` liefert ein Bundle zurück. BridgeLink kann dieses Bundle als separaten Schritt an den FHIR-Server senden:
 
 ```http
 POST <FHIR-Server-Route ueber BridgeLink>/fhir
@@ -291,7 +290,7 @@ Accept: application/fhir+json
 
 Das bedeutet: Der Ablauf kann auch so aussehen:
 
-1. `POST /middleware/cda/convert` mit CDA-Daten
+1. `POST /cda/convert` mit CDA-Daten
 2. Ergebnis: FHIR Bundle JSON
 3. BridgeLink sendet das Bundle an die FHIR-Server-Route
 
@@ -303,7 +302,7 @@ das Bundle anschließend in den FHIR-Server.
 
 Beispiele:
 
-- `POST /middleware/cda/import`
+- `POST /cda/import`
 - `POST /middleware/emediplan/import`
 - `POST /middleware/emediplan/import-bundle`
 
@@ -334,8 +333,8 @@ Diese Endpunkte verarbeiten einen kompletten Workflow mit Konvertierung + Versan
 
 Beispiele:
 
-- `POST /middleware/cda/umzh/send`
-- `POST /middleware/cda/vacd/send`
+- `POST /cda/umzh/send`
+- `POST /cda/vacd/send`
 
 Erwartung:
 
@@ -343,7 +342,7 @@ Erwartung:
   - `convert`: Workflow-Informationen
   - `send`: Versandreport / Status des Zielsystems
 
-`POST /middleware/cda/vacd/send` richtet sich an einen openEHR-basierten CH-VACD-
+`POST /cda/vacd/send` richtet sich an einen openEHR-basierten CH-VACD-
 Referenzserver (z. B. `https://vaccination-demo.raly.ch/api/fhir`, Default via
 `VACD_SEND_BASE_URL`, ueberschreibbar per Query-Parameter `destination_base_url`).
 Ablauf:

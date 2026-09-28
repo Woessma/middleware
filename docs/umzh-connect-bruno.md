@@ -57,7 +57,7 @@ curl -X POST "https://fhir.omnilink.ch/fhir/Task" \
 
 Neuer Middleware Endpoint:
 
-- `POST /middleware/cda/umzh/convert?workflow_stage=initial|updated|completed`
+- `POST https://bridge.omnilink.ch/cda/umzh/convert?workflow_stage=initial|updated|completed`
 - Optional: `&target=default|sandbox-placer`
 
 Dieser erzeugt aus einer CDA-Datei ein UMZH-Convert-Bundle passend zum Referral-Ablauf:
@@ -93,7 +93,7 @@ Dann werden absolute Referenzen auf Sandbox-URLs ausgerichtet:
 
 Neuer Middleware Endpoint:
 
-- `POST /middleware/cda/umzh/send`
+- `POST https://bridge.omnilink.ch/cda/umzh/send`
 
 Query Parameter:
 
@@ -133,7 +133,7 @@ Die juengsten EPIC-Aenderungen betreffen primär:
 
 Der Middleware-Endpoint fuer das CH VACD Immunization Administration Document ist:
 
-- `POST /middleware/cda/vacd/convert`
+- `POST https://bridge.omnilink.ch/cda/vacd/convert`
 
 Der Endpoint liefert immer ein FHIR-R4-Dokumentbundle mit:
 

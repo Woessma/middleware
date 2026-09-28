@@ -141,8 +141,8 @@ Die direkte Middleware-Domain `https://middleware.local.omnilink.ch` liefert
 Dashboard, Testclients und Middleware-Endpunkte. Terminologie und der VACD-
 Referenzserver liefern HTTP 200 über ihre jeweiligen `/metadata`-Pfade.
 
-Der BridgeLink-Pfad `/middleware/cda/import` liefert auf Port 9080 aktuell
-HTTP 404. Ein direkter `POST /cda/import` an die Middleware konvertiert und
+Der externe BridgeLink-CDA-Aufruf `https://bridge.omnilink.ch/cda/import`
+liefert aktuell HTTP 404. Ein direkter interner `POST /cda/import` an die Middleware konvertiert und
 validiert CDA, schreibt aber nicht nach HAPI. Der Persistenzweg BridgeLink ->
 HAPI ist deshalb noch offen.
 

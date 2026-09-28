@@ -11,7 +11,7 @@ Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt n
 ## Endpoint
 
 - Intern: `POST /cda/vacd/convert`
-- Über den Proxy: `POST /middleware/cda/vacd/convert`
+- Über BridgeLink: `POST https://bridge.omnilink.ch/cda/vacd/convert`
 - Eingabe: CDA als Multipart-Datei `file`, Formularfeld `raw_xml` oder Raw-Body
 - Bundle-Typ: immer `document`
 
