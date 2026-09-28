@@ -21,8 +21,8 @@ https://middleware.local.omnilink.ch/
 Beispiele:
 
 ```text
-POST https://middleware.local.omnilink.ch/cda/convert?bundle_type=transaction
-POST https://middleware.local.omnilink.ch/cda/import
+POST /cda/convert?bundle_type=transaction (intern)
+POST /cda/import (intern)
 ```
 
 Der direkte CDA-Import wurde mit `app/tests/data/CDA-AT.xml` erfolgreich
