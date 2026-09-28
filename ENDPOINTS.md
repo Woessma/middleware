@@ -10,6 +10,21 @@
 - Terminologie: https://tx.fhir.ch/r4
 - VACD Send: https://vaccination-demo.raly.ch/api/fhir
 
+## Status
+
+✅ **Getestet und freigegeben:** CDA-Import über
+`https://bridge.omnilink.ch/cda/import`
+
+Der Endpunkt akzeptiert CDA-XML in beiden Formen:
+
+- Raw-Body mit `Content-Type: application/xml` oder `application/xml+cda`
+- `multipart/form-data` mit dem Feld `file`
+
+BridgeLink leitet das erzeugte FHIR-Transaction-Bundle an HAPI FHIR weiter.
+
+🚧 **Weitere Use Cases:** in Konstruktion und noch nicht als produktiver
+BridgeLink-Workflow freigegeben.
+
 ### Bruno / aktueller BridgeLink-Aufruf
 
 Für Bruno wird der externe BridgeLink-CDA-Endpunkt verwendet:
