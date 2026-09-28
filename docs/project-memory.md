@@ -295,8 +295,8 @@ Vermeidung doppelter Ressourcen und idempotente FHIR-Imports.
 - `POST /cda/debug` — detaillierte CDA-Analyse im Debug-Modus
 - Intern: `POST /cda/convert` — konvertiert CDA zu einem FHIR-Transaction-Bundle
 - Intern: `POST /cda/import` — erzeugt und validiert ein Bundle fuer BridgeLink
-- Ueber BridgeLink: `POST /middleware/cda/convert` bzw. `POST /middleware/cda/import`
-- Aktuelle Bruno-Basisadresse auf `001-l-hlt01`: `http://10.20.30.212:9080`
+- Extern ueber BridgeLink: `POST https://bridge.omnilink.ch/cda/convert` bzw. `POST https://bridge.omnilink.ch/cda/import`
+- Externer CDA-Endpunkt: `https://bridge.omnilink.ch/cda`
 - `POST /emediplan/import-bundle` — stabilisiert und validiert ein FHIR-Resource-Objekt oder Bundle fuer BridgeLink
 - `POST /cda/umzh/convert` — konvertiert CDA in UMZH-Workflow-Bundle mit Stages `initial|updated|completed`
 - `POST /cda/umzh/send` — kombiniert UMZH-Convert mit Versand an ein Ziel-FHIR-System und liefert einen Versandreport

@@ -11,16 +11,16 @@ Referenz-Testpfad:
 
 `app/tests/data/CDA-EPIC.xml` -> `POST /middleware/cda/import` via BridgeLink -> `GET /middleware/fhir/medications/epic-cda/from-server?patient_id=<id>&count=100` via BridgeLink
 
-Aktuelle Bruno-Basisadresse:
+Externer CDA-Endpunkt:
 
 ```text
-http://10.20.30.212:9080
+https://bridge.omnilink.ch/cda
 ```
 
 Damit lautet der Import-Aufruf vollständig:
 
 ```text
-POST http://10.20.30.212:9080/middleware/cda/import
+POST https://bridge.omnilink.ch/cda/import
 ```
 
 Die Referenzen nutzen die Kommentar-IDs in den Python-Dateien.

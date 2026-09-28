@@ -3,7 +3,7 @@
 ## Basis-URLs
 
 - BridgeLink FHIR Route (Proxy-Ziel noch offen): https://fhir.omnilink.ch/fhir/
-- BridgeLink Middleware Route (Proxy-Ziel noch offen): https://fhir.omnilink.ch/middleware/
+- Externer CDA-Endpunkt: https://bridge.omnilink.ch/cda
 - BridgeLink intern auf `001-l-hlt01`: http://10.20.30.212:9080/
 - Direkte Middleware-Adresse: https://middleware.local.omnilink.ch/
 - HAPI intern aus der Middleware: http://hapi-fhir:8080/fhir
@@ -29,8 +29,8 @@ Der direkte CDA-Import wurde mit `app/tests/data/CDA-AT.xml` erfolgreich
 verarbeitet (`HTTP 200`, Transaction-Bundle mit 43 Einträgen). Dieser direkte
 Aufruf konvertiert und validiert nur; er schreibt nicht nach HAPI.
 
-Der vorgesehene BridgeLink-Pfad
-`http://10.20.30.212:9080/middleware/cda/import` liefert aktuell `HTTP 404`.
+Der externe CDA-Endpunkt
+`https://bridge.omnilink.ch/cda/import` ist der dokumentierte BridgeLink-Aufruf.
 Dadurch ist der Persistenzweg BridgeLink -> HAPI noch nicht aktiv.
 
 ## Beobachtung aus dem Live-System
@@ -102,9 +102,9 @@ Erwartung:
 
 ---
 
-## 2) Middleware ueber BridgeLink: https://fhir.omnilink.ch/middleware/
+## 2) CDA ueber BridgeLink: https://bridge.omnilink.ch/cda
 
-Dieser Endpunkt ist der API-Basispfad der Middleware, nicht der FHIR-Server selbst. Die Middleware verarbeitet CDA-/FHIR-Umwandlungen und Imports.
+Dieser Endpunkt ist der externe CDA-Basispfad der Middleware, nicht der FHIR-Server selbst. Die Middleware verarbeitet CDA-/FHIR-Umwandlungen und Imports.
 
 ### Erwartetes Verhalten
 
@@ -465,7 +465,7 @@ Beispiel-JSON:
 ### Beispiel für den Middleware-Weg
 
 ```http
-POST http://10.20.30.212:9080/middleware/cda/import
+POST https://bridge.omnilink.ch/cda/import
 Authorization: Bearer <JWT>
 Content-Type: multipart/form-data
 ```
@@ -489,6 +489,6 @@ Erwartung:
 ## Kurzfassung
 
 - `https://fhir.omnilink.ch/fhir/` = FHIR-Route ueber BridgeLink, Read und FHIR-Write
-- `https://fhir.omnilink.ch/middleware/` = Middleware-Route ueber BridgeLink fuer Convert und Bundle-Erzeugung
+- `https://bridge.omnilink.ch/cda` = einziger externer CDA-Endpunkt ueber BridgeLink
 
 Wenn du möchtest, kann ich daraus auch noch eine sauberere Version mit Swagger-ähnlicher Tabellenstruktur oder eine Version für externe Stakeholder im Projekt-Style machen.
