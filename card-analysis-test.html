@@ -24,14 +24,14 @@
     <section class="panel">
       <h2>Input auswählen</h2>
       <p class="muted">Die Kamera liefert einen QR-Wert. Dateien werden als Bild oder PKPass an die Middleware gesendet.</p>
-      <div class="field"><label for="endpoint">Card Analysis Endpoint</label><input id="endpoint" value="https://middleware.local.omnilink.ch/card/analyze" spellcheck="false"></div>
-      <div class="field"><label for="keycloakClientId">Keycloak Client-ID</label><input id="keycloakClientId" placeholder="Public OIDC Client-ID"><div class="actions"><button id="keycloakLoginBtn" type="button">Mit Keycloak anmelden</button><button id="keycloakLogoutBtn" class="quiet" type="button">Token löschen</button><span id="keycloakStatus" class="muted">Kein Keycloak-Token aktiv.</span></div></div>
+      <input id="keycloakClientId" type="hidden" value="api-mwo01">
+      <div class="field"><div class="actions"><button id="keycloakLoginBtn" type="button">Mit Keycloak anmelden</button></div></div>
       <div class="field"><label>Aufnahme auswählen</label><div class="actions mode-actions"><button class="secondary" data-mode="qr" type="button">QR / EchoSOS</button><button class="secondary" data-mode="insurance" type="button">Versicherungskarte</button><button class="secondary" data-mode="swissid" type="button">SwissID</button></div><button id="camera" hidden type="button"></button><input id="cardFile" type="file" hidden><div class="actions"><button id="chooseFile" class="quiet" type="button">Datei auswählen</button><button id="analyzeFile" type="button">Datei analysieren</button></div><p id="modeHint" class="hint">Modus auswählen. Die Kamera wird direkt geöffnet.</p></div>
       <div class="divider"></div>
       <div class="field"><label for="rawInput">Rohdaten / MRZ / Key-Value-Text</label><textarea id="rawInput" spellcheck="false" placeholder="Zum Beispiel:\nfamily=Muster\ngiven=Anna\nbirth_date=1990-05-21\nidentifier=A123456"></textarea></div>
       <div class="actions"><button id="analyzeText" type="button">Rohdaten analysieren</button><button id="clear" class="quiet" type="button">Leeren</button></div>
       <div class="field"><label>Testdaten laden</label><div class="sample-row"><button class="quiet" data-sample="generic" type="button">Versicherungskarte</button><button class="quiet" data-sample="mrz" type="button">MRZ / ID-Karte</button><button class="quiet" data-sample="url" type="button">EchoSOS URL</button></div></div>
-      <p class="hint">Für die Kamera muss die Seite über HTTPS oder lokal über <code>localhost</code> geöffnet werden. Der Endpoint kann oben auf die laufende Middleware zeigen.</p>
+      <p class="hint">Für die Kamera muss die Seite über HTTPS oder lokal über <code>localhost</code> geöffnet werden.</p>
     </section>
     <section class="panel">
       <h2>Analyseergebnis</h2>
@@ -49,7 +49,7 @@
   <div class="camera-head"><h2>QR oder Karte mit Kamera erfassen</h2><button id="closeCamera" class="quiet" type="button">Schließen</button></div>
   <div class="camera-body"><div class="camera-stage"><video id="cameraVideo" class="camera-video" autoplay playsinline muted></video><div class="card-frame" aria-hidden="true"></div></div><div class="quality"><span id="qualityLabel">Bildqualität: wird geprüft ...</span><div class="quality-bar" aria-hidden="true"><span id="qualityValue"></span></div></div><p id="cameraHelp" class="camera-help">Karte vollständig in den Rahmen legen, möglichst gerade halten und Reflexionen vermeiden.</p><div class="actions"><button id="captureCard" type="button">Karte fotografieren</button><button id="stopCamera" class="secondary" type="button">Abbrechen</button></div></div>
 </dialog>
-<script src="keycloak-auth.js"></script>
+<script src="keycloak-auth.js?v=2"></script>
 <script>
 const $=id=>document.getElementById(id);
 document.getElementById('cameraVideo').addEventListener('loadedmetadata',event=>{const video=event.currentTarget;video.width=video.videoWidth;video.height=video.videoHeight});
@@ -58,7 +58,7 @@ let cameraStream=null,cameraFrame=null,qrCanvas=null,qrContext=null,currentMode=
 const modes={qr:{label:'QR / EchoSOS',accept:'.pkpass,.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp,application/vnd.apple.pkpass',hint:'QR-Bild, EchoSOS-Karte oder PKPass auswählen.'},insurance:{label:'Versicherungskarte',accept:'.heic,.heif,.png,.jpg,.jpeg,.webp,image/heic,image/heif,image/png,image/jpeg,image/webp',hint:'Foto der Versicherungskarte auswählen.'},swissid:{label:'SwissID',accept:'.heic,.heif,.png,.jpg,.jpeg,.webp,image/heic,image/heif,image/png,image/jpeg,image/webp',hint:'Bitte die Rückseite der Schweizer Identitätskarte mit MRZ aufnehmen.'}};
 function setMode(mode){currentMode=mode;const config=modes[mode];$('cardFile').accept=config.accept;$('modeHint').textContent=config.hint;document.querySelectorAll('[data-mode]').forEach(button=>button.classList.toggle('active',button.dataset.mode===mode))}
 function show(message,error=false){$('status').textContent=message;$('status').className='status show'+(error?' error':'')}
-function endpoint(){const value=$('endpoint').value.trim().replace(/\/+$/,'');if(!value)throw new Error('Bitte einen Card Analysis Endpoint eingeben.');return value}
+function endpoint(){return 'https://middleware.local.omnilink.ch/card/analyze'}
 function stopCamera(){if(cameraFrame){cancelAnimationFrame(cameraFrame);cameraFrame=null}if(autoCaptureFrame){cancelAnimationFrame(autoCaptureFrame);autoCaptureFrame=null}previousCameraSample=null;stableCameraFrames=0;captureInProgress=false;autoCaptureStartedAt=0;if(cameraStream){cameraStream.getTracks().forEach(track=>track.stop());cameraStream=null}$('cameraVideo').srcObject=null;if($('cameraDialog').open)$('cameraDialog').close()}
 async function improveCameraFocus(){const track=cameraStream?.getVideoTracks?.()[0];if(!track?.applyConstraints)return;try{await track.applyConstraints({advanced:[{focusMode:'continuous',width:{ideal:1920},height:{ideal:1080}}]})}catch(error){try{await track.applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(ignore){}}
 }
