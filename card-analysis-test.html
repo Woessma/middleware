@@ -25,11 +25,7 @@
       <h2>Input auswählen</h2>
       <p class="muted">Die Kamera liefert einen QR-Wert. Dateien werden als Bild oder PKPass an die Middleware gesendet.</p>
       <div class="field"><div class="actions"><button id="keycloakLoginBtn" type="button">Mit Keycloak anmelden</button></div></div>
-      <details class="field">
-        <summary>Keycloak-Einstellungen</summary>
-        <label for="keycloakClientId">Freigegebene Client-ID</label>
-        <input id="keycloakClientId" placeholder="Public OIDC Client-ID">
-      </details>
+      <input id="keycloakClientId" type="hidden" value="app-omnilink-cardtest">
       <p id="keycloakStatus" class="hint" role="status">Kein Keycloak-Token aktiv.</p>
       <div class="field"><label>Aufnahme auswählen</label><div class="actions mode-actions"><button class="secondary" data-mode="qr" type="button">QR / EchoSOS</button><button class="secondary" data-mode="insurance" type="button">Versicherungskarte</button><button class="secondary" data-mode="swissid" type="button">SwissID</button></div><button id="camera" hidden type="button"></button><input id="cardFile" type="file" hidden><div class="actions"><button id="chooseFile" class="quiet" type="button">Datei auswählen</button><button id="analyzeFile" type="button">Datei analysieren</button></div><p id="modeHint" class="hint">Modus auswählen. Die Kamera wird direkt geöffnet.</p></div>
       <div class="divider"></div>
