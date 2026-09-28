@@ -104,7 +104,7 @@ Middleware und HAPI teilen das externe Docker-Netzwerk `proxy`. Der PostgreSQL-C
 | Middleware | 001-l-hlt01 | 8000, 8082 |
 | HAPI FHIR | 001-l-hlt01 | 8090 -> 8080 |
 | PostgreSQL | 001-l-dat01 | 5433 -> 5432 |
-| BridgeLink | 001-l-hlt01 | 8080, 8081, 8443, 9080 |
+| BridgeLink | 001-l-hlt01 | siehe interne Portangaben in `docs/architecture.md` |
 
 ### Konfiguration
 

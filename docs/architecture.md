@@ -97,6 +97,7 @@ Self-Service-API `GET/PUT /api/identity` gepflegt werden.
 - Containername `python-middleware`
 - Direkter Zugriff: `https://middleware.local.omnilink.ch`
 - BridgeLink auf der HLT-VM: `http://10.20.30.212:9080`
+- Interne BridgeLink-Ports: `8080`, `8081`, `8443`, `9080`
 - Zugriff im Testlab ueber Forti-VPN, Technitium DNS und Caddy
 - Middleware schreibt bei Standard-Importpfaden nicht direkt nach HAPI FHIR
 
