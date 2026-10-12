@@ -418,6 +418,10 @@ Clinical Notes, DocumentReference, Binary und ein erstes UMZH-orientiertes Diagn
 - CareTeam-Reimport abgesichert: Vorhandene PCP-Teilnehmer bleiben bei CDA-Updates erhalten, wenn der neue CDA-Abschnitt keinen PCP liefert
 - EchoSOS-Observations klassifiziert: Labor mit `laboratory`, Vitalzeichen mit `vital-signs`, Sozialanamnese mit `social-history`; unklassifizierte Observations und Encounter werden nur in der Notfallansicht ausgeblendet
 - EchoSOS-Blutgruppe standardisiert: LOINC `882-1` fuer kombinierte ABO/Rh-Werte; ABO `883-9` und Rh `10331-7` werden in der Anzeige kombiniert
+- EchoSOS-QR-Auswahlen dekodiert: Allergien mit positionsbezogenen Reaktionen, medizinische Vorgeschichte sowie bis zu drei Notfallkontakte werden aus dem kompakten QR gelesen
+- EchoSOS-FHIR-Persistenz erweitert: SNOMED-`AllergyIntolerance` und SNOMED-`Condition`; Patient als Recorder/Asserter und als Performer der Blutgruppen-Observation
+- EchoSOS-Medikamentenauswahlen, Organspende und Freitext werden dekodiert, sind aber noch nicht als eigene FHIR-Ressourcen persistiert
+- EchoSOS-Namensräume auf `https://fhir.omnilink.ch/fhir/NamingSystem/...` migriert; identifier-basierte Reimports bleiben beim Systemwechsel idempotent
 - Schwangerschaftsstatus als Observation mit LOINC `82810-3` und SNOMED CT `77386006` abgebildet
 - CDA-Autoren dokumentbezogen aufgeloest: ID-only-Authoren werden, wenn im selben CDA benannt, auf den vorhandenen Namen zurueckgefuehrt
 - HAPI-Testbestand gezielt bereinigt: doppelte Patient-, Practitioner-, PractitionerRole-, Organization-, Observation- und CareTeam-Datensaetze entfernt

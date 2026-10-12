@@ -56,7 +56,7 @@ EPIC CDA
 - UMZH Send: Convert + Versandreport mit `destination_base_url` (und optionalem Outbound-Authorization-Header)
 - CH VACD Convert: `Bundle.type=document`, Composition zuerst, CH-VACD Bundle-/Composition-/Immunization-Profile, UUID-Identifier und aufgelöste `fullUrl`-Referenzen
 - FHIR-Import: Einzelressourcen und Dokumentbundles werden vor dem Versand als Transaction-Bundle stabilisiert; fehlende Requests werden aus Ressourcentyp und ID abgeleitet
-- EchoSOS-Import: QR/PKPass -> Patient-Upsert -> Blutgruppen-Observation -> `$everything`-Abfrage -> Notfallansicht
+- EchoSOS-Import: QR/PKPass -> kompakte Auswahlen dekodieren -> Patient-Upsert -> Blutgruppen-Observation, AllergyIntolerance und Condition -> `$everything`-Abfrage -> Notfallansicht
 - Kontaktmodell: `Patient.contact` plus `RelatedPerson`; PCP über `CareTeam.participant` und `Practitioner`-Referenz
 - EchoSOS-Ansicht gruppiert Observations nach `vital-signs`, `laboratory` und `social-history`; unklassifizierte Observations und Encounter werden ausgeblendet
 - HAPI FHIR: interne HTTP-API ueber `http://hapi-fhir:8080/fhir`

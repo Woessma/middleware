@@ -70,7 +70,9 @@ Status: In Umsetzung
 - [x] CH-Core-Practitioner aus gueltiger eMediplan-`PrscbBy`-GLN mit OID-System und refdata-Anreicherung abgesichert
 - [ ] Importverhalten fuer weitere Ressourcentypen explizit testen
 - [ ] Fehlerbilder aus HAPI-Antworten einheitlicher auf API-Fehler abbilden
-- [x] EchoSOS-QR-Import mit anschliessender Patient-`$everything`-Abfrage umgesetzt
+- [x] EchoSOS-QR/PKPass-Auswahlen fuer Allergien samt Reaktionen und Vorgeschichte dekodieren und als `AllergyIntolerance`/`Condition` persistieren
+- [x] EchoSOS-Blutgruppe als LOINC-Observation und bis zu drei Notfallkontakte in `Patient.contact` persistieren
+- [ ] EchoSOS-Medikamentenauswahlen, Organspende und Freitext in geeignete FHIR-Ressourcen ueberfuehren
 - [x] Bestehende CareTeam-PCP-Teilnehmer bei CDA-Reimport erhalten
 - [ ] TX-Validierung fuer Pharmacode-NamingSystem ueber eine passende Schweizer Terminologiequelle ergaenzen
 

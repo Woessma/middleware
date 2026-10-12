@@ -7,12 +7,49 @@ Stand: 2026-09-10
 1. EchoSOS-QR, Bild oder PKPass wird an `POST /echosos/qr/import` gesendet.
 2. Die Middleware sucht den Patienten anhand von Name und Geburtsdatum.
 3. Der Patient wird angelegt oder aktualisiert.
-4. QR-Daten wie Notfallkontakt und Blutgruppe werden als FHIR gespeichert.
-5. Danach wird automatisch `Patient/{id}/$everything?_count=500` abgefragt.
-6. Die Antwort wird in der EchoSOS-Notfallansicht dargestellt.
+4. Kompakt codierte QR-Auswahlen werden dekodiert.
+5. Patientenkontakte, Blutgruppe, Allergien und medizinische Vorgeschichte werden
+   als FHIR gespeichert.
+6. Danach wird automatisch `Patient/{id}/$everything?_count=500` abgefragt.
+7. Die Antwort wird in der EchoSOS-Notfallansicht dargestellt.
 
 Der QR-Import und die manuelle Patientensuche verwenden damit denselben
 FHIR-Gesamtdatenbestand.
+
+## QR-Daten
+
+Die Fragmentparameter des QR enthalten unter anderem:
+
+- `n1`/`p1` bis `n3`/`p3`: bis zu drei Notfallkontakte
+- `b`: Index der Blutgruppe, einschliesslich `Unbekannt`
+- `a` und `r`: Allergie- und Reaktionsindizes; Reaktionen werden positionsweise
+  den ausgewählten Allergien zugeordnet
+- `d`: Indizes der medizinischen Vorgeschichte
+- `m`: Medikamentenauswahlen
+- `o` und `s`: Organspendeangaben ausserhalb bzw. im Schweizer Register
+- `i`: sonstiger Freitext
+
+Die Auswahlindizes werden entsprechend der öffentlich ausgelieferten
+EchoSOS-Auswahllisten interpretiert. Der QR wird lokal dekodiert; für die
+Auswahlwerte ist kein Abruf der persönlichen QR-URL erforderlich.
+
+## Persistierte FHIR-Ressourcen
+
+- `Patient`: Name, Geburtsdatum und bis zu drei Kontakte mit Beziehung `ECON`
+- `Observation`: Blutgruppe mit LOINC `882-1`; der Patient ist Performer
+- `AllergyIntolerance`: pro Allergie ein Eintrag, SNOMED-Codierung und optionale
+  Reaktionsmanifestation; der Patient ist Recorder
+- `Condition`: pro Vorgeschichtsauswahl ein Eintrag; der Patient ist Asserter
+
+„Keine bekannten Allergien“ wird als SNOMED-CT `716186003` codiert. Die
+Sammelauswahlen „Nierenversagen/Dialyse“ und
+„Herzschrittmacher/Defibrillator“ werden ohne eindeutige Unterauswahl als
+Quelltext gespeichert, damit keine der möglichen Diagnosen unbegründet
+behauptet wird. Für nicht eindeutig spezifizierte Allergieauswahlen bleibt der
+Originalbegriff erhalten.
+
+Medikamentenauswahlen, Organspende und „Sonstiges“ werden derzeit zwar aus dem
+QR dekodiert, aber noch nicht als eigene FHIR-Ressourcen persistiert.
 
 ## Kontaktmodell
 
@@ -85,3 +122,8 @@ curl -H "Accept: application/fhir+json" \
 Die Antwort enthält Patient, `RelatedPerson`, `CareTeam`, `Practitioner`,
 `Observation`, `Condition`, `MedicationStatement` und weitere verknüpfte
 Ressourcen, sofern sie für den Patienten gespeichert sind.
+
+Die lokalen EchoSOS-Identifier verwenden
+`https://fhir.omnilink.ch/fhir/NamingSystem/...`. Bedingte Upserts suchen
+zusätzlich anhand des Identifier-Werts, damit bereits gespeicherte Ressourcen
+mit dem früheren Identifier-System beim Reimport wiedergefunden werden.
