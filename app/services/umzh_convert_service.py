@@ -738,15 +738,15 @@ def cda_to_umzh_bundle(
         "meta": {
             "tag": [
                 {
-                    "system": "http://woess.ch/convert-profile",
+                    "system": "https://fhir.omnilink.ch/convert-profile",
                     "code": "umzh-connect",
                 },
                 {
-                    "system": "http://woess.ch/convert-workflow-stage",
+                    "system": "https://fhir.omnilink.ch/convert-workflow-stage",
                     "code": stage,
                 },
                 {
-                    "system": "http://woess.ch/convert-target",
+                    "system": "https://fhir.omnilink.ch/convert-target",
                     "code": target_config["target"],
                 }
             ]
@@ -973,15 +973,15 @@ def cda_to_etoc_document_bundle(
             "profile": bundle_profiles,
             "tag": [
                 {
-                    "system": "http://woess.ch/convert-profile",
+                    "system": "https://fhir.omnilink.ch/convert-profile",
                     "code": "ch-etoc-document",
                 },
                 {
-                    "system": "http://woess.ch/convert-workflow-stage",
+                    "system": "https://fhir.omnilink.ch/convert-workflow-stage",
                     "code": workflow_stage,
                 },
                 {
-                    "system": "http://woess.ch/convert-target",
+                    "system": "https://fhir.omnilink.ch/convert-target",
                     "code": target_config["target"],
                 },
             ],

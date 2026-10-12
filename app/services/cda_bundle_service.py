@@ -209,7 +209,7 @@ def _extract_document_identifier(root):
     if root_oid:
         system = f"urn:oid:{root_oid}"
     else:
-        system = "https://woess.ch/fhir/NamingSystem/cda-document-id"
+        system = "https://fhir.omnilink.ch/fhir/NamingSystem/cda-document-id"
 
     return {
         "system": system,
@@ -785,7 +785,7 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
                 ],
                 "tag": [
                     {
-                        "system": "http://woess.ch/cda-profile",
+                        "system": "https://fhir.omnilink.ch/cda-profile",
                         "code": profile_code,
                     }
                 ],
@@ -808,7 +808,7 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
             "tag": [
                 {
                     "system":
-                        "http://woess.ch/cda-profile",
+                        "https://fhir.omnilink.ch/cda-profile",
                     "code":
                         profile_code
                 }

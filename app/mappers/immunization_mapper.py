@@ -180,7 +180,7 @@ def map_immunization_section(
             ).hexdigest()
 
             identifier_system = (
-                "https://woess.ch/fhir/"
+                "https://fhir.omnilink.ch/fhir/"
                 "NamingSystem/"
                 "cda-import-immunization"
             )

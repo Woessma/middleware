@@ -13,7 +13,7 @@ class VacdConvertEndpointTests(unittest.TestCase):
             "type": "transaction",
             "meta": {
                 "tag": [
-                    {"system": "http://woess.ch/cda-profile", "code": "EPIC-CCDA"}
+                    {"system": "https://fhir.omnilink.ch/cda-profile", "code": "EPIC-CCDA"}
                 ]
             },
             "entry": [
@@ -53,7 +53,7 @@ class VacdConvertEndpointTests(unittest.TestCase):
             "type": "transaction",
             "meta": {
                 "tag": [
-                    {"system": "http://woess.ch/cda-profile", "code": "EPIC-CCDA"}
+                    {"system": "https://fhir.omnilink.ch/cda-profile", "code": "EPIC-CCDA"}
                 ]
             },
             "entry": [

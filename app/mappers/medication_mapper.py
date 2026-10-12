@@ -10,7 +10,7 @@ from utils.fhir_utils import (
 from mappers.author_helpers import add_author_display
 
 MEDICATION_IDENTIFIER_SYSTEM = (
-    "https://woess.ch/fhir/NamingSystem/cda-import-medicationstatement"
+    "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-medicationstatement"
 )
 
 CH_CORE_MEDICATION_STATEMENT_PROFILE = (

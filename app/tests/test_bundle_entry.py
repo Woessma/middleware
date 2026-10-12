@@ -120,7 +120,7 @@ class BundleEntryTests(unittest.TestCase):
             "resourceType": "DocumentReference",
             "identifier": [
                 {
-                    "system": "https://woess.ch/fhir/NamingSystem/cda-import-clinical-note",
+                    "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-clinical-note",
                     "value": "new-hash-after-mapping-change",
                 }
             ],

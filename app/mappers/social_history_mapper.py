@@ -56,7 +56,7 @@ def map_social_history_section(section, patient_reference, context):
             "id": str(uuid.uuid4()),
             "identifier": [
                 {
-                    "system": "https://woess.ch/fhir/NamingSystem/cda-import-social-history",
+                    "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-social-history",
                     "value": identifier_value,
                 }
             ],

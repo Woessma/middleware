@@ -185,7 +185,7 @@ class Hl7v2OruR01Tests(unittest.TestCase):
         observation = bundle["entry"][1]["resource"]
         coding = observation["code"]["coding"][0]
 
-        self.assertEqual(coding["system"], "https://woess.ch/fhir/CodeSystem/hl7v2-local")
+        self.assertEqual(coding["system"], "https://fhir.omnilink.ch/fhir/CodeSystem/hl7v2-local")
         self.assertEqual(coding["code"], "NA")
         self.assertEqual(coding["display"], "Natrium")
         self.assertEqual(observation["valueQuantity"]["value"], 60.0)

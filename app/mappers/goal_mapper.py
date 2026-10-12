@@ -58,7 +58,7 @@ def map_goal_section(
             "identifier": [
                 {
                     "system": (
-                        "https://woess.ch/fhir/"
+                        "https://fhir.omnilink.ch/fhir/"
                         "NamingSystem/cda-import-goal"
                     ),
                     "value": identifier_value

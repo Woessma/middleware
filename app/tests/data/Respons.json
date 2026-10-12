@@ -9,12 +9,12 @@
   "link": [
     {
       "relation": "self",
-      "url": "http://fhir.woess.ch/fhir/Patient/2179/$everything?_count=500"
+      "url": "https://fhir.omnilink.ch/fhir/Patient/2179/$everything?_count=500"
     }
   ],
   "entry": [
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Patient/2179",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Patient/2179",
       "resource": {
         "resourceType": "Patient",
         "id": "2179",
@@ -71,7 +71,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Encounter/2181",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Encounter/2181",
       "resource": {
         "resourceType": "Encounter",
         "id": "2181",
@@ -109,7 +109,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Encounter/2182",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Encounter/2182",
       "resource": {
         "resourceType": "Encounter",
         "id": "2182",
@@ -146,7 +146,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Encounter/2183",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Encounter/2183",
       "resource": {
         "resourceType": "Encounter",
         "id": "2183",
@@ -184,7 +184,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Encounter/2184",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Encounter/2184",
       "resource": {
         "resourceType": "Encounter",
         "id": "2184",
@@ -221,7 +221,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Encounter/2185",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Encounter/2185",
       "resource": {
         "resourceType": "Encounter",
         "id": "2185",
@@ -259,7 +259,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Encounter/2186",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Encounter/2186",
       "resource": {
         "resourceType": "Encounter",
         "id": "2186",
@@ -297,7 +297,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/AllergyIntolerance/2187",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/AllergyIntolerance/2187",
       "resource": {
         "resourceType": "AllergyIntolerance",
         "id": "2187",
@@ -307,7 +307,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-allergy",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-allergy",
             "value": "f478037b144ea913aae9512261a26e0eb2b136ffcd087be6060ba9c68a153f35"
           }
         ],
@@ -378,7 +378,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/MedicationStatement/2188",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/MedicationStatement/2188",
       "resource": {
         "resourceType": "MedicationStatement",
         "id": "2188",
@@ -388,7 +388,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-medicationstatement",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-medicationstatement",
             "value": "b50b4e4f0018509491d746c3da238fa6e4afa4e73e746d5e38a64d5ba3e7536f"
           }
         ],
@@ -411,7 +411,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/MedicationStatement/2189",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/MedicationStatement/2189",
       "resource": {
         "resourceType": "MedicationStatement",
         "id": "2189",
@@ -421,7 +421,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-medicationstatement",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-medicationstatement",
             "value": "9fa9afa4970a7b7f488fbdf1f2873261ae3d85f0bfb8e8f892f8e9b186b33601"
           }
         ],
@@ -443,7 +443,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Condition/2190",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Condition/2190",
       "resource": {
         "resourceType": "Condition",
         "id": "2190",
@@ -453,7 +453,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-condition",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-condition",
             "value": "118e5cdcfa26ca286f2af8d24416468c46884809dbbcaf7493d1cc1b222ec247"
           }
         ],
@@ -486,7 +486,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Condition/2191",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Condition/2191",
       "resource": {
         "resourceType": "Condition",
         "id": "2191",
@@ -496,7 +496,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-condition",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-condition",
             "value": "85244b91159906c163155bd88ad96b45ca7cf4e901b19ed952ff340c672fcfdd"
           }
         ],
@@ -536,7 +536,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Condition/2192",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Condition/2192",
       "resource": {
         "resourceType": "Condition",
         "id": "2192",
@@ -546,7 +546,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-condition",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-condition",
             "value": "4545a9c4a9344aa49503facdb4e91d626a2f17a517de24afabb84cb6d49306ee"
           }
         ],
@@ -579,7 +579,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Condition/2193",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Condition/2193",
       "resource": {
         "resourceType": "Condition",
         "id": "2193",
@@ -589,7 +589,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-condition",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-condition",
             "value": "077422b0289c0ab02f13bddb503a705b5b2d67b871289873eb21417e2fbcd6b0"
           }
         ],
@@ -622,7 +622,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Condition/2194",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Condition/2194",
       "resource": {
         "resourceType": "Condition",
         "id": "2194",
@@ -632,7 +632,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-condition",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-condition",
             "value": "4f18d900c5ee145ebf65688385da05fbfeab931fc6d5827732095a3ccf111123"
           }
         ],
@@ -665,7 +665,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2195",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2195",
       "resource": {
         "resourceType": "Observation",
         "id": "2195",
@@ -675,7 +675,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "231dcfb02ed2317da224ed26da11e175ba7311383550b057cae08770048fefd9"
           }
         ],
@@ -709,7 +709,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2196",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2196",
       "resource": {
         "resourceType": "Observation",
         "id": "2196",
@@ -719,7 +719,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "1c38ad4a47beab37b7a52ac74682e35d5f06633924d54b0b02045ff0241229bf"
           }
         ],
@@ -744,7 +744,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2197",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2197",
       "resource": {
         "resourceType": "Observation",
         "id": "2197",
@@ -754,7 +754,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "d6d6999115af0bd342499e005105d338a9c76d1404e159a51550d9e372967eff"
           }
         ],
@@ -778,7 +778,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2198",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2198",
       "resource": {
         "resourceType": "Observation",
         "id": "2198",
@@ -788,7 +788,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "87e1ec3f9b3670bb1ed5e6bebf96eafd6f202632341d1b627620dd6525af9700"
           }
         ],
@@ -812,7 +812,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2199",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2199",
       "resource": {
         "resourceType": "Observation",
         "id": "2199",
@@ -822,7 +822,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "e5be4282268dcec0da17e7ccf6777540cb0e1f9cf6e471496b39fa06a492819d"
           }
         ],
@@ -846,7 +846,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2200",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2200",
       "resource": {
         "resourceType": "Observation",
         "id": "2200",
@@ -856,7 +856,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "6e3f52b87e48ac576f5e986b5abb5ca112cd567b7626212a52c6997d602feee9"
           }
         ],
@@ -880,7 +880,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2201",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2201",
       "resource": {
         "resourceType": "Observation",
         "id": "2201",
@@ -890,7 +890,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "6afcf3bb04a57d1a4119eeddd4fe7a367fc5b7eaed7e17413fef589573401f30"
           }
         ],
@@ -914,7 +914,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2202",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2202",
       "resource": {
         "resourceType": "Observation",
         "id": "2202",
@@ -924,7 +924,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "a2353b247a33d81a27594941728e186caabd33997ec77c45afc4d890b8b740e4"
           }
         ],
@@ -948,7 +948,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Immunization/2203",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Immunization/2203",
       "resource": {
         "resourceType": "Immunization",
         "id": "2203",
@@ -984,7 +984,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Immunization/2204",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Immunization/2204",
       "resource": {
         "resourceType": "Immunization",
         "id": "2204",
@@ -1013,7 +1013,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Immunization/2205",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Immunization/2205",
       "resource": {
         "resourceType": "Immunization",
         "id": "2205",
@@ -1042,7 +1042,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2206",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2206",
       "resource": {
         "resourceType": "Observation",
         "id": "2206",
@@ -1052,7 +1052,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "1e0dd86eafd90247575c8f9bde7a5b2f08ea445e309e4dc92f9953a41a6df023"
           }
         ],
@@ -1075,7 +1075,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2207",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2207",
       "resource": {
         "resourceType": "Observation",
         "id": "2207",
@@ -1085,7 +1085,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "b5d51aea08c575c0f27ec552c4c82f762623beec858a7e34379218cfe409c82d"
           }
         ],
@@ -1108,7 +1108,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2208",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2208",
       "resource": {
         "resourceType": "Observation",
         "id": "2208",
@@ -1118,7 +1118,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "1c6619c4dec8a0dd054e9975eb900fecdba994b5b2e088be2a82ed8aa40fb4a2"
           }
         ],
@@ -1141,7 +1141,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2209",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2209",
       "resource": {
         "resourceType": "Observation",
         "id": "2209",
@@ -1151,7 +1151,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "96a4f60fa5a3e74f539eebd86cbe31730d7d3ec88942a1c40b420cb9eb8d2761"
           }
         ],
@@ -1174,7 +1174,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2210",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2210",
       "resource": {
         "resourceType": "Observation",
         "id": "2210",
@@ -1184,7 +1184,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "45255c26773a3c7e7b57eecd2d075304eda6414309733ce3cc34a54e4d0fa723"
           }
         ],
@@ -1207,7 +1207,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2211",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2211",
       "resource": {
         "resourceType": "Observation",
         "id": "2211",
@@ -1217,7 +1217,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "289d4cf3508788a56a28bb900c765fbacac2642349635d178c6cdbde4aadf8e1"
           }
         ],
@@ -1240,7 +1240,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2212",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2212",
       "resource": {
         "resourceType": "Observation",
         "id": "2212",
@@ -1250,7 +1250,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "3cd3746b965a0e236d9ceafc603e80e7fb8f53d4b05162a849d499828e30cfc3"
           }
         ],
@@ -1273,7 +1273,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2213",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2213",
       "resource": {
         "resourceType": "Observation",
         "id": "2213",
@@ -1283,7 +1283,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "cca4010ac7fd516b6998271f4fc53a4af4fea7ea281b77c1857493e8c389b302"
           }
         ],
@@ -1306,7 +1306,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2214",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2214",
       "resource": {
         "resourceType": "Observation",
         "id": "2214",
@@ -1316,7 +1316,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "a80dbae4c3a0fbcc970f0c86930fd9917c577be3cceef6a20edec9ed632be146"
           }
         ],
@@ -1339,7 +1339,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2215",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2215",
       "resource": {
         "resourceType": "Observation",
         "id": "2215",
@@ -1349,7 +1349,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "c1079c250f3e754362f5213d65eef6ebb47cc61d455141c3329d3ebc0336947b"
           }
         ],
@@ -1383,7 +1383,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2216",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2216",
       "resource": {
         "resourceType": "Observation",
         "id": "2216",
@@ -1393,7 +1393,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "42eb3b16baf49e6429c5009a0289c3ceb371d5d0dd19820869f0417f08859e6a"
           }
         ],
@@ -1419,7 +1419,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2217",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2217",
       "resource": {
         "resourceType": "Observation",
         "id": "2217",
@@ -1429,7 +1429,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "3e6b5b506ad8e7f95c006eddddf9b55bdb96cf6eee019bae55982ad314b6e9be"
           }
         ],
@@ -1464,7 +1464,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2218",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2218",
       "resource": {
         "resourceType": "Observation",
         "id": "2218",
@@ -1474,7 +1474,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "b10ade7d73a6845a81e546fd87594f7a3aefed90bd4da2d3cee0096b0ab9c285"
           }
         ],
@@ -1499,7 +1499,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2219",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2219",
       "resource": {
         "resourceType": "Observation",
         "id": "2219",
@@ -1509,7 +1509,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
             "value": "9d8d1c0ea8f88d89930d30741b6bb058a337afe215251738bd26fba1de5ad72d"
           }
         ],
@@ -1534,7 +1534,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2220",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2220",
       "resource": {
         "resourceType": "Observation",
         "id": "2220",
@@ -1544,7 +1544,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-vitalsign",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-vitalsign",
             "value": "6806563c90fc467a8013040253d7bbb611f95289d0dee72e4b445d1f13fa30b8"
           }
         ],
@@ -1586,7 +1586,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2221",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2221",
       "resource": {
         "resourceType": "Observation",
         "id": "2221",
@@ -1596,7 +1596,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-vitalsign",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-vitalsign",
             "value": "6e7141eb322d1780b01eaf7663177cd8e52eea8241c3e6ba7981be15212d92f2"
           }
         ],
@@ -1638,7 +1638,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2222",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2222",
       "resource": {
         "resourceType": "Observation",
         "id": "2222",
@@ -1648,7 +1648,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-vitalsign",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-vitalsign",
             "value": "9ffe8071c7911da9555a0847f4bdaa0aa7e7818b593a0a53889fa7d09ea15e6d"
           }
         ],
@@ -1690,7 +1690,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2223",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2223",
       "resource": {
         "resourceType": "Observation",
         "id": "2223",
@@ -1700,7 +1700,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-vitalsign",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-vitalsign",
             "value": "e1487b49a79fdaf94ac3fa0818f2fcf289256557fa7a0a14b54216a78087a94c"
           }
         ],
@@ -1742,7 +1742,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2224",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2224",
       "resource": {
         "resourceType": "Observation",
         "id": "2224",
@@ -1752,7 +1752,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-vitalsign",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-vitalsign",
             "value": "6b5195143b3178b39700729d31459f5172d261fedc9e1ecafcef212dd7c26d97"
           }
         ],
@@ -1794,7 +1794,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2225",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2225",
       "resource": {
         "resourceType": "Observation",
         "id": "2225",
@@ -1804,7 +1804,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-vitalsign",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-vitalsign",
             "value": "9e291c66f7cd8928efcca01f605756de3e0ddf0cd364d7ec233d4d7a124bb9ea"
           }
         ],
@@ -1846,7 +1846,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2226",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2226",
       "resource": {
         "resourceType": "Observation",
         "id": "2226",
@@ -1856,7 +1856,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-vitalsign",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-vitalsign",
             "value": "3292a81bef8c18d43834397245a9045c7806751f79c84eca390ba3c79a26b649"
           }
         ],
@@ -1898,7 +1898,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Goal/2227",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Goal/2227",
       "resource": {
         "resourceType": "Goal",
         "id": "2227",
@@ -1908,7 +1908,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-goal",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-goal",
             "value": "190e41f3b5b9847f66d6fb5de3643fc489ab10aa27e95debfc1b95768ccc165a"
           }
         ],
@@ -1925,7 +1925,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Goal/2228",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Goal/2228",
       "resource": {
         "resourceType": "Goal",
         "id": "2228",
@@ -1935,7 +1935,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-goal",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-goal",
             "value": "b35fb525d4d3edef9159259ceac5598ab10f24d9547c32b4c3b8e86c49f0058a"
           }
         ],
@@ -1952,7 +1952,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Procedure/2229",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Procedure/2229",
       "resource": {
         "resourceType": "Procedure",
         "id": "2229",
@@ -1962,7 +1962,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-procedure",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-procedure",
             "value": "0c7f1f66cbbf8eced432118a58a6d054f96995bee14b6c89a8c79dca50c7682f"
           }
         ],
@@ -1980,7 +1980,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/CareTeam/2230",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/CareTeam/2230",
       "resource": {
         "resourceType": "CareTeam",
         "id": "2230",
@@ -1990,7 +1990,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-careteam",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-careteam",
             "value": "4da02ca314ff1e452762da998eb89a7566b726c612f68b43de253f4224c36b88"
           }
         ],
@@ -2005,7 +2005,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Consent/2299",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Consent/2299",
       "resource": {
         "resourceType": "Consent",
         "id": "2299",
@@ -2042,7 +2042,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Condition/2300",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Condition/2300",
       "resource": {
         "resourceType": "Condition",
         "id": "2300",
@@ -2052,7 +2052,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-condition",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-condition",
             "value": "0fa86585dec43bdaa3c855f30fb77706ed6bc1a508a177f0c27bf3ddcafbb9a5"
           }
         ],
@@ -2085,7 +2085,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Condition/2301",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Condition/2301",
       "resource": {
         "resourceType": "Condition",
         "id": "2301",
@@ -2095,7 +2095,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-condition",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-condition",
             "value": "c890776cba9f6b73b998a13d9e8c2b50fe943c412205fc582ea002d3996f03df"
           }
         ],
@@ -2128,7 +2128,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Condition/2302",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Condition/2302",
       "resource": {
         "resourceType": "Condition",
         "id": "2302",
@@ -2138,7 +2138,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-condition",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-condition",
             "value": "83aa2f29ddf3d8beedc8600a23b9c329d540fdfd86f66557111a37ecef627b7f"
           }
         ],
@@ -2178,7 +2178,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Condition/2303",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Condition/2303",
       "resource": {
         "resourceType": "Condition",
         "id": "2303",
@@ -2188,7 +2188,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-condition",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-condition",
             "value": "0ffe3ec02f9600f2d3ee19af6616af542fa0a3954359ad459c1aab2dd9dd3951"
           }
         ],
@@ -2221,7 +2221,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Encounter/2304",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Encounter/2304",
       "resource": {
         "resourceType": "Encounter",
         "id": "2304",
@@ -2231,7 +2231,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-encounter",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-encounter",
             "value": "8e49d60b3e27ce5d9e919bed86887f7a824ad74bb3345ce47327f5a388b6a68a"
           }
         ],
@@ -2252,7 +2252,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Encounter/2305",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Encounter/2305",
       "resource": {
         "resourceType": "Encounter",
         "id": "2305",
@@ -2262,7 +2262,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-encounter",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-encounter",
             "value": "7350948c09ac4a61318185ff819e88f0fca41ed3ffcee6df74036eb7ca7cdd6d"
           }
         ],
@@ -2283,7 +2283,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Encounter/2306",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Encounter/2306",
       "resource": {
         "resourceType": "Encounter",
         "id": "2306",
@@ -2293,7 +2293,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-encounter",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-encounter",
             "value": "4ff6f3da55b5dd8f9df729c01013e591de7f080374e49e524a608beb8992d8ea"
           }
         ],
@@ -2314,7 +2314,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Encounter/2307",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Encounter/2307",
       "resource": {
         "resourceType": "Encounter",
         "id": "2307",
@@ -2324,7 +2324,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-encounter",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-encounter",
             "value": "10cc81f689523def6cb33d1083fb8c0aa7f24b3f9752d6bb394c7bed14829f23"
           }
         ],
@@ -2345,7 +2345,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Encounter/2308",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Encounter/2308",
       "resource": {
         "resourceType": "Encounter",
         "id": "2308",
@@ -2355,7 +2355,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-encounter",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-encounter",
             "value": "1fe83c691cdda7017e2d30ce106ec98c11b629c9edc584ae681b1007e39e8427"
           }
         ],
@@ -2376,7 +2376,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Encounter/2309",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Encounter/2309",
       "resource": {
         "resourceType": "Encounter",
         "id": "2309",
@@ -2386,7 +2386,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-encounter",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-encounter",
             "value": "f84815fbeacf0e41a15c0224385e42b70a478a3230736763399839a4ed6455e7"
           }
         ],
@@ -2407,7 +2407,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Procedure/2310",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Procedure/2310",
       "resource": {
         "resourceType": "Procedure",
         "id": "2310",
@@ -2417,7 +2417,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-procedure",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-procedure",
             "value": "faa70bd54b56ff4a3e0c16956d14ed81b2ea4bae7507bc92fcef2bc034cb6441"
           }
         ],
@@ -2440,7 +2440,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Procedure/2311",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Procedure/2311",
       "resource": {
         "resourceType": "Procedure",
         "id": "2311",
@@ -2450,7 +2450,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-procedure",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-procedure",
             "value": "50c1a12df5ddfe677b4eddb7558b71bbe69f07e5d53cac6435abf5a4e97cf4e3"
           }
         ],
@@ -2473,7 +2473,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Procedure/2312",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Procedure/2312",
       "resource": {
         "resourceType": "Procedure",
         "id": "2312",
@@ -2483,7 +2483,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-procedure",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-procedure",
             "value": "5485c713a6e5a90cce3c625bf7d1e7cfb95b8df92884629ecb9656bd3110e248"
           }
         ],
@@ -2506,7 +2506,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Procedure/2313",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Procedure/2313",
       "resource": {
         "resourceType": "Procedure",
         "id": "2313",
@@ -2516,7 +2516,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-procedure",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-procedure",
             "value": "1204c32f57bab66988855b90b0815a288273bb14e2f2a3646825cfd38a99db41"
           }
         ],
@@ -2539,7 +2539,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Procedure/2314",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Procedure/2314",
       "resource": {
         "resourceType": "Procedure",
         "id": "2314",
@@ -2549,7 +2549,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-procedure",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-procedure",
             "value": "514120255ec18e6865ac797a62c481309f93efcb2fe3c0ef5a4a0bcafc28e0d4"
           }
         ],
@@ -2572,7 +2572,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2315",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2315",
       "resource": {
         "resourceType": "Observation",
         "id": "2315",
@@ -2582,7 +2582,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-social-history",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-social-history",
             "value": "e9b1c0571c76562d3eef67ea084df22788c407b7fdc76062f1a83736bf9a4248"
           }
         ],
@@ -2609,7 +2609,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2316",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2316",
       "resource": {
         "resourceType": "Observation",
         "id": "2316",
@@ -2619,7 +2619,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-social-history",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-social-history",
             "value": "b2f73dd1f4bdf09087502c5f25f24ccc455442846ded05fcd31e87524242d933"
           }
         ],
@@ -2646,7 +2646,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2317",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2317",
       "resource": {
         "resourceType": "Observation",
         "id": "2317",
@@ -2656,7 +2656,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-social-history",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-social-history",
             "value": "68576ee0e8ecf602143bc2acfe24ee26f79b50ba71a3fce72179a72fc75670ba"
           }
         ],
@@ -2683,7 +2683,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2318",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2318",
       "resource": {
         "resourceType": "Observation",
         "id": "2318",
@@ -2693,7 +2693,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-social-history",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-social-history",
             "value": "2fa604bfaa7458b3e275d6348cdf66221f26429a04e04403d9c0a75af8575875"
           }
         ],
@@ -2720,7 +2720,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Observation/2319",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Observation/2319",
       "resource": {
         "resourceType": "Observation",
         "id": "2319",
@@ -2730,7 +2730,7 @@
         },
         "identifier": [
           {
-            "system": "https://woess.ch/fhir/NamingSystem/cda-import-social-history",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-social-history",
             "value": "a6d62b1681cf237960819c337cf0c69d5f97def4e29876a6946c37766eea251a"
           }
         ],
@@ -2757,7 +2757,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Consent/2377",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Consent/2377",
       "resource": {
         "resourceType": "Consent",
         "id": "2377",
@@ -2794,7 +2794,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Consent/2385",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Consent/2385",
       "resource": {
         "resourceType": "Consent",
         "id": "2385",
@@ -2831,7 +2831,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Consent/2389",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Consent/2389",
       "resource": {
         "resourceType": "Consent",
         "id": "2389",
@@ -2868,7 +2868,7 @@
       }
     },
     {
-      "fullUrl": "http://fhir.woess.ch/fhir/Organization/2178",
+      "fullUrl": "https://fhir.omnilink.ch/fhir/Organization/2178",
       "resource": {
         "resourceType": "Organization",
         "id": "2178",

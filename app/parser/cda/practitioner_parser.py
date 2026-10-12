@@ -15,7 +15,7 @@ from domain.patient import (
 
 
 FALLBACK_PRACTITIONER_SYSTEM = (
-    "https://woess.ch/fhir/NamingSystem/cda-import-practitioner"
+    "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-practitioner"
 )
 
 

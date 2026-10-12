@@ -156,7 +156,7 @@ class ReferenceResourceServiceTests(unittest.TestCase):
         from services.practitioner_service import find_practitioner
 
         result = find_practitioner(
-            "https://woess.ch/fhir/NamingSystem/cda-import-practitioner",
+            "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-practitioner",
             "d7fc4fa562885376abbc12d2873f9dfb9333cc78103c75bb121b68505554d413",
         )
 

@@ -10,7 +10,7 @@ from fhir.fhir_helpers import oid_to_fhir_system
 
 
 CLINICAL_NOTE_IDENTIFIER_SYSTEM = (
-    "https://woess.ch/fhir/NamingSystem/cda-import-clinical-note"
+    "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-clinical-note"
 )
 
 CLINICAL_NOTE_SECTION_CODES = {

@@ -15,7 +15,7 @@ PATIENT_RELIGION_URL = (
 )
 
 PATIENT_CONTACT_IDENTIFIER_URL = (
-    "https://woess.ch/fhir/StructureDefinition/patient-contact-identifier"
+    "https://fhir.omnilink.ch/fhir/StructureDefinition/patient-contact-identifier"
 )
 
 

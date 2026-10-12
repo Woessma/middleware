@@ -104,7 +104,7 @@ def map_procedure_section(
             "identifier": [
                 {
                     "system": (
-                        "https://woess.ch/fhir/"
+                        "https://fhir.omnilink.ch/fhir/"
                         "NamingSystem/cda-import-procedure"
                     ),
                     "value": identifier_value

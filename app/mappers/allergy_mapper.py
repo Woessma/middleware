@@ -24,7 +24,7 @@ from fhir.fhir_helpers import oid_to_fhir_system
 logger = logging.getLogger(__name__)
 
 ALLERGY_IDENTIFIER_SYSTEM = (
-    "https://woess.ch/fhir/NamingSystem/cda-import-allergy"
+    "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-allergy"
 )
 
 CH_CORE_ALLERGY_INTOLERANCE_PROFILE = (

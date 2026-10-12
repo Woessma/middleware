@@ -4,7 +4,7 @@ import textwrap
 from generate_management_pdf import PAGE_H, PAGE_W, add_text_block
 
 
-BASE = Path('/opt/fhir-middleware/Woess_Fhir/fhir-middleware/docs')
+BASE = Path(__file__).resolve().parent
 MD_PATH = BASE / 'vm-umzug-checkliste.md'
 OUT_PATH = BASE / 'vm-umzug-checkliste.pdf'
 

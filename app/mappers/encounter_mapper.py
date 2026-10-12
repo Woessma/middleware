@@ -46,7 +46,7 @@ def map_encounter_section(section, patient_reference, context):
             "id": str(uuid.uuid4()),
             "identifier": [
                 {
-                    "system": "https://woess.ch/fhir/NamingSystem/cda-import-encounter",
+                    "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-encounter",
                     "value": identifier_value,
                 }
             ],

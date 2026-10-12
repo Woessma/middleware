@@ -21,9 +21,9 @@ from terminology.echosos import (
 )
 
 ECHOSOS_HOST = "eid.echosos.com"
-ECHOSOS_IDENTIFIER_SYSTEM = "https://woess.ch/fhir/NamingSystem/echosos"
-ECHOSOS_ALLERGY_IDENTIFIER_SYSTEM = "https://woess.ch/fhir/NamingSystem/echosos-allergy"
-ECHOSOS_CONDITION_IDENTIFIER_SYSTEM = "https://woess.ch/fhir/NamingSystem/echosos-condition"
+ECHOSOS_IDENTIFIER_SYSTEM = "https://fhir.omnilink.ch/fhir/NamingSystem/echosos"
+ECHOSOS_ALLERGY_IDENTIFIER_SYSTEM = "https://fhir.omnilink.ch/fhir/NamingSystem/echosos-allergy"
+ECHOSOS_CONDITION_IDENTIFIER_SYSTEM = "https://fhir.omnilink.ch/fhir/NamingSystem/echosos-condition"
 BLOOD_GROUP_LOINC = "882-1"
 BLOOD_GROUPS = ["A-", "A+", "B-", "B+", "AB-", "AB+", "0-", "0+", "Unbekannt"]
 ECHOSOS_CODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
@@ -497,7 +497,7 @@ def _upsert_resource(resource):
     identifier = resource["identifier"][0]
     response = requests.get(
         f"{FHIR_BASE}/{resource_type}",
-        params={"identifier": f"{identifier['system']}|{identifier['value']}"},
+        params={"identifier": identifier["value"]},
         headers={"Accept": "application/fhir+json"},
         timeout=15,
     )

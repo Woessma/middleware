@@ -4,7 +4,7 @@ CH_CORE_PRACTITIONER_ROLE_PROFILE = (
 )
 
 PRACTITIONER_ROLE_IDENTIFIER_SYSTEM = (
-    "https://woess.ch/fhir/"
+    "https://fhir.omnilink.ch/fhir/"
     "NamingSystem/practitionerrole"
 )
 

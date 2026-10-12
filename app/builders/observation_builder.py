@@ -94,7 +94,7 @@ def build_observation_from_entry(
         "identifier": [
             {
                 "system": (
-                    "https://woess.ch/fhir/"
+                    "https://fhir.omnilink.ch/fhir/"
                     "NamingSystem/"
                     "cda-import-observation"
                 ),

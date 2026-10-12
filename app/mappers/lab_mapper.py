@@ -177,7 +177,7 @@ def build_lab_observation(
         "identifier": [
             {
                 "system": (
-                    "https://woess.ch/fhir/"
+                    "https://fhir.omnilink.ch/fhir/"
                     "NamingSystem/cda-import-observation"
                 ),
                 "value": identifier_value
@@ -309,7 +309,7 @@ def build_diagnostic_report(
         "identifier": [
             {
                 "system": (
-                    "https://woess.ch/fhir/"
+                    "https://fhir.omnilink.ch/fhir/"
                     "NamingSystem/cda-import-diagnosticreport"
                 ),
                 "value": identifier_value

@@ -19,7 +19,7 @@ CH_ECH_11_CONTACT_DATA_CODING = {
     "code": "contactData",
     "display": "contact data",
 }
-CONTACT_CATEGORY_SYSTEM = "https://woess.ch/fhir/CodeSystem/patient-contact-category"
+CONTACT_CATEGORY_SYSTEM = "https://fhir.omnilink.ch/fhir/CodeSystem/patient-contact-category"
 
 
 def parse_identifier_elements(parent: ET.Element | None) -> list[Identifier]:

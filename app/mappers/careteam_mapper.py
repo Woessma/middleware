@@ -55,7 +55,7 @@ def map_careteam_section(
             "identifier": [
                 {
                     "system": (
-                        "https://woess.ch/fhir/"
+                        "https://fhir.omnilink.ch/fhir/"
                         "NamingSystem/cda-import-careteam"
                     ),
                     "value": identifier_value

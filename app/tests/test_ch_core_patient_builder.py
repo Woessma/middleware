@@ -115,7 +115,7 @@ def test_build_mwo_patient_maps_participant_to_contact_slice_shape():
     assert contact["relationship"][0]["text"] == "Ehepartner/-in"
     assert contact["telecom"][0]["use"] == "mobile"
     assert contact["address"]["use"] == "home"
-    assert contact["extension"][0]["url"] == "https://woess.ch/fhir/StructureDefinition/patient-contact-identifier"
+    assert contact["extension"][0]["url"] == "https://fhir.omnilink.ch/fhir/StructureDefinition/patient-contact-identifier"
     assert contact["extension"][0]["valueIdentifier"]["system"] == "urn:oid:1.2.840.114350.1.13.521.2.7.2.827665"
     assert contact["extension"][0]["valueIdentifier"]["value"] == "519870"
 

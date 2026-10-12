@@ -82,7 +82,7 @@ def map_condition_section(
             "identifier": [
                 {
                     "system": (
-                        "https://woess.ch/fhir/"
+                        "https://fhir.omnilink.ch/fhir/"
                         "NamingSystem/cda-import-condition"
                     ),
                     "value": identifier_value

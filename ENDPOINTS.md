@@ -210,7 +210,7 @@ Verarbeitete Segmente:
 - Laborwerte mit Einheit und Referenzbereich
 - LOINC-Codings aus `OBX-3` mit `LN`
 - lokale Codes wie `NA^Natrium` mit dem System
-  `https://woess.ch/fhir/CodeSystem/hl7v2-local`
+  `https://fhir.omnilink.ch/fhir/CodeSystem/hl7v2-local`
 - HL7v2-Abweichungskennzeichnungen wie `LL` als FHIR-`interpretation`
 
 LOINC-Codes werden automatisch zentral über TX validiert. Lokale Codes werden

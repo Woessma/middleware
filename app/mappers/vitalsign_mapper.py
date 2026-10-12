@@ -114,7 +114,7 @@ def map_vitalsign_section(
                 "identifier": [
                     {
                         "system": (
-                            "https://woess.ch/fhir/"
+                            "https://fhir.omnilink.ch/fhir/"
                             "NamingSystem/"
                             "cda-import-vitalsign"
                         ),

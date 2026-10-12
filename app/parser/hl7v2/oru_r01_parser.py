@@ -8,9 +8,9 @@ from fhir.narrative import ensure_resource_narrative
 
 
 HL7_V2_IDENTIFIER_SYSTEM = "https://hl7.org/fhir/sid/us-ssn"
-LOCAL_IDENTIFIER_SYSTEM = "https://woess.ch/fhir/NamingSystem/hl7v2"
+LOCAL_IDENTIFIER_SYSTEM = "https://fhir.omnilink.ch/fhir/NamingSystem/hl7v2"
 LOINC_SYSTEM = "http://loinc.org"
-LOCAL_CODE_SYSTEM = "https://woess.ch/fhir/CodeSystem/hl7v2-local"
+LOCAL_CODE_SYSTEM = "https://fhir.omnilink.ch/fhir/CodeSystem/hl7v2-local"
 
 
 def _clean(value):
@@ -56,7 +56,7 @@ def _parse_patient(pid):
     assigning_authority = _clean(patient_identifier[3] if len(patient_identifier) > 3 else None)
     identifier_type = _clean(patient_identifier[4] if len(patient_identifier) > 4 else None)
     identifier_system = (
-        f"https://woess.ch/fhir/NamingSystem/hl7v2/{assigning_authority}"
+        f"https://fhir.omnilink.ch/fhir/NamingSystem/hl7v2/{assigning_authority}"
         if assigning_authority
         else LOCAL_IDENTIFIER_SYSTEM
     )
@@ -125,7 +125,7 @@ def _parse_observation(obx, patient_reference, obr):
         "resourceType": "Observation",
         "id": observation_id,
         "identifier": [{
-            "system": "https://woess.ch/fhir/NamingSystem/hl7v2-observation",
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/hl7v2-observation",
             "value": hashlib.sha256(observation_identity.encode("utf-8")).hexdigest(),
         }],
         "status": {"F": "final", "P": "preliminary"}.get(_clean(obx[11] if len(obx) > 11 else None), "final"),
@@ -159,7 +159,7 @@ def _parse_observation(obx, patient_reference, obr):
             "text": interpretation,
         }]
 
-    observation["extension"] = [{"url": "https://woess.ch/fhir/StructureDefinition/hl7v2-observation-id", "valueString": identifier}]
+    observation["extension"] = [{"url": "https://fhir.omnilink.ch/fhir/StructureDefinition/hl7v2-observation-id", "valueString": identifier}]
     return observation
 
 

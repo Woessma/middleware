@@ -37,7 +37,7 @@ class BundleDedupeTests(unittest.TestCase):
                 "resourceType": "Observation",
                 "identifier": [
                     {
-                        "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+                        "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
                         "value": "same",
                     }
                 ],
@@ -72,7 +72,7 @@ class BundleDedupeTests(unittest.TestCase):
                 "resource": {
                     "resourceType": "Observation",
                     "identifier": [
-                        {"system": "https://woess.ch/fhir/NamingSystem/cda-import-observation", "value": "same"}
+                        {"system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation", "value": "same"}
                     ],
                     "valueString": "ABC",
                 },
@@ -82,7 +82,7 @@ class BundleDedupeTests(unittest.TestCase):
                 "resource": {
                     "resourceType": "Observation",
                     "identifier": [
-                        {"system": "https://woess.ch/fhir/NamingSystem/cda-import-observation", "value": "same"}
+                        {"system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation", "value": "same"}
                     ],
                     "valueString": "ABC",
                 },
@@ -104,7 +104,7 @@ class BundleDedupeTests(unittest.TestCase):
                         "resourceType": "Observation",
                         "identifier": [
                             {
-                                "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+                                "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
                                 "value": "same",
                             }
                         ],
@@ -117,7 +117,7 @@ class BundleDedupeTests(unittest.TestCase):
                         "resourceType": "Observation",
                         "identifier": [
                             {
-                                "system": "https://woess.ch/fhir/NamingSystem/cda-import-observation",
+                                "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-observation",
                                 "value": "same",
                             }
                         ],
@@ -133,7 +133,7 @@ class BundleDedupeTests(unittest.TestCase):
         self.assertEqual(len(stabilized["entry"]), 1)
         self.assertEqual(
             stabilized["entry"][0]["request"]["ifNoneExist"],
-            "identifier=https://woess.ch/fhir/NamingSystem/cda-import-observation|same",
+            "identifier=same",
         )
 
     def test_stabilize_wraps_single_resource_as_idempotent_transaction(self):

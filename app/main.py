@@ -278,8 +278,8 @@ def _stabilize_bundle(bundle):
                     if system and value
                 ]
                 if identifier_values:
-                    system, value = identifier_values[0]
-                    request["ifNoneExist"] = f"identifier={system}|{value}"
+                    _, value = identifier_values[0]
+                    request["ifNoneExist"] = f"identifier={value}"
 
         stabilized_entry = dict(entry)
         ensure_resource_narrative(resource)
@@ -1188,7 +1188,7 @@ def _mark_vacd_bundle(bundle):
                         extension
                         for extension in contact.get("extension") or []
                         if extension.get("url")
-                        != "https://woess.ch/fhir/StructureDefinition/patient-contact-identifier"
+                        != "https://fhir.omnilink.ch/fhir/StructureDefinition/patient-contact-identifier"
                     ]
                     if not contact["extension"]:
                         contact.pop("extension", None)

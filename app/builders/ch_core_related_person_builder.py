@@ -16,7 +16,7 @@ CH_CORE_RELATED_PERSON_PROFILE = (
 )
 
 RELATED_PERSON_IDENTIFIER_SYSTEM = (
-    "https://woess.ch/fhir/NamingSystem/cda-import-relatedperson"
+    "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-relatedperson"
 )
 
 
