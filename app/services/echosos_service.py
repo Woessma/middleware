@@ -24,6 +24,7 @@ ECHOSOS_HOST = "eid.echosos.com"
 ECHOSOS_IDENTIFIER_SYSTEM = "https://fhir.omnilink.ch/fhir/NamingSystem/echosos"
 ECHOSOS_ALLERGY_IDENTIFIER_SYSTEM = "https://fhir.omnilink.ch/fhir/NamingSystem/echosos-allergy"
 ECHOSOS_CONDITION_IDENTIFIER_SYSTEM = "https://fhir.omnilink.ch/fhir/NamingSystem/echosos-condition"
+ECHOSOS_CONSENT_IDENTIFIER_SYSTEM = "https://fhir.omnilink.ch/fhir/NamingSystem/echosos-organ-donation-consent"
 BLOOD_GROUP_LOINC = "882-1"
 BLOOD_GROUPS = ["A-", "A+", "B-", "B+", "AB-", "AB+", "0-", "0+", "Unbekannt"]
 ECHOSOS_CODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
@@ -492,6 +493,49 @@ def _echosos_condition_resources(data, patient_id):
     return resources
 
 
+def _echosos_organ_donation_consents(data, patient_id):
+    organ_donation = data.get("organ_donation") or {}
+    swiss_registry = organ_donation.get("swiss_registry")
+
+    if swiss_registry is not None:
+        provision_type = "permit" if swiss_registry == "registered" else None
+    else:
+        provision_type = {
+            "yes": "permit",
+            "no": "deny",
+        }.get(organ_donation.get("outside_switzerland"))
+
+    if provision_type is None:
+        return []
+
+    patient_reference = f"Patient/{patient_id}"
+    return [{
+        "resourceType": "Consent",
+        "identifier": [{
+            "system": ECHOSOS_CONSENT_IDENTIFIER_SYSTEM,
+            "value": _echosos_identifier(data, "organ-donation-consent", provision_type),
+        }],
+        "status": "active",
+        "scope": {
+            "coding": [{
+                "system": "http://terminology.hl7.org/CodeSystem/consentscope",
+                "code": "adr",
+                "display": "Advance Care Directive",
+            }]
+        },
+        "category": [{
+            "coding": [{
+                "system": "http://loinc.org",
+                "code": "42348-3",
+                "display": "Advance directives",
+            }]
+        }],
+        "patient": {"reference": patient_reference},
+        "performer": [{"reference": patient_reference}],
+        "provision": {"type": provision_type},
+    }]
+
+
 def _upsert_resource(resource):
     resource_type = resource["resourceType"]
     identifier = resource["identifier"][0]
@@ -535,6 +579,10 @@ def import_echosos(raw_bytes, content_type=None, author="unknown"):
         _upsert_resource(item)
         for item in _echosos_condition_resources(data, patient["id"])
     ]
+    consents = [
+        _upsert_resource(item)
+        for item in _echosos_organ_donation_consents(data, patient["id"])
+    ]
     everything = requests.get(
         f"{FHIR_BASE}/Patient/{patient['id']}/$everything",
         params={"_count": 500},
@@ -550,5 +598,6 @@ def import_echosos(raw_bytes, content_type=None, author="unknown"):
         "observations": observations,
         "allergies": allergies,
         "conditions": conditions,
+        "consents": consents,
         "everything": everything.json(),
     }

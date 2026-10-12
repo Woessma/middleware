@@ -72,7 +72,8 @@ Status: In Umsetzung
 - [ ] Fehlerbilder aus HAPI-Antworten einheitlicher auf API-Fehler abbilden
 - [x] EchoSOS-QR/PKPass-Auswahlen fuer Allergien samt Reaktionen und Vorgeschichte dekodieren und als `AllergyIntolerance`/`Condition` persistieren
 - [x] EchoSOS-Blutgruppe als LOINC-Observation und bis zu drei Notfallkontakte in `Patient.contact` persistieren
-- [ ] EchoSOS-Medikamentenauswahlen, Organspende und Freitext in geeignete FHIR-Ressourcen ueberfuehren
+- [x] Explizite EchoSOS-Organspende-Zustimmung/Ablehnung als `Consent` persistieren; fehlender Schweizer Registereintrag ist keine Ablehnung
+- [ ] EchoSOS-Medikamentenauswahlen und Freitext in geeignete FHIR-Ressourcen ueberfuehren
 - [x] Bestehende CareTeam-PCP-Teilnehmer bei CDA-Reimport erhalten
 - [ ] TX-Validierung fuer Pharmacode-NamingSystem ueber eine passende Schweizer Terminologiequelle ergaenzen
 

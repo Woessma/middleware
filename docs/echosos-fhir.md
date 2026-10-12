@@ -40,6 +40,8 @@ Auswahlwerte ist kein Abruf der persönlichen QR-URL erforderlich.
 - `AllergyIntolerance`: pro Allergie ein Eintrag, SNOMED-Codierung und optionale
   Reaktionsmanifestation; der Patient ist Recorder
 - `Condition`: pro Vorgeschichtsauswahl ein Eintrag; der Patient ist Asserter
+- `Consent`: bei expliziter Organspende-Zustimmung oder -Ablehnung; der Patient
+  ist Patient und Performer
 
 „Keine bekannten Allergien“ wird als SNOMED-CT `716186003` codiert. Die
 Sammelauswahlen „Nierenversagen/Dialyse“ und
@@ -48,8 +50,15 @@ Quelltext gespeichert, damit keine der möglichen Diagnosen unbegründet
 behauptet wird. Für nicht eindeutig spezifizierte Allergieauswahlen bleibt der
 Originalbegriff erhalten.
 
-Medikamentenauswahlen, Organspende und „Sonstiges“ werden derzeit zwar aus dem
-QR dekodiert, aber noch nicht als eigene FHIR-Ressourcen persistiert.
+Eine explizite Organspende-Zustimmung wird als `Consent.provision.type = permit`,
+eine explizite Ablehnung als `deny` gespeichert. Verwendet werden Scope `adr`
+und LOINC `42348-3` (`Advance directives`). Ein Schweizer Registereintrag
+(`s=0`) gilt als Zustimmung. Ein fehlender Eintrag (`s=1`) ist keine Ablehnung;
+„Keine Angabe“ und fehlende Werte erzeugen keinen Consent. Der QR enthält kein
+Erklärungsdatum, daher wird keines ergänzt.
+
+Medikamentenauswahlen und „Sonstiges“ werden derzeit zwar aus dem QR dekodiert,
+aber noch nicht als eigene FHIR-Ressourcen persistiert.
 
 ## Kontaktmodell
 

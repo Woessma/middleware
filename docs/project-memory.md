@@ -420,6 +420,7 @@ Clinical Notes, DocumentReference, Binary und ein erstes UMZH-orientiertes Diagn
 - EchoSOS-Blutgruppe standardisiert: LOINC `882-1` fuer kombinierte ABO/Rh-Werte; ABO `883-9` und Rh `10331-7` werden in der Anzeige kombiniert
 - EchoSOS-QR-Auswahlen dekodiert: Allergien mit positionsbezogenen Reaktionen, medizinische Vorgeschichte sowie bis zu drei Notfallkontakte werden aus dem kompakten QR gelesen
 - EchoSOS-FHIR-Persistenz erweitert: SNOMED-`AllergyIntolerance` und SNOMED-`Condition`; Patient als Recorder/Asserter und als Performer der Blutgruppen-Observation
+- Explizite EchoSOS-Organspende-Angabe als `Consent` mit Scope `adr` und LOINC `42348-3`; nur Zustimmung/Ablehnung erzeugen Consent, Schweizer „kein Registereintrag“ und „keine Angabe“ nicht
 - EchoSOS-Medikamentenauswahlen, Organspende und Freitext werden dekodiert, sind aber noch nicht als eigene FHIR-Ressourcen persistiert
 - EchoSOS-Namensräume auf `https://fhir.omnilink.ch/fhir/NamingSystem/...` migriert; identifier-basierte Reimports bleiben beim Systemwechsel idempotent
 - Schwangerschaftsstatus als Observation mit LOINC `82810-3` und SNOMED CT `77386006` abgebildet

@@ -8,6 +8,7 @@ from services.echosos_service import (
     _blood_observations,
     _echosos_allergy_resources,
     _echosos_condition_resources,
+    _echosos_organ_donation_consents,
     _patient_resource,
     extract_echosos_url,
     parse_echosos_data,
@@ -165,6 +166,70 @@ class EchoSosServiceTests(unittest.TestCase):
         )
 
         self.assertEqual(conditions[0]["code"], {"text": "Nierenversagen/Dialyse"})
+
+    def test_builds_consent_for_explicit_organ_donation_choices_only(self):
+        consent_data = {
+            "source_url": "https://eid.echosos.com/#o=0",
+            "organ_donation": {"outside_switzerland": "yes", "swiss_registry": None},
+        }
+
+        yes_consent = _echosos_organ_donation_consents(consent_data, "123")[0]
+        no_consent = _echosos_organ_donation_consents(
+            {
+                "source_url": "https://eid.echosos.com/#o=1",
+                "organ_donation": {"outside_switzerland": "no", "swiss_registry": None},
+            },
+            "123",
+        )[0]
+
+        self.assertEqual(yes_consent["resourceType"], "Consent")
+        self.assertEqual(yes_consent["scope"]["coding"][0]["code"], "adr")
+        self.assertEqual(yes_consent["category"][0]["coding"][0]["code"], "42348-3")
+        self.assertEqual(yes_consent["patient"]["reference"], "Patient/123")
+        self.assertEqual(yes_consent["performer"][0]["reference"], "Patient/123")
+        self.assertEqual(yes_consent["provision"]["type"], "permit")
+        self.assertEqual(no_consent["provision"]["type"], "deny")
+        self.assertNotEqual(yes_consent["identifier"], no_consent["identifier"])
+
+        for status in ("no_information", None):
+            self.assertEqual(
+                _echosos_organ_donation_consents(
+                    {
+                        "source_url": "https://eid.echosos.com/#o=2",
+                        "organ_donation": {
+                            "outside_switzerland": status,
+                            "swiss_registry": None,
+                        },
+                    },
+                    "123",
+                ),
+                [],
+            )
+
+        self.assertEqual(
+            _echosos_organ_donation_consents(
+                {
+                    "source_url": "https://eid.echosos.com/#s=1",
+                    "organ_donation": {
+                        "outside_switzerland": None,
+                        "swiss_registry": "no_entry",
+                    },
+                },
+                "123",
+            ),
+            [],
+        )
+        swiss_registry_consent = _echosos_organ_donation_consents(
+            {
+                "source_url": "https://eid.echosos.com/#s=0",
+                "organ_donation": {
+                    "outside_switzerland": None,
+                    "swiss_registry": "registered",
+                },
+            },
+            "123",
+        )[0]
+        self.assertEqual(swiss_registry_consent["provision"]["type"], "permit")
 
     def test_reads_pkpass_barcode(self):
         output = io.BytesIO()
