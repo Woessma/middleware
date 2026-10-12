@@ -13,11 +13,44 @@ import requests
 
 from config import FHIR_BASE
 from services.terminology_service import validate_coding
+from terminology.echosos import (
+    ECHOSOS_ALLERGENS,
+    ECHOSOS_ALLERGY_REACTIONS,
+    ECHOSOS_MEDICAL_HISTORY,
+    SNOMED_SYSTEM,
+)
 
 ECHOSOS_HOST = "eid.echosos.com"
 ECHOSOS_IDENTIFIER_SYSTEM = "https://woess.ch/fhir/NamingSystem/echosos"
+ECHOSOS_ALLERGY_IDENTIFIER_SYSTEM = "https://woess.ch/fhir/NamingSystem/echosos-allergy"
+ECHOSOS_CONDITION_IDENTIFIER_SYSTEM = "https://woess.ch/fhir/NamingSystem/echosos-condition"
 BLOOD_GROUP_LOINC = "882-1"
 BLOOD_GROUPS = ["A-", "A+", "B-", "B+", "AB-", "AB+", "0-", "0+", "Unbekannt"]
+ECHOSOS_CODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+ECHOSOS_ALLERGY_OPTIONS = (
+    "Keine", "Penizillin", "Andere Antibiotika", "Entzündungshemmer", "Aspirin",
+    "Kontrastmittel", "Curare (Anästhesie)", "Erdnüsse", "Nüsse", "Meeresfrüchte",
+    "Bienenstich", "Wespenstich", "Andere",
+)
+ECHOSOS_ALLERGY_REACTION_OPTIONS = (
+    "Hautrötung", "Schwellung der Haut", "Atemnot", "Angioödem", "Anaphylaxie",
+)
+ECHOSOS_MEDICATION_OPTIONS = (
+    "Keine", "Antihypertensiva", "Betablocker", "Nitroderivate", "Antiarrhythmika",
+    "Antikoagulantien", "Antidepressiva", "Neuroleptika", "Antiepileptika",
+    "Antidiabetika vom Insulin-Typ", "Orale Antidiabetika", "Kortikoide",
+    "Immunsuppressiva", "Antiphlogistikum", "Opiate", "Andere",
+    "Amyloidgerichtete Therapie",
+)
+ECHOSOS_MEDICAL_HISTORY_OPTIONS = (
+    "Keine", "Asthma", "Chronisch obstruktive Lungenerkrankung (COPD)",
+    "Koronare Herzkrankheit", "Herzinsuffizienz", "Herzrhythmusstörungen",
+    "Periphere arterielle Verschlusskrankheit", "Abdominales Aortenaneurysma",
+    "Künstliche Herzklappen", "Störung der Blutgerinnung", "Krampfanfälle",
+    "Nierenversagen/Dialyse", "Leberkrankheit", "Ansteckende Krankheit",
+    "Herzschrittmacher/Defibrillator", "Andere", "Schwierige Intubation",
+    "Organtransplantierter", "Diabetes",
+)
 MONTHS = {
     "januar": "01",
     "februar": "02",
@@ -93,6 +126,18 @@ def _value(params, key):
     return values[0].strip() if values else ""
 
 
+def _decode_option_codes(params, key, options):
+    encoded = _value(params, key)
+    selections = []
+    for character in encoded:
+        try:
+            index = ECHOSOS_CODE_ALPHABET.index(character)
+            selections.append((index, options[index]))
+        except (ValueError, IndexError) as exc:
+            raise ValueError(f"Ungültiger EchoSOS-Auswahlcode im Feld {key}") from exc
+    return selections
+
+
 def _date_from_text(text):
     match = re.search(r"(\d{1,2})\.\s*([A-Za-zÄÖÜäöü]+)\s+(\d{4})", text)
     if not match:
@@ -136,8 +181,12 @@ def parse_echosos_data(url, page_html=""):
     params = parse_qs(parsed.fragment, keep_blank_values=True)
     first = html.unescape(_value(params, "f"))
     family = html.unescape(_value(params, "l"))
-    contact_name = html.unescape(_value(params, "n1"))
-    contact_phone = html.unescape(_value(params, "p1"))
+    emergency_contacts = []
+    for contact_number in range(1, 4):
+        contact_name = html.unescape(_value(params, f"n{contact_number}"))
+        contact_phone = html.unescape(_value(params, f"p{contact_number}"))
+        if contact_name or contact_phone:
+            emergency_contacts.append({"name": contact_name, "phone": contact_phone})
     text_parser = _TextParser()
     text_parser.feed(page_html)
     text = text_parser.text()
@@ -147,13 +196,50 @@ def parse_echosos_data(url, page_html=""):
         first, family = (parts[0], parts[-1]) if len(parts) > 1 else (parts[0], "")
     blood_code = _value(params, "b")
     blood_group = BLOOD_GROUPS[int(blood_code)] if blood_code.isdigit() and int(blood_code) < len(BLOOD_GROUPS) else _label_value(text, "Blutgruppe")
+    if blood_group not in BLOOD_GROUPS:
+        blood_group = None
+
+    allergy_codes = _decode_option_codes(params, "a", ECHOSOS_ALLERGY_OPTIONS)
+    reaction_codes = _decode_option_codes(params, "r", ECHOSOS_ALLERGY_REACTION_OPTIONS)
+    allergy_selections = []
+    for position, (index, allergen) in enumerate(allergy_codes):
+        if index == 0:
+            continue
+        reaction = reaction_codes[position][1] if position < len(reaction_codes) else None
+        allergy_selections.append({"allergen": allergen, "reaction": reaction})
+
+    medication_codes = _decode_option_codes(params, "m", ECHOSOS_MEDICATION_OPTIONS)
+    medical_history_codes = _decode_option_codes(
+        params, "d", ECHOSOS_MEDICAL_HISTORY_OPTIONS
+    )
+    organ_donation = {
+        "outside_switzerland": {
+            "0": "yes",
+            "1": "no",
+            "2": "no_information",
+        }.get(_value(params, "o")),
+        "swiss_registry": {
+            "0": "registered",
+            "1": "no_entry",
+        }.get(_value(params, "s")),
+    }
+
     return {
         "source_url": url,
         "given": first,
         "family": family,
         "birth_date": _date_from_echosos_code(_value(params, "g")) or _date_from_text(text),
-        "blood_group": blood_group if re.fullmatch(r"[A-Z][+-]", blood_group) else None,
-        "emergency_contact": {"name": contact_name, "phone": contact_phone},
+        "blood_group": blood_group,
+        "emergency_contact": emergency_contacts[0] if emergency_contacts else {"name": "", "phone": ""},
+        "emergency_contacts": emergency_contacts,
+        "allergy_selections": allergy_selections,
+        "no_known_allergies": [index for index, _ in allergy_codes] == [0],
+        "medication_selections": [label for index, label in medication_codes if index != 0],
+        "medical_history_selections": [
+            label for index, label in medical_history_codes if index != 0
+        ],
+        "organ_donation": organ_donation,
+        "other_information": html.unescape(_value(params, "i")) or _label_value(text, "Sonstiges"),
         "allergies": _label_value(text, "Allergien / Stärkste Reaktion"),
         "medications": _label_value(text, "Medikamente"),
         "medical_history": _label_value(text, "Medizinische Vorgeschichte"),
@@ -179,8 +265,10 @@ def _patient_resource(data, existing=None):
     }
     patient["name"] = [{"use": "official", "family": data["family"], "given": [data["given"]]}]
     patient["birthDate"] = data["birth_date"]
-    contact = data["emergency_contact"]
-    if contact.get("name") or contact.get("phone"):
+    contacts_to_add = data.get("emergency_contacts") or [data.get("emergency_contact", {})]
+    for contact in contacts_to_add:
+        if not (contact.get("name") or contact.get("phone")):
+            continue
         contacts = patient.setdefault("contact", [])
         matching = next(
             (
@@ -257,10 +345,158 @@ def _blood_observations(data, patient_id, author):
     }]
 
 
-def _upsert_observation(observation):
-    identifier = observation["identifier"][0]
+def _echosos_identifier(data, resource_type, selection_key):
+    source = f"{data['source_url']}|{resource_type}|{selection_key}"
+    return hashlib.sha256(source.encode("utf-8")).hexdigest()
+
+
+def _echosos_allergy_resources(data, patient_id):
+    patient_reference = f"Patient/{patient_id}"
+    resources = []
+    selections = data.get("allergy_selections", [])
+
+    if data.get("no_known_allergies") and not selections:
+        selections = [{"allergen": "Keine", "reaction": None}]
+
+    for position, selection in enumerate(selections):
+        allergen = selection["allergen"]
+        reaction = selection.get("reaction")
+        identifier_value = _echosos_identifier(
+            data,
+            "allergy",
+            f"{position}|{allergen}|{reaction or ''}",
+        )
+
+        allergy = {
+            "resourceType": "AllergyIntolerance",
+            "meta": {
+                "profile": [
+                    "http://fhir.ch/ig/ch-core/StructureDefinition/ch-core-allergyintolerance"
+                ]
+            },
+            "identifier": [{
+                "system": ECHOSOS_ALLERGY_IDENTIFIER_SYSTEM,
+                "value": identifier_value,
+            }],
+            "clinicalStatus": {
+                "coding": [{
+                    "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                    "code": "active",
+                }]
+            },
+            "verificationStatus": {
+                "coding": [{
+                    "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
+                    "code": "confirmed",
+                }]
+            },
+            "type": "allergy",
+            "patient": {"reference": patient_reference},
+            "recorder": {"reference": patient_reference},
+        }
+
+        if allergen == "Keine":
+            allergy["code"] = {
+                "coding": [{
+                    "system": SNOMED_SYSTEM,
+                    "code": "716186003",
+                    "display": "No known allergy",
+                }],
+                "text": "Keine bekannten Allergien",
+            }
+        else:
+            allergy_mapping = next(
+                (
+                    options[allergen]
+                    for options in ECHOSOS_ALLERGENS.values()
+                    if allergen in options
+                ),
+                None,
+            )
+            if allergy_mapping:
+                allergy["code"] = {
+                    "coding": [allergy_mapping],
+                    "text": allergen,
+                }
+            else:
+                allergy["code"] = {"text": allergen}
+
+            category = next(
+                (
+                    group
+                    for group, options in ECHOSOS_ALLERGENS.items()
+                    if allergen in options
+                ),
+                None,
+            )
+            category_code = {
+                "Medikamente": "medication",
+                "Lebensmittel": "food",
+                "Insektengift": "environment",
+            }.get(category)
+            if category_code:
+                allergy["category"] = [category_code]
+
+            if reaction in ECHOSOS_ALLERGY_REACTIONS:
+                manifestation = ECHOSOS_ALLERGY_REACTIONS[reaction]
+                allergy["reaction"] = [{
+                    "manifestation": [{
+                        "coding": [manifestation],
+                        "text": reaction,
+                    }]
+                }]
+
+        resources.append(allergy)
+
+    return resources
+
+
+def _echosos_condition_resources(data, patient_id):
+    patient_reference = f"Patient/{patient_id}"
+    resources = []
+
+    for position, label in enumerate(data.get("medical_history_selections", [])):
+        condition = {
+            "resourceType": "Condition",
+            "identifier": [{
+                "system": ECHOSOS_CONDITION_IDENTIFIER_SYSTEM,
+                "value": _echosos_identifier(data, "condition", f"{position}|{label}"),
+            }],
+            "category": [{
+                "coding": [{
+                    "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                    "code": "problem-list-item",
+                    "display": "Problem List Item",
+                }]
+            }],
+            "subject": {"reference": patient_reference},
+            "asserter": {"reference": patient_reference},
+            "verificationStatus": {
+                "coding": [{
+                    "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+                    "code": "confirmed",
+                }]
+            },
+            "code": {"text": label},
+        }
+
+        mapping = ECHOSOS_MEDICAL_HISTORY.get(label)
+        if mapping and not mapping.get("requires_disambiguation"):
+            condition["code"] = {
+                "coding": [mapping],
+                "text": label,
+            }
+
+        resources.append(condition)
+
+    return resources
+
+
+def _upsert_resource(resource):
+    resource_type = resource["resourceType"]
+    identifier = resource["identifier"][0]
     response = requests.get(
-        f"{FHIR_BASE}/Observation",
+        f"{FHIR_BASE}/{resource_type}",
         params={"identifier": f"{identifier['system']}|{identifier['value']}"},
         headers={"Accept": "application/fhir+json"},
         timeout=15,
@@ -268,15 +504,19 @@ def _upsert_observation(observation):
     response.raise_for_status()
     entries = response.json().get("entry", [])
     if entries:
-        observation["id"] = entries[0]["resource"]["id"]
-        url = f"{FHIR_BASE}/Observation/{observation['id']}"
+        resource["id"] = entries[0]["resource"]["id"]
+        url = f"{FHIR_BASE}/{resource_type}/{resource['id']}"
         method = requests.put
     else:
-        url = f"{FHIR_BASE}/Observation"
+        url = f"{FHIR_BASE}/{resource_type}"
         method = requests.post
-    result = method(url, json=observation, headers={"Content-Type": "application/fhir+json", "Accept": "application/fhir+json"}, timeout=15)
+    result = method(url, json=resource, headers={"Content-Type": "application/fhir+json", "Accept": "application/fhir+json"}, timeout=15)
     result.raise_for_status()
     return result.json()
+
+
+def _upsert_observation(observation):
+    return _upsert_resource(observation)
 
 
 def import_echosos(raw_bytes, content_type=None, author="unknown"):
@@ -287,6 +527,14 @@ def import_echosos(raw_bytes, content_type=None, author="unknown"):
     existing = _patient_search(data)
     patient = _upsert_patient(_patient_resource(data, existing))
     observations = [_upsert_observation(item) for item in _blood_observations(data, patient["id"], author)]
+    allergies = [
+        _upsert_resource(item)
+        for item in _echosos_allergy_resources(data, patient["id"])
+    ]
+    conditions = [
+        _upsert_resource(item)
+        for item in _echosos_condition_resources(data, patient["id"])
+    ]
     everything = requests.get(
         f"{FHIR_BASE}/Patient/{patient['id']}/$everything",
         params={"_count": 500},
@@ -300,5 +548,7 @@ def import_echosos(raw_bytes, content_type=None, author="unknown"):
         "patient_id": patient["id"],
         "created": existing is None,
         "observations": observations,
+        "allergies": allergies,
+        "conditions": conditions,
         "everything": everything.json(),
     }
