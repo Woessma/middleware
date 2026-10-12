@@ -5,16 +5,19 @@ import zipfile
 
 from services.card_analysis_service import analyze_card, _parse_ocr_card_text, _parse_swiss_id_ocr_text
 
-URL = "https://eid.echosos.com/#b=1&f=Markus%20&g=euJH&i=&l=W%C3%B6ss%20&n1=Claudia%20Maria%20Enz%20W%C3%B6ss&p1=%2B41765771463"
+URL = (
+    "https://eid.echosos.com/#b=1&f=Eva&g=fGBP&i=&l=Beispiel"
+    "&n1=Notfallkontakt&p1=%2B41000000000"
+)
 
 
 class CardAnalysisServiceTests(unittest.TestCase):
     def test_analyzes_echo_sos_qr_text(self):
         result = analyze_card(URL.encode("utf-8"))
 
-        self.assertEqual(result["person"]["given"], "Markus")
-        self.assertEqual(result["person"]["family"], "Wöss")
-        self.assertEqual(result["person"]["birth_date"], "1966-09-07")
+        self.assertEqual(result["person"]["given"], "Eva")
+        self.assertEqual(result["person"]["family"], "Beispiel")
+        self.assertEqual(result["person"]["birth_date"], "1990-01-15")
         self.assertEqual(result["card_type"], "echo_sos_qr")
         self.assertTrue(any(item["system"].endswith("echosos") for item in result["identifiers"]))
 
@@ -26,8 +29,8 @@ class CardAnalysisServiceTests(unittest.TestCase):
         result = analyze_card(output.getvalue(), content_type="application/vnd.apple.pkpass")
 
         self.assertEqual(result["card_type"], "echo_sos_qr")
-        self.assertEqual(result["person"]["given"], "Markus")
-        self.assertEqual(result["person"]["family"], "Wöss")
+        self.assertEqual(result["person"]["given"], "Eva")
+        self.assertEqual(result["person"]["family"], "Beispiel")
 
     def test_analyzes_generic_card_text(self):
         payload = "family=Muster\ngiven=Anna\nbirth_date=1990-05-21\nidentifier=A123456"

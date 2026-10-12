@@ -22,9 +22,12 @@ from terminology.echosos import (
 )
 
 
-URL = "https://eid.echosos.com/#b=1&f=Markus%20&g=euJH&i=&l=W%C3%B6ss%20&n1=Claudia%20Maria%20Enz%20W%C3%B6ss&p1=%2B41765771463"
+URL = (
+    "https://eid.echosos.com/#b=1&f=Eva&g=fGBP&i=&l=Beispiel"
+    "&n1=Notfallkontakt&p1=%2B41000000000"
+)
 COMPACT_QR_URL = (
-    "https://eid.echosos.com/#a=BHKL&b=8&d=BS&f=Max&g=euJH&l=Beispiel"
+    "https://eid.echosos.com/#a=BHKL&b=8&d=BS&f=Max&g=fGBP&l=Beispiel"
     "&m=BG&n1=Kontakt%201&p1=%2B41000000001"
     "&n2=Kontakt%202&p2=%2B41000000002"
     "&n3=Kontakt%203&p3=%2B41000000003&o=0&r=ACAE"
@@ -66,11 +69,27 @@ class EchoSosServiceTests(unittest.TestCase):
     def test_decodes_echo_sos_fields(self):
         data = parse_echosos_data(URL)
 
-        self.assertEqual(data["given"], "Markus")
-        self.assertEqual(data["family"], "Wöss")
-        self.assertEqual(data["birth_date"], "1966-09-07")
+        self.assertEqual(data["given"], "Eva")
+        self.assertEqual(data["family"], "Beispiel")
+        self.assertEqual(data["birth_date"], "1990-01-15")
         self.assertEqual(data["blood_group"], "A+")
-        self.assertEqual(data["emergency_contact"]["phone"], "+41765771463")
+        self.assertEqual(data["emergency_contact"]["phone"], "+41000000000")
+
+    def test_decodes_synthetic_qr_image_fixture(self):
+        image_path = __file__.replace(
+            "test_echosos_service.py",
+            "data/EchoSOS.synthetic.png",
+        )
+        with open(image_path, "rb") as image_file:
+            url = extract_echosos_url(image_file.read(), "image/png")
+
+        data = parse_echosos_data(url)
+
+        self.assertEqual(data["given"], "Max")
+        self.assertEqual(data["family"], "Beispiel")
+        self.assertEqual(data["birth_date"], "1990-01-15")
+        self.assertEqual(len(data["allergy_selections"]), 4)
+        self.assertEqual(len(data["medical_history_selections"]), 2)
 
     def test_decodes_compact_qr_selections_and_all_emergency_contacts(self):
         data = parse_echosos_data(COMPACT_QR_URL)
