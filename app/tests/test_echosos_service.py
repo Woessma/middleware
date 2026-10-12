@@ -177,14 +177,14 @@ class EchoSosServiceTests(unittest.TestCase):
         )
 
     @patch("services.echosos_service.validate_coding", return_value={"status": "validated"})
-    def test_blood_observation_has_import_date_and_author(self, _validate_coding):
+    def test_blood_observation_has_import_date_and_patient_performer(self, _validate_coding):
         observation = _blood_observations(
             {"blood_group": "A+", "source_url": URL},
             "3323",
             "test-user",
         )[0]
 
-        self.assertEqual(observation["performer"][0]["display"], "test-user")
+        self.assertEqual(observation["performer"][0]["reference"], "Patient/3323")
         self.assertEqual(
             observation["category"][0]["coding"][0]["code"],
             "laboratory",

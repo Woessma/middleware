@@ -341,7 +341,7 @@ def _blood_observations(data, patient_id, author):
         "code": {"coding": [coding], "text": "ABO and Rh group [Type] in Blood"},
         "subject": {"reference": f"Patient/{patient_id}"},
         "valueCodeableConcept": {"text": data["blood_group"]},
-        "performer": [{"display": author}],
+        "performer": [{"reference": f"Patient/{patient_id}"}],
     }]
 
 
