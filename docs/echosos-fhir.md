@@ -4,14 +4,17 @@ Stand: 2026-09-10
 
 ## Ablauf
 
-1. EchoSOS-QR, Bild oder PKPass wird an `POST /echosos/qr/import` gesendet.
-2. Die Middleware sucht den Patienten anhand von Name und Geburtsdatum.
-3. Der Patient wird angelegt oder aktualisiert.
-4. Kompakt codierte QR-Auswahlen werden dekodiert.
-5. Patientenkontakte, Blutgruppe, Allergien und medizinische Vorgeschichte werden
-   als FHIR gespeichert.
-6. Danach wird automatisch `Patient/{id}/$everything?_count=500` abgefragt.
-7. Die Antwort wird in der EchoSOS-Notfallansicht dargestellt.
+1. BridgeLink sendet EchoSOS-QR, Bild oder PKPass an `POST /echosos/qr/import`.
+2. Die Middleware dekodiert die QR-Daten und sucht den Patienten in HAPI anhand
+  von Vorname, Nachname und Geburtsdatum. Mehrere Treffer werden abgewiesen.
+3. Die Middleware erstellt ein FHIR-Transaction-Bundle mit Patient, Kontakten,
+  Blutgruppe, Allergien, Vorgeschichte und gegebenenfalls Consent.
+4. Die Middleware gibt das Bundle an BridgeLink zurück; sie schreibt die
+  Ressourcen nicht selbst nach HAPI.
+5. BridgeLink sendet das Bundle an HAPI und erhält die Transaction-Antwort.
+6. `$everything` ist ein separater Folgeaufruf von BridgeLink nach erfolgreichem
+  Write. Die resultierenden Daten können in der EchoSOS-Notfallansicht
+  dargestellt werden.
 
 Der QR-Import und die manuelle Patientensuche verwenden damit denselben
 FHIR-Gesamtdatenbestand.
@@ -31,7 +34,9 @@ Die Fragmentparameter des QR enthalten unter anderem:
 
 Die Auswahlindizes werden entsprechend der öffentlich ausgelieferten
 EchoSOS-Auswahllisten interpretiert. Der QR wird lokal dekodiert; für die
-Auswahlwerte ist kein Abruf der persönlichen QR-URL erforderlich.
+Auswahlwerte ist kein Abruf der persönlichen QR-URL erforderlich. Für
+Patienten- und Identifier-Abgleiche führt die Middleware lesende Suchen in HAPI
+aus; alle Writes erfolgen durch BridgeLink.
 
 ## Persistierte FHIR-Ressourcen
 
@@ -125,7 +130,7 @@ LOINC- oder SNOMED-Codes gegen TX validiert.
 
 ```bash
 curl -H "Accept: application/fhir+json" \
-  "https://fhir.omnilink.ch/fhir/Patient/{id}/$everything?_count=500"
+  "https://fhir.local.omnilink.ch/fhir/Patient/{id}/%24everything?_count=500"
 ```
 
 Die Antwort enthält Patient, `RelatedPerson`, `CareTeam`, `Practitioner`,

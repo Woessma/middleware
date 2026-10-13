@@ -21,7 +21,7 @@ Stand: 2026-09-10
 - FHIR Query Client zeigt den Verordner mit GLN oder dem Hinweis `GLN: nicht vorhanden`
 - Matrix Import Bot fuer eMediplan-PDF/Bild und CDA-XML mit blockierender Absender-Patienten-Pruefung umgesetzt
 - Private Zwei-Personen-Raeume und Self-Service-Identitaetsverwaltung fuer den Matrix-Bot umgesetzt
-- EchoSOS-QR/PKPass-Import mit SNOMED-Allergien, Reaktionsmanifestationen, SNOMED-Vorgeschichte, bedingtem Organspende-Consent, Blutgruppe, bis zu drei Notfallkontakten und automatischer `$everything`-Abfrage umgesetzt
+- EchoSOS-QR/PKPass-Import mit SNOMED-Allergien, Reaktionsmanifestationen, SNOMED-Vorgeschichte, bedingtem Organspende-Consent, Blutgruppe und bis zu drei Notfallkontakten umgesetzt; Transaction-Bundle-Write läuft über BridgeLink, `$everything` ist ein separater Folgeaufruf
 - FHIR-Kontaktmodell fuer `Patient.contact`, `RelatedPerson` und PCP-CareTeam dokumentiert und visualisiert
 - Blutgruppe, Schwangerschaftsstatus sowie kategorisierte Labor-/Vital-/Sozialobservations visualisiert
 

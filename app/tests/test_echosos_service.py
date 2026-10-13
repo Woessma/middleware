@@ -11,6 +11,7 @@ from services.echosos_service import (
     _echosos_organ_donation_consents,
     _patient_resource,
     extract_echosos_url,
+    import_echosos,
     parse_echosos_data,
 )
 from terminology.echosos import (
@@ -256,6 +257,74 @@ class EchoSosServiceTests(unittest.TestCase):
         )
         self.assertTrue(observation["effectiveDateTime"].endswith("Z"))
         self.assertEqual(observation["issued"], observation["effectiveDateTime"])
+
+    def test_import_returns_transaction_bundle_for_new_patient(self):
+        data = {
+            "given": "Eva",
+            "family": "Beispiel",
+            "birth_date": "1990-01-15",
+            "source_url": URL,
+            "blood_group": "A+",
+            "emergency_contacts": [],
+            "allergy_selections": [],
+            "medical_history_selections": [],
+            "organ_donation": {},
+        }
+        with (
+            patch("services.echosos_service.extract_echosos_url", return_value=URL),
+            patch("services.echosos_service.parse_echosos_data", return_value=data),
+            patch("services.echosos_service._patient_search", return_value=None),
+            patch("services.echosos_service._existing_resource_id", return_value=None),
+            patch("services.echosos_service.validate_coding", return_value={"status": "validated"}),
+            patch("services.echosos_service.requests.post") as post,
+            patch("services.echosos_service.requests.put") as put,
+        ):
+            bundle = import_echosos(b"qr")
+
+        patient_entry = bundle["entry"][0]
+        patient_reference = patient_entry["fullUrl"]
+        self.assertEqual(bundle["resourceType"], "Bundle")
+        self.assertEqual(bundle["type"], "transaction")
+        self.assertEqual(patient_entry["request"]["method"], "POST")
+        self.assertEqual(patient_entry["request"]["url"], "Patient")
+        self.assertIn("ifNoneExist", patient_entry["request"])
+        self.assertEqual(bundle["entry"][1]["resource"]["subject"]["reference"], patient_reference)
+        post.assert_not_called()
+        put.assert_not_called()
+
+    def test_import_updates_existing_patient_in_transaction_bundle(self):
+        data = {
+            "given": "Max",
+            "family": "Beispiel",
+            "birth_date": "1990-01-15",
+            "source_url": COMPACT_QR_URL,
+            "blood_group": None,
+            "emergency_contacts": [],
+            "allergy_selections": [{"allergen": "Penizillin", "reaction": None}],
+            "no_known_allergies": False,
+            "medical_history_selections": [],
+            "organ_donation": {},
+        }
+        existing = {
+            "resourceType": "Patient",
+            "id": "123",
+            "name": [{"family": "Beispiel", "given": ["Max"]}],
+            "birthDate": "1990-01-15",
+        }
+        with (
+            patch("services.echosos_service.extract_echosos_url", return_value=COMPACT_QR_URL),
+            patch("services.echosos_service.parse_echosos_data", return_value=data),
+            patch("services.echosos_service._patient_search", return_value=existing),
+            patch("services.echosos_service._existing_resource_id", return_value=None),
+            patch("services.echosos_service.requests.post") as post,
+            patch("services.echosos_service.requests.put") as put,
+        ):
+            bundle = import_echosos(b"qr")
+
+        self.assertEqual(bundle["entry"][0]["request"], {"method": "PUT", "url": "Patient/123"})
+        self.assertEqual(bundle["entry"][1]["resource"]["patient"]["reference"], "Patient/123")
+        post.assert_not_called()
+        put.assert_not_called()
 
 
 if __name__ == "__main__":

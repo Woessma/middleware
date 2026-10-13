@@ -168,7 +168,7 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `GET` | `/fhir/medications/epic-cda/from-server` | Liest Medikamente aus FHIR und liefert Epic-CDA-XML | FHIR -> Epic CDA |
 | `POST` | `/hl7v2/convert` | Konvertiert ORU^R01 in ein FHIR-Bundle | HL7v2 -> FHIR |
 | `POST` | `/hl7v2/import` | Konvertiert ORU^R01 und importiert das Bundle | HL7v2 -> BridgeLink -> HAPI |
-| `POST` | `/echosos/qr/import` | Importiert EchoSOS-QR/PKPass und liefert `$everything` | EchoSOS -> FHIR |
+| `POST` | `/echosos/qr/import` | Dekodiert EchoSOS-QR/PKPass und liefert ein Transaction-Bundle; BridgeLink schreibt nach HAPI | EchoSOS -> BridgeLink -> HAPI |
 | `POST` | `/fhir/stabilize` | Stabilisiert ein FHIR-Resource-Objekt oder Bundle | FHIR-Importvorbereitung |
 | `POST` | `/fhir/convert` | Stabilisiert, validiert und verarbeitet ein FHIR-Bundle | FHIR-Import |
 | `POST` | `/terminology/{resource_type}/{operation}` | Leitet Terminologieoperationen an TX weiter | Terminologie |

@@ -7,7 +7,8 @@ import re
 import zipfile
 from datetime import datetime, timezone
 from html.parser import HTMLParser
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, quote, urlsplit
+from uuid import uuid4
 
 import requests
 
@@ -255,7 +256,10 @@ def _patient_search(data):
         timeout=15,
     )
     response.raise_for_status()
-    entries = response.json().get("entry", [])
+    result = response.json()
+    entries = result.get("entry", [])
+    if result.get("total", len(entries)) > 1 or len(entries) > 1:
+        raise ValueError("EchoSOS-Patientensuche mit Name und Geburtsdatum ist nicht eindeutig")
     return entries[0]["resource"] if entries else None
 
 
@@ -307,13 +311,10 @@ def _patient_resource(data, existing=None):
     return patient
 
 
-def _upsert_patient(patient):
-    patient_id = patient.get("id")
-    method = requests.put if patient_id else requests.post
-    url = f"{FHIR_BASE}/Patient/{patient_id}" if patient_id else f"{FHIR_BASE}/Patient"
-    response = method(url, json=patient, headers={"Content-Type": "application/fhir+json", "Accept": "application/fhir+json"}, timeout=15)
-    response.raise_for_status()
-    return response.json()
+def _patient_reference(patient_id):
+    if patient_id.startswith(("Patient/", "urn:uuid:")):
+        return patient_id
+    return f"Patient/{patient_id}"
 
 
 def _blood_observations(data, patient_id, author):
@@ -340,9 +341,9 @@ def _blood_observations(data, patient_id, author):
             "text": "Laboratory"
         }],
         "code": {"coding": [coding], "text": "ABO and Rh group [Type] in Blood"},
-        "subject": {"reference": f"Patient/{patient_id}"},
+        "subject": {"reference": _patient_reference(patient_id)},
         "valueCodeableConcept": {"text": data["blood_group"]},
-        "performer": [{"reference": f"Patient/{patient_id}"}],
+        "performer": [{"reference": _patient_reference(patient_id)}],
     }]
 
 
@@ -352,7 +353,7 @@ def _echosos_identifier(data, resource_type, selection_key):
 
 
 def _echosos_allergy_resources(data, patient_id):
-    patient_reference = f"Patient/{patient_id}"
+    patient_reference = _patient_reference(patient_id)
     resources = []
     selections = data.get("allergy_selections", [])
 
@@ -453,7 +454,7 @@ def _echosos_allergy_resources(data, patient_id):
 
 
 def _echosos_condition_resources(data, patient_id):
-    patient_reference = f"Patient/{patient_id}"
+    patient_reference = _patient_reference(patient_id)
     resources = []
 
     for position, label in enumerate(data.get("medical_history_selections", [])):
@@ -508,7 +509,7 @@ def _echosos_organ_donation_consents(data, patient_id):
     if provision_type is None:
         return []
 
-    patient_reference = f"Patient/{patient_id}"
+    patient_reference = _patient_reference(patient_id)
     return [{
         "resourceType": "Consent",
         "identifier": [{
@@ -536,31 +537,61 @@ def _echosos_organ_donation_consents(data, patient_id):
     }]
 
 
-def _upsert_resource(resource):
+def _existing_resource_id(resource):
     resource_type = resource["resourceType"]
-    identifier = resource["identifier"][0]
+    identifiers = resource.get("identifier", [])
+    if isinstance(identifiers, dict):
+        identifiers = [identifiers]
+    identifier = next(
+        (item for item in identifiers if item.get("system") and item.get("value")),
+        None,
+    )
+    if identifier is None:
+        return None
     response = requests.get(
         f"{FHIR_BASE}/{resource_type}",
-        params={"identifier": identifier["value"]},
+        params={"identifier": f"{identifier['system']}|{identifier['value']}"},
         headers={"Accept": "application/fhir+json"},
         timeout=15,
     )
     response.raise_for_status()
     entries = response.json().get("entry", [])
-    if entries:
-        resource["id"] = entries[0]["resource"]["id"]
-        url = f"{FHIR_BASE}/{resource_type}/{resource['id']}"
-        method = requests.put
-    else:
-        url = f"{FHIR_BASE}/{resource_type}"
-        method = requests.post
-    result = method(url, json=resource, headers={"Content-Type": "application/fhir+json", "Accept": "application/fhir+json"}, timeout=15)
-    result.raise_for_status()
-    return result.json()
+    if len(entries) > 1:
+        raise ValueError(f"EchoSOS-Identifier fuer {resource_type} ist nicht eindeutig")
+    return entries[0].get("resource", {}).get("id") if entries else None
 
 
-def _upsert_observation(observation):
-    return _upsert_resource(observation)
+def _transaction_entry(resource):
+    resource_type = resource["resourceType"]
+    existing_id = _existing_resource_id(resource)
+    identifiers = resource.get("identifier", [])
+    if isinstance(identifiers, dict):
+        identifiers = [identifiers]
+    identifier = next(
+        (item for item in identifiers if item.get("system") and item.get("value")),
+        None,
+    )
+
+    if existing_id:
+        resource["id"] = existing_id
+        return {
+            "fullUrl": f"{FHIR_BASE.rstrip('/')}/{resource_type}/{existing_id}",
+            "resource": resource,
+            "request": {"method": "PUT", "url": f"{resource_type}/{existing_id}"},
+        }
+
+    request = {"method": "POST", "url": resource_type}
+    if identifier:
+        conditional = quote(
+            f"{identifier['system']}|{identifier['value']}",
+            safe="",
+        )
+        request["ifNoneExist"] = f"identifier={conditional}"
+    return {
+        "fullUrl": f"urn:uuid:{uuid4()}",
+        "resource": resource,
+        "request": request,
+    }
 
 
 def import_echosos(raw_bytes, content_type=None, author="unknown"):
@@ -569,35 +600,38 @@ def import_echosos(raw_bytes, content_type=None, author="unknown"):
     if not data["given"] or not data["family"] or not data["birth_date"]:
         raise ValueError("EchoSOS-Daten enthalten keinen vollständigen Namen und kein Geburtsdatum")
     existing = _patient_search(data)
-    patient = _upsert_patient(_patient_resource(data, existing))
-    observations = [_upsert_observation(item) for item in _blood_observations(data, patient["id"], author)]
-    allergies = [
-        _upsert_resource(item)
-        for item in _echosos_allergy_resources(data, patient["id"])
-    ]
-    conditions = [
-        _upsert_resource(item)
-        for item in _echosos_condition_resources(data, patient["id"])
-    ]
-    consents = [
-        _upsert_resource(item)
-        for item in _echosos_organ_donation_consents(data, patient["id"])
-    ]
-    everything = requests.get(
-        f"{FHIR_BASE}/Patient/{patient['id']}/$everything",
-        params={"_count": 500},
-        headers={"Accept": "application/fhir+json"},
-        timeout=15,
-    )
-    everything.raise_for_status()
+    patient = _patient_resource(data, existing)
+    if existing:
+        patient_id = existing["id"]
+        patient_reference = f"Patient/{patient_id}"
+        patient_entry = {
+            "fullUrl": f"{FHIR_BASE.rstrip('/')}/Patient/{patient_id}",
+            "resource": patient,
+            "request": {"method": "PUT", "url": f"Patient/{patient_id}"},
+        }
+    else:
+        patient_reference = f"urn:uuid:{uuid4()}"
+        patient_entry = {
+            "fullUrl": patient_reference,
+            "resource": patient,
+            "request": {
+                "method": "POST",
+                "url": "Patient",
+                "ifNoneExist": (
+                    f"family={quote(data['family'], safe='')}&"
+                    f"given={quote(data['given'], safe='')}&"
+                    f"birthdate={quote(data['birth_date'], safe='')}"
+                ),
+            },
+        }
+
+    resources = _blood_observations(data, patient_reference, author)
+    resources.extend(_echosos_allergy_resources(data, patient_reference))
+    resources.extend(_echosos_condition_resources(data, patient_reference))
+    resources.extend(_echosos_organ_donation_consents(data, patient_reference))
+
     return {
-        "source": data,
-        "patient": patient,
-        "patient_id": patient["id"],
-        "created": existing is None,
-        "observations": observations,
-        "allergies": allergies,
-        "conditions": conditions,
-        "consents": consents,
-        "everything": everything.json(),
+        "resourceType": "Bundle",
+        "type": "transaction",
+        "entry": [patient_entry] + [_transaction_entry(item) for item in resources],
     }

@@ -413,7 +413,7 @@ Clinical Notes, DocumentReference, Binary und ein erstes UMZH-orientiertes Diagn
 - Clinical Notes werden aus narrativen CDA-Sections extrahiert und als `DocumentReference` mit referenzierten `Binary`-Ressourcen in das Bundle aufgenommen
 - Patient-Import erweitert: `maritalStatus`, `deceasedBoolean`, `communication`, `contact`, `patient-birthPlace`, `patient-religion` und Contact-Identifier aus CDA werden in CH-Core-Patient uebernommen
 - `participant/associatedEntity` aus CDA-MWO wird als `Patient.contact` mit CH-Core-`contactData` plus fachlicher Beziehung (`SPS`) abgebildet
-- EchoSOS-QR/PKPass-Import umgesetzt: Patient-Upsert nach Name/Geburtsdatum, QR-Blutgruppe und Notfallkontakt sowie anschliessende `Patient/{id}/$everything?_count=500`-Abfrage
+- EchoSOS-QR/PKPass-Import: Patientensuche nach Vorname, Nachname und Geburtsdatum; Middleware liefert ein Transaction-Bundle an BridgeLink, das den HAPI-Write ausführt; `$everything` erfolgt separat nach erfolgreichem Write
 - EchoSOS-Kontaktmodell erweitert: `Patient.contact` und `RelatedPerson` werden gemeinsam angezeigt; `ECON` kennzeichnet Notfallkontakte, PCP wird ueber `CareTeam.participant` und `Practitioner` referenziert
 - CareTeam-Reimport abgesichert: Vorhandene PCP-Teilnehmer bleiben bei CDA-Updates erhalten, wenn der neue CDA-Abschnitt keinen PCP liefert
 - EchoSOS-Observations klassifiziert: Labor mit `laboratory`, Vitalzeichen mit `vital-signs`, Sozialanamnese mit `social-history`; unklassifizierte Observations und Encounter werden nur in der Notfallansicht ausgeblendet
