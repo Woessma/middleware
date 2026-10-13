@@ -4,7 +4,7 @@ Stand: 2026-09-10
 
 ## Ablauf
 
-1. BridgeLink sendet EchoSOS-QR, Bild oder PKPass an `POST /echosos/qr/import`.
+1. BridgeLink sendet EchoSOS-QR, Bild oder PKPass an `POST /echosos/qr`.
 2. Die Middleware dekodiert die QR-Daten und sucht den Patienten in HAPI anhand
   von Vorname, Nachname und Geburtsdatum. Mehrere Treffer werden abgewiesen.
 3. Die Middleware erstellt ein FHIR-Transaction-Bundle mit Patient, Kontakten,

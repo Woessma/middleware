@@ -68,7 +68,7 @@ https://middleware.local.omnilink.ch/echosos-fhir-test.html
 Der Import verwendet:
 
 ```text
-POST /echosos/qr/import
+POST /echosos/qr
 ```
 
 ## FHIR-Abfragen visualisieren

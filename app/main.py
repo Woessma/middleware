@@ -1630,7 +1630,7 @@ async def emediplan_qr_import(
         raise HTTPException(status_code=500, detail=str(ex))
 
 
-@app.post("/echosos/qr/import")
+@app.post("/echosos/qr")
 async def echosos_qr_import(
     request: Request,
     file: Optional[UploadFile] = File(None),
