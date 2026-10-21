@@ -124,8 +124,9 @@ aus dem Browser.
 und zeigt bei einer enthaltenen Patient-Ressource zuerst die Stammdaten,
 Kontaktinformationen, Adressen und Notfallkontakte. Danach folgen die fachliche
 Zusammenfassung. In der EchoSOS-Notfallansicht sind Patient und fachliche
-Zusammenfassung standardmaessig aufgeklappt; technische Ressourcendetails,
-Encounter und unklassifizierte Beobachtungen werden dort ausgeblendet.
+Zusammenfassung standardmaessig aufgeklappt. Alle Ressourcen und Felder sind
+zusaetzlich strukturiert aufklappbar; Encounter und weitere Beobachtungen
+werden nicht mehr ausgeblendet.
 Zusätzlich fasst die Seite vorhandene klinische Einträge als Tabellen zusammen:
 Vital Signs, Laborbefunde, Sozialanamnese, Medikationen, Probleme, Allergien und
 Unvertraeglichkeiten sowie Immunisierungen. Leere Bereiche werden ausgeblendet.
@@ -139,8 +140,17 @@ Hinweis `(GLN: nicht vorhanden)`.
 Bei `Composition`-Ressourcen werden die Sections inklusive Entry-Referenzen als
 Tabelle dargestellt.
 In der EchoSOS-Notfallansicht sind Patient und fachliche Zusammenfassung
-standardmaessig aufgeklappt. Technische Ressourcendetails, Encounter und
-unklassifizierte Beobachtungen werden dort ausgeblendet.
+standardmaessig aufgeklappt. Impfungen stehen mit Anzahl, Datum, Impfstoff,
+Charge, Durchfuehrenden und Status am Anfang. Bei fehlenden Impfungen wird
+dies fuer die geladene Patient-ID explizit angezeigt. `$everything`-Folgeseiten
+werden automatisch geladen; alle Ressourcen und Felder bleiben zugaenglich.
+
+Die QR-Vorschau verwendet vor dem Import den schreibfreien lokalen Decoder
+`POST /echosos/preview`. Sie zeigt alle erkannten Angaben einschliesslich
+weiterer Notfallkontakte, Allergiereaktionen, Medikamenten, Vorgeschichte,
+Organspende und Freitext sowie aufklappbare Originalparameter.
+Eine Vorschau ist keine Speicherbestaetigung: Medikamente und Freitext
+werden derzeit nicht als eigene klinische FHIR-Ressourcen gespeichert.
 
 Die obere Übersicht zeigt außerdem Blutgruppe und Schwangerschaftsstatus.
 Die voreingestellte Abfrage ist:

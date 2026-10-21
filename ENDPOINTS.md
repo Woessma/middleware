@@ -188,6 +188,7 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 |---|---|---|---|
 | Extern ueber BridgeLink | `POST` | `https://api.omnilink.ch/v1/echosos/resolve` | HAPI-Ergebnis als FHIR-Bundle mit `type: transaction-response` |
 | Browser-Import ueber Same-Origin-Proxy | `POST` | `/echosos/import` | Leitet den authentifizierten Request an den festen BridgeLink-Endpunkt weiter |
+| Lokale QR-Vorschau | `POST` | `/echosos/preview` | Dekodiert rohe URL-, Bild- oder PKPass-Daten mit Bearer-Header; alle erkannten Felder, kein BridgeLink-/FHIR-Zugriff und kein Write |
 | Direkt an die Middleware | `POST` | `https://middleware.local.omnilink.ch/echosos/qr` | FHIR-Bundle mit `type: transaction`, noch ohne Write |
 | Same-Origin-FHIR-Leseproxy | `GET` | `/echosos/fhir/Patient`, `/echosos/fhir/Patient/{id}` oder `/echosos/fhir/Patient/{id}/$everything` | Leitet authentifizierte Patient-Lesezugriffe an `FHIR_BASE` weiter |
 
@@ -214,6 +215,11 @@ wird nach erfolgreichem Write separat
 Same-Origin-Route leitet die Anfrage mit dem Keycloak-Bearer-Token an den
 konfigurierten FHIR-Server weiter. Die Patient-ID kann aus `response.location`
 entnommen werden.
+
+`_count=500` ist die Seitengroesse, kein Gesamtlimit. Der Same-Origin-Proxy
+fasst vertrauenswuerdige Folgeseiten zusammen und meldet unvollstaendige
+Abfragen als Fehler. Die Ansicht zeigt alle Ressourcen und Felder sowie
+Impfungen mit Anzahl und Details.
 
 Weitere Details: [EchoSOS zu FHIR](docs/echosos-fhir.md).
 Der erfolgreiche API-Test ist vom Browser-Login zu unterscheiden:

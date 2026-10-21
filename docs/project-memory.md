@@ -1,6 +1,45 @@
 # BridgeLink - Project Memory
 
-Stand: 2026-09-10
+Stand: 2026-10-21
+
+## Tagesabschluss 2026-10-21: CDA und EchoSOS
+
+- CDA-Zeichencodierung: Originaldatei und direkte HTTP-Konvertierung durch
+  `/cda/convert` liefern korrektes UTF-8. Der Importweg mit Bruno lieferte
+  zuvor beschaedigte Umlaute. Nach explizitem
+  `Content-Type: application/xml; charset=UTF-8` wurde der erneut importierte
+  Patient mit korrektem Namen verifiziert. Der genaue interne
+  BridgeLink-Decodierungsschritt wurde nicht durch einen Live-Channel-Export
+  nachgewiesen; HAPI nicht als Fehlerursache ausgeben. Multipart-Boundaries
+  beim Dateiversand beibehalten, nicht durch einen Raw-XML-Header ersetzen.
+- Die zwei alten Testpatienten samt 33 zugehoerigen Ressourcen wurden auf
+  ausdruecklichen Wunsch logisch geloescht (35 Ressourcen insgesamt).
+  Arzt und Organisation sowie FHIR-Historie blieben erhalten.
+  Keine Patientennamen, Geburtsdaten oder Original-CDA-Payloads in Git ablegen.
+- EchoSOS: feste BridgeLink-Route `/v1/echosos/resolve`, rohe Kamera-/Dateibodies,
+  strikte Transaction-Response-Pruefung vor separatem `$everything`.
+  Stabile Identifier und klinischer Altbestandsabgleich fuer Blutgruppe,
+  Allergien, Probleme und Organspende; Patientenkontakte sind idempotent.
+  Bereits vorhandene Dubletten wurden nur nach Freigabe bereinigt.
+- Patientenansicht: alle Ressourcentypen und Felder sichtbar, keine
+  Encounter-/Beobachtungs-Ausblendungen. Sichere serverseitige Pagination,
+  sieben Impfungen im CDA-Nachimport verifiziert. Patient-ID und Impfanzahl
+  bleiben sichtbar; keine automatische Zusammenfuehrung von Patienten.
+- QR-Vorschau: `/echosos/preview` dekodiert ohne BridgeLink-/FHIR-Zugriff mit
+  demselben Parser wie der Import. Alle erkannten Felder und originalen
+  Parameter sichtbar, auch Medikamente und Freitext. Diese beiden Inhalte
+  werden noch nicht als eigenstaendige FHIR-Ressourcen gespeichert.
+- Stand deployt und auf `main` gepusht; letzter Funktionscommit `1ba65d4`.
+  41 gezielte Python-Tests erfolgreich; Browserpruefungen fuer vollstaendige
+  Vorschau und Kamera-/Dateiablauf mit simuliertem Import erfolgreich.
+- Offen: Live-Keycloak-Redirect-Konfiguration weiter nicht unabhaengig
+  verifiziert; frueherer `redirect_uri`-Fehler bleibt historischer Befund.
+  Einen weiteren EchoSOS-Import gegen den korrigierten CDA-Patienten und
+  Wiederholungsimport erst beim naechsten bewussten Benutzertest pruefen.
+  Keine weiteren Patientenschreibzugriffe fuer den Tagesabschluss.
+
+Details: [EchoSOS](echosos-fhir.md),
+[BridgeLink/CDA](bridgelink-cda-usecases.md).
 
 ## Projektname
 

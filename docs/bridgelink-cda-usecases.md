@@ -18,6 +18,26 @@ aktive Ziel-URL, Auth-Header der Sender, Response-Transformer-Einstellungen und
 der endgueltige HAPI-Importstatus sind hier nicht verifiziert. Alte Werte aus
 Derby-Dateien sind kein Nachweis fuer die aktive Channel-Konfiguration.
 
+## Encoding-Abnahme vom 2026-10-21
+
+Die bereitgestellte Original-CDA-Datei war gueltiges UTF-8 mit korrekter
+XML-Deklaration und Umlauten. Direkte HTTP-Konvertierung an `/cda/convert`
+lieferte HTTP 200 und korrektes UTF-8-FHIR-JSON, ohne anschliessenden HAPI-Write.
+Im produktiven Importweg wurden zunaechst beschaedigte Umlaute gespeichert.
+Nach Korrektur des Bruno-Raw-XML-Headers auf
+`Content-Type: application/xml; charset=UTF-8` war der gespeicherte Name korrekt;
+auch die sieben Impfungen und insgesamt 20 `$everything`-Ressourcen wurden
+lesend verifiziert.
+
+Die explizite Charset-Angabe fuer Raw XML beibehalten. Bei Multipart-Dateien
+hingegen den automatisch erzeugten `multipart/form-data; boundary=...`-Header
+unveraendert lassen. Keine pauschale Latin-1/UTF-8-Reparatur auf bereits
+decodierten Strings anwenden. Eine entfernte XML-Deklaration allein beweist
+keinen Encodingfehler. Der exakte interne BridgeLink-Schritt bleibt ohne
+Vergleich derselben Nachricht bzw. aktuellen Channel-Export nicht belegt.
+Die Management-API war ohne Anmeldung nicht zugaenglich; weder Zugangsdaten
+noch produktive Konfiguration wurden fuer diese Diagnose geaendert.
+
 ## Gemeinsame Einstellungen (Vorlage, nicht Live-Export)
 
 | BridgeLink-Komponente | Einstellung / Pruefpunkt |
