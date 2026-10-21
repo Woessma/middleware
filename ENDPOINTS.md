@@ -4,7 +4,7 @@
 
 - BridgeLink FHIR Route: https://fhir.local.omnilink.ch/fhir/
 - Externer CDA-Endpunkt: https://api.omnilink.ch/v1/cda/convert
-- Externer EchoSOS-Endpunkt: https://api.omnilink.ch/v1/echosos/resolveRequestResponse
+- Externer EchoSOS-Endpunkt: https://api.omnilink.ch/v1/echosos/resolve
 - BridgeLink intern auf `001-l-hlt01`: http://10.20.30.212:9080/
 - Direkte Middleware-Adresse: https://middleware.local.omnilink.ch/
 - HAPI intern aus der Middleware: http://hapi-fhir:8080/fhir
@@ -24,7 +24,7 @@ Der Endpunkt akzeptiert CDA-XML in beiden Formen:
 BridgeLink leitet das erzeugte FHIR-Transaction-Bundle an HAPI FHIR weiter.
 
 ✅ **EchoSOS erfolgreich getestet am 2026-10-21:**
-`POST https://api.omnilink.ch/v1/echosos/resolveRequestResponse`
+`POST https://api.omnilink.ch/v1/echosos/resolve`
 liefert nach dem HAPI-Write HTTP `200 OK` mit einem FHIR-Bundle vom Typ
 `transaction-response`. Details siehe Abschnitt „EchoSOS ueber BridgeLink“.
 
@@ -186,7 +186,7 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 
 | Zugriff | Methode | URL | Antwort |
 |---|---|---|---|
-| Extern ueber BridgeLink | `POST` | `https://api.omnilink.ch/v1/echosos/resolveRequestResponse` | HAPI-Ergebnis als FHIR-Bundle mit `type: transaction-response` |
+| Extern ueber BridgeLink | `POST` | `https://api.omnilink.ch/v1/echosos/resolve` | HAPI-Ergebnis als FHIR-Bundle mit `type: transaction-response` |
 | Browser-Import ueber Same-Origin-Proxy | `POST` | `/echosos/import` | Leitet den authentifizierten Request an den festen BridgeLink-Endpunkt weiter |
 | Direkt an die Middleware | `POST` | `https://middleware.local.omnilink.ch/echosos/qr` | FHIR-Bundle mit `type: transaction`, noch ohne Write |
 | Same-Origin-FHIR-Leseproxy | `GET` | `/echosos/fhir/Patient`, `/echosos/fhir/Patient/{id}` oder `/echosos/fhir/Patient/{id}/$everything` | Leitet authentifizierte Patient-Lesezugriffe an `FHIR_BASE` weiter |

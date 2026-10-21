@@ -7,8 +7,12 @@ Stand: 2026-10-21
 Der externe BridgeLink-Aufruf ist:
 
 ```text
-POST https://api.omnilink.ch/v1/echosos/resolveRequestResponse
+POST https://api.omnilink.ch/v1/echosos/resolve
 ```
+
+Korrektur am 2026-10-21: Der in Bruno verwendete Pfad endet auf `/resolve`.
+Der zuvor dokumentierte Pfad mit dem Suffix `RequestResponse` liefert
+`Unknown endpoint` und darf nicht fuer den Import verwendet werden.
 
 Dieser Aufruf wurde am 2026-10-21 erfolgreich getestet: HTTP `200 OK`,
 `Content-Type: application/json;charset=utf-8`, Laufzeit ca. `2176 ms`.
@@ -25,7 +29,7 @@ POST https://middleware.local.omnilink.ch/echosos/qr
 ```
 
 Sie liefert nur das FHIR-Bundle mit `type: transaction` zurueck und schreibt
-nicht selbst nach HAPI. Der externe Pfad `/v1/echosos/resolveRequestResponse`
+nicht selbst nach HAPI. Der externe Pfad `/v1/echosos/resolve`
 wird von BridgeLink bereitgestellt, nicht von FastAPI.
 
 Der Browserclient `echosos-fhir-test.html` verwendet den Same-Origin-Proxy

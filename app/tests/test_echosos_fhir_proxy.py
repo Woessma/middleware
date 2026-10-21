@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 from fastapi.testclient import TestClient
 
-from main import ECHOSOS_IMPORT_URL, FHIR_BASE, app
+from main import FHIR_BASE, app
 
 
 class EchoSosFhirProxyTests(unittest.TestCase):
@@ -34,7 +34,7 @@ class EchoSosFhirProxyTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, upstream.content)
         mock_post.assert_called_once_with(
-            ECHOSOS_IMPORT_URL,
+            "https://api.omnilink.ch/v1/echosos/resolve",
             data=body,
             headers={
                 "Authorization": "Bearer test-token",
@@ -64,7 +64,10 @@ class EchoSosFhirProxyTests(unittest.TestCase):
 
         response = self.client.get(
             "/echosos/fhir/Patient/123/$everything?_count=500",
-            headers=self.headers,
+            headers={
+                **self.headers,
+                "Accept": "application/fhir+json, application/json",
+            },
         )
 
         self.assertEqual(response.status_code, 200)

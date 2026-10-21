@@ -162,7 +162,7 @@ from config import (
 UMZH_SEND_BASE_URL = os.getenv("UMZH_SEND_BASE_URL", "")
 UMZH_SEND_TIMEOUT = int(os.getenv("UMZH_SEND_TIMEOUT", "60"))
 BRIDGELINK_CDA_URL = "https://bridge.omnilink.ch/cda"
-ECHOSOS_IMPORT_URL = "https://api.omnilink.ch/v1/echosos/resolveRequestResponse"
+ECHOSOS_IMPORT_URL = "https://api.omnilink.ch/v1/echosos/resolve"
 
 def _validate_bundle(bundle):
     enrichment_report = enrich_bundle_terminology(bundle)

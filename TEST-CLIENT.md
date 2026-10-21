@@ -80,7 +80,7 @@ POST /echosos/import
 ```
 
 Die Middleware leitet diesen authentifizierten Same-Origin-Aufruf an den
-festen BridgeLink-Endpunkt `https://api.omnilink.ch/v1/echosos/resolveRequestResponse`
+festen BridgeLink-Endpunkt `https://api.omnilink.ch/v1/echosos/resolve`
 weiter. So muss der Browser keine Cross-Origin-Anfrage an BridgeLink senden.
 Der Client prueft das `transaction-response`-Bundle einschliesslich aller
 Eintragsstatus und Fehler-Issues. Die Patient-ID wird aus
