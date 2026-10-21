@@ -14,6 +14,7 @@ import logging
 import json
 import copy
 import hashlib
+from urllib.parse import urljoin, urlsplit
 
 DEBUG_MODE = os.getenv(
     "DEBUG_MODE",
@@ -601,6 +602,73 @@ async def echosos_fhir_proxy(patient_path: str, request: Request):
             headers=headers,
             timeout=30,
         )
+        if patient_path.endswith("/$everything") and upstream.status_code == 200:
+            try:
+                def read_page(content):
+                    result = json.loads(content)
+                    if not isinstance(result, dict) or result.get("resourceType") != "Bundle":
+                        raise ValueError("$everything did not return a Bundle")
+                    for field in ("entry", "link"):
+                        items = result.get(field, [])
+                        if not isinstance(items, list) or not all(isinstance(item, dict) for item in items):
+                            raise ValueError(f"Invalid $everything {field}")
+                    return result
+
+                bundle = read_page(upstream.content)
+                entries = list(bundle.get("entry", []))
+                page = bundle
+                visited = set()
+                base_url = FHIR_BASE.rstrip("/")
+                base_parts = urlsplit(base_url)
+                while True:
+                    next_links = [
+                        link["url"] for link in page.get("link", [])
+                        if link.get("relation") == "next"
+                    ]
+                    if not next_links:
+                        break
+                    if len(next_links) != 1:
+                        raise ValueError("Ambiguous $everything next page")
+                    next_url = urljoin(base_url + "/", next_links[0])
+                    parts = urlsplit(next_url)
+                    allowed_paths = {
+                        base_parts.path, base_parts.path + "/",
+                        base_parts.path + "/" + patient_path,
+                    }
+                    if (
+                        (parts.scheme, parts.netloc) != (base_parts.scheme, base_parts.netloc)
+                        or parts.path not in allowed_paths
+                        or parts.fragment
+                        or next_url in visited
+                    ):
+                        raise ValueError("Invalid or repeated $everything next page")
+                    visited.add(next_url)
+                    next_response = await run_in_threadpool(
+                        requests.get, next_url, headers=headers, timeout=30,
+                        allow_redirects=False,
+                    )
+                    if next_response.status_code != 200:
+                        raise ValueError(
+                            f"$everything next page returned HTTP {next_response.status_code}"
+                        )
+                    page = read_page(next_response.content)
+                    entries.extend(page.get("entry", []))
+                if visited:
+                    bundle["entry"] = entries
+                    bundle["link"] = [
+                        link for link in bundle.get("link", [])
+                        if link.get("relation") == "self"
+                    ]
+                    return Response(
+                        content=json.dumps(bundle),
+                        media_type="application/fhir+json",
+                    )
+            except (ValueError, KeyError, TypeError) as exc:
+                logger.warning("EchoSOS $everything response or pagination is invalid: %s", exc)
+                raise HTTPException(
+                    status_code=502,
+                    detail="FHIR-Gesamtabfrage unvollständig oder ungültig; keine vollständigen Patientendaten geladen.",
+                ) from exc
     except requests.RequestException as exc:
         logger.warning("EchoSOS FHIR query failed: %s", exc)
         raise HTTPException(

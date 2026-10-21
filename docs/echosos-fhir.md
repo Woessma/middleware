@@ -117,6 +117,24 @@ Konfigurationsschritte und genaue URI:
 Der QR-Import und die manuelle Patientensuche verwenden damit denselben
 FHIR-Gesamtdatenbestand.
 
+### Vollstaendige Patientenansicht
+
+`Patient/{id}/$everything?_count=500` liest alle vom FHIR-Server gelieferten
+Ressourcen, unabhaengig von EchoSOS oder einer anderen Datenquelle.
+`_count=500` ist die Seitengroesse, kein Gesamtlimit. Die Middleware folgt
+`next`-Links ausschliesslich auf dem konfigurierten FHIR-Server und fasst die
+Seiten zusammen. Ungueltige, zyklische oder fehlgeschlagene Folgeseiten
+werden als Fehler angezeigt, nicht als vollstaendige Abfrage ausgegeben.
+
+Die fachliche Zusammenfassung zeigt auch weitere Beobachtungen und
+Begegnungen. Zusaetzliche Ressourcentypen wie Composition, CareTeam,
+RelatedPerson, Practitioner, Organization oder Consent erhalten eigene
+Tabellen. Unter „Alle Ressourcen und Felder“ sind alle gelieferten Felder
+strukturiert aufklappbar und zusaetzlich als FHIR-JSON einsehbar. Inhalte
+werden als Text dargestellt, nicht als ungeprueftes FHIR-Narrative-HTML
+ausgefuehrt. Die Ressourcenanzahl bleibt neben der klinischen Uebersicht
+sichtbar.
+
 ## Deployment und Routenpruefung
 
 Der aktuelle interne Middleware-Endpoint ist `POST /echosos/qr`, nicht

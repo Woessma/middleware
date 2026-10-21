@@ -1,4 +1,5 @@
 import unittest
+import json
 from unittest.mock import Mock, patch
 
 from fastapi.testclient import TestClient
@@ -120,6 +121,92 @@ class EchoSosFhirProxyTests(unittest.TestCase):
             },
             timeout=30,
         )
+
+    @patch("main.requests.get")
+    def test_everything_combines_all_pages_without_filtering_resource_types(self, mock_get):
+        next_url = f"{FHIR_BASE.rstrip('/')}?_getpages=synthetic&_getpagesoffset=500"
+        pages = [
+            {
+                "resourceType": "Bundle",
+                "type": "searchset",
+                "entry": [{"resource": {"resourceType": "Patient", "id": "123"}}] + [
+                    {"resource": {"resourceType": "Observation", "id": str(index)}}
+                    for index in range(499)
+                ],
+                "link": [{"relation": "next", "url": next_url}],
+            },
+            {
+                "resourceType": "Bundle",
+                "type": "searchset",
+                "entry": [
+                    {"resource": {"resourceType": resource_type, "id": str(index)}}
+                    for index, resource_type in enumerate(
+                        ["Encounter", "Composition", "CareTeam", "Observation"]
+                    )
+                ],
+            },
+        ]
+        mock_get.side_effect = [
+            Mock(status_code=200, content=json.dumps(page).encode())
+            for page in pages
+        ]
+
+        response = self.client.get(
+            "/echosos/fhir/Patient/123/$everything?_count=500", headers=self.headers,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["entry"]), 504)
+        self.assertEqual(response.json()["link"], [])
+        self.assertEqual(mock_get.call_count, 2)
+        self.assertEqual(mock_get.call_args.args, (next_url,))
+        self.assertEqual(mock_get.call_args.kwargs["headers"]["Authorization"], self.headers["Authorization"])
+        self.assertFalse(mock_get.call_args.kwargs["allow_redirects"])
+
+    @patch("main.requests.get")
+    def test_everything_rejects_unsafe_or_cyclic_pagination(self, mock_get):
+        for next_url in (
+            "https://example.org/fhir?_getpages=foreign",
+            f"{FHIR_BASE.rstrip('/')}/Observation",
+            f"{FHIR_BASE.rstrip('/')}?_getpages=cycle",
+        ):
+            with self.subTest(next_url=next_url):
+                page = {
+                    "resourceType": "Bundle", "entry": [],
+                    "link": [{"relation": "next", "url": next_url}],
+                }
+                mock_get.reset_mock()
+                mock_get.side_effect = None
+                mock_get.return_value = Mock(status_code=200, content=json.dumps(page).encode())
+                response = self.client.get(
+                    "/echosos/fhir/Patient/123/$everything?_count=500", headers=self.headers,
+                )
+                self.assertEqual(response.status_code, 502)
+                self.assertLessEqual(mock_get.call_count, 2)
+
+    @patch("main.requests.get")
+    def test_everything_does_not_report_partial_results_as_success(self, mock_get):
+        first = {
+            "resourceType": "Bundle", "entry": [],
+            "link": [{"relation": "next", "url": f"{FHIR_BASE.rstrip('/')}?_getpages=test"}],
+        }
+        for next_page in (
+            Mock(status_code=500, content=b"unavailable"),
+            Mock(status_code=200, content=b'{"resourceType":"OperationOutcome"}'),
+            Mock(status_code=200, content=b"not JSON"),
+            Mock(status_code=302, content=b"redirect"),
+            Mock(status_code=200, content=b'{"resourceType":"Bundle","link":["invalid"]}'),
+            Mock(status_code=200, content=b'{"resourceType":"Bundle","entry":null}'),
+        ):
+            with self.subTest(next_page=next_page):
+                mock_get.side_effect = [
+                    Mock(status_code=200, content=json.dumps(first).encode()), next_page,
+                ]
+                response = self.client.get(
+                    "/echosos/fhir/Patient/123/$everything?_count=500", headers=self.headers,
+                )
+                self.assertEqual(response.status_code, 502)
+                self.assertIn("unvollständig", response.json()["detail"])
 
     @patch("main.requests.get")
     def test_rejects_requests_without_bearer_token(self, mock_get):
