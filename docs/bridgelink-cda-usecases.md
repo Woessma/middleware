@@ -2,7 +2,8 @@
 
 ## Geltungsbereich
 
-Der einzige dokumentierte externe CDA-Endpunkt ist `POST https://bridge.omnilink.ch/cda`.
+Der aktuelle externe CDA-Endpunkt ist seit 2026-10-21
+`POST https://api.omnilink.ch/v1/cda/convert`.
 Port `8081` ist ein interner BridgeLink-Port und keine externe CDA-URL. Die
 Middleware-Routen `/cda/...` sind interne Ziele, keine weiteren oeffentlichen
 BridgeLink-Endpunkte. Ein Eintrag in dieser Uebersicht bedeutet **nicht**, dass
@@ -21,7 +22,7 @@ Derby-Dateien sind kein Nachweis fuer die aktive Channel-Konfiguration.
 
 | BridgeLink-Komponente | Einstellung / Pruefpunkt |
 |---|---|
-| HTTP Listener | Extern nur `POST /cda` ueber `https://bridge.omnilink.ch`; keine weiteren CDA-Pfade oder Port `8081` als externe API dokumentieren. |
+| HTTP Listener | Extern `POST /v1/cda/convert` ueber `https://api.omnilink.ch`; keine weiteren CDA-Pfade oder Port `8081` als externe API dokumentieren. |
 | Authenticator | Eingehendes Keycloak-Bearer-JWT pruefen (Signatur, Issuer, Ablaufzeit, erforderliche Realm-Rolle und zugelassener Client). Die Client-Allowlist des Channels muss den tatsaechlichen `azp`/`client_id` enthalten. |
 | Request | Raw CDA-XML (`application/xml`) oder Multipart (`multipart/form-data`, Feld `file`) unveraendert mit passendem `Content-Type` inklusive Boundary an die Middleware weitergeben. `/cda/debug` akzeptiert ausschliesslich Multipart. |
 | HTTP Sender: Middleware | Internes, vom BridgeLink-Container erreichbares Ziel `POST /cda/<use-case>` konfigurieren. Ziel-URL im aktiven Channel pruefen; weder den Browser-Relay `/_proxy/bridge/cda` noch einen historischen Hostnamen als Ziel uebernehmen. |
@@ -40,7 +41,7 @@ Alle Zeilen ausser der Standard-Konvertierung **mit nachgelagertem HAPI-Write**
 beschreiben moegliche interne BridgeLink-Routen, keine bereits produktiven
 externen Schnittstellen. Fuer
 weitere oeffentliche Use-Cases ist eine explizite, autorisierte Auswahl innerhalb
-des einzigen `/cda`-Einstiegs erforderlich (z. B. eine serverseitig erlaubte
+des externen `/v1/cda/convert`-Einstiegs erforderlich (z. B. eine serverseitig erlaubte
 Use-Case-Kennung). Bis ein solcher Dispatcher eingerichtet und getestet ist,
 bleibt der externe Einstieg auf den bisherigen Import beschraenkt.
 
@@ -63,7 +64,7 @@ die BridgeLink-Konfiguration muss Zielsysteme und Zugangsdaten begrenzen.
 
 ## Bestehender Import-Workflow: Abnahme in BridgeLink
 
-1. Externer `POST /cda` mit einem **im Channel erlaubten** Bearer-Client und
+1. Externer `POST /v1/cda/convert` mit einem **im Channel erlaubten** Bearer-Client und
    Raw-XML oder Multipart-`file` entgegennehmen. Bei nicht erlaubtem Client
    endet der Request mit 401 vor der Middleware.
 2. Den CDA-Body samt passendem Content-Type an die aktive interne
@@ -75,12 +76,12 @@ die BridgeLink-Konfiguration muss Zielsysteme und Zugangsdaten begrenzen.
 4. Den tatsaechlichen HAPI-HTTP-Status und dessen Antwort an den Client
    weitergeben; einen Middleware-200er nicht als erfolgreichen Import ausgeben.
 5. Fuer einen End-to-End-Test `app/tests/data/CDA-EPIC.xml` verwenden, aber nur
-   mit bewusst freigegebenem Import: Der produktive `/cda`-Workflow schreibt
+   mit bewusst freigegebenem Import: Der externe `/v1/cda/convert`-Workflow schreibt
    danach nach HAPI. Ein isolierter Convert-Test verwendet nur die interne
    Middleware-Route `/cda/convert` oder einen separaten BridgeLink-Testchannel
    ohne HAPI-Destination.
 
 FHIR-zu-Epic-CDA und eMediplan-zu-Epic-CDA sind Ausgabe- bzw. andere
 Eingabe-Workflows; sie sind **keine** weiteren oeffentlichen CDA-Importpfade unter
-`https://bridge.omnilink.ch/cda`. Die Middleware-Routen und ihre fachlichen
+`https://api.omnilink.ch/v1/cda/convert`. Die Middleware-Routen und ihre fachlichen
 Vertraege stehen in [ENDPOINTS.md](../ENDPOINTS.md).

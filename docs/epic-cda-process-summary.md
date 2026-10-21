@@ -1,6 +1,6 @@
 # EPIC CDA Process Summary
 
-Stand: 2026-09-23
+Stand: 2026-10-21
 
 Dieses Dokument beschreibt den aktuellen End-to-End Prozess fuer:
 - CDA Import nach FHIR
@@ -9,18 +9,18 @@ Dieses Dokument beschreibt den aktuellen End-to-End Prozess fuer:
 
 Referenz-Testpfad:
 
-`app/tests/data/CDA-EPIC.xml` -> `POST https://bridge.omnilink.ch/cda` -> `GET https://fhir.omnilink.ch/fhir/medications/epic-cda/from-server?patient_id=<id>&count=100`
+`app/tests/data/CDA-EPIC.xml` -> `POST https://api.omnilink.ch/v1/cda/convert` -> `GET https://fhir.omnilink.ch/fhir/medications/epic-cda/from-server?patient_id=<id>&count=100`
 
 Externer CDA-Endpunkt:
 
 ```text
-https://bridge.omnilink.ch/cda
+https://api.omnilink.ch/v1/cda/convert
 ```
 
 Damit lautet der Import-Aufruf vollständig:
 
 ```text
-POST https://bridge.omnilink.ch/cda
+POST https://api.omnilink.ch/v1/cda/convert
 ```
 
 Die Referenzen nutzen die Kommentar-IDs in den Python-Dateien.

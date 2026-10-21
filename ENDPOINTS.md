@@ -3,7 +3,8 @@
 ## Basis-URLs
 
 - BridgeLink FHIR Route: https://fhir.local.omnilink.ch/fhir/
-- Externer CDA-Endpunkt: https://bridge.omnilink.ch/cda
+- Externer CDA-Endpunkt: https://api.omnilink.ch/v1/cda/convert
+- Externer EchoSOS-Endpunkt: https://api.omnilink.ch/v1/echosos/resolveRequestResponse
 - BridgeLink intern auf `001-l-hlt01`: http://10.20.30.212:9080/
 - Direkte Middleware-Adresse: https://middleware.local.omnilink.ch/
 - HAPI intern aus der Middleware: http://hapi-fhir:8080/fhir
@@ -13,7 +14,7 @@
 ## Status
 
 ✅ **Getestet und freigegeben:** CDA-Import über
-`https://bridge.omnilink.ch/cda`
+`https://api.omnilink.ch/v1/cda/convert`
 
 Der Endpunkt akzeptiert CDA-XML in beiden Formen:
 
@@ -22,7 +23,12 @@ Der Endpunkt akzeptiert CDA-XML in beiden Formen:
 
 BridgeLink leitet das erzeugte FHIR-Transaction-Bundle an HAPI FHIR weiter.
 
-🚧 **Weitere Use Cases:** in Konstruktion und noch nicht als produktiver
+✅ **EchoSOS erfolgreich getestet am 2026-10-21:**
+`POST https://api.omnilink.ch/v1/echosos/resolveRequestResponse`
+liefert nach dem HAPI-Write HTTP `200 OK` mit einem FHIR-Bundle vom Typ
+`transaction-response`. Details siehe Abschnitt „EchoSOS ueber BridgeLink“.
+
+🚧 **Weitere Use Cases ausser CDA und EchoSOS:** in Konstruktion und noch nicht als produktiver
 BridgeLink-Workflow freigegeben.
 
 ### Bruno / aktueller BridgeLink-Aufruf
@@ -30,20 +36,20 @@ BridgeLink-Workflow freigegeben.
 Für Bruno wird der externe BridgeLink-CDA-Endpunkt verwendet:
 
 ```text
-https://bridge.omnilink.ch/cda
+https://api.omnilink.ch/v1/cda/convert
 ```
 
 Import-Aufruf:
 
 ```text
-POST https://bridge.omnilink.ch/cda
+POST https://api.omnilink.ch/v1/cda/convert
 ```
 
 Der interne FastAPI-Testpfad `/cda/import` wurde mit `app/tests/data/CDA-AT.xml`
 erfolgreich verarbeitet (`HTTP 200`, Transaction-Bundle mit 43 Einträgen).
 Dieser interne Aufruf konvertiert und validiert nur; er schreibt nicht nach HAPI.
 
-Der externe CDA-Endpunkt `https://bridge.omnilink.ch/cda` ist der dokumentierte
+Der externe CDA-Endpunkt `https://api.omnilink.ch/v1/cda/convert` ist der dokumentierte
 BridgeLink-Aufruf. BridgeLink leitet das Ergebnis an HAPI FHIR weiter.
 
 ## Beobachtung aus dem Live-System
@@ -117,9 +123,9 @@ Erwartung:
 
 ---
 
-## 2) CDA ueber BridgeLink: https://bridge.omnilink.ch/cda
+## 2) CDA ueber BridgeLink: https://api.omnilink.ch/v1/cda/convert
 
-Dieser Endpunkt ist der externe CDA-Basispfad der Middleware, nicht der FHIR-Server selbst. Die Middleware verarbeitet CDA-/FHIR-Umwandlungen und Imports.
+Dieser Endpunkt ist der externe CDA-Aufruf ueber BridgeLink, nicht der FHIR-Server selbst. Die Middleware verarbeitet CDA-/FHIR-Umwandlungen und Imports.
 
 ### Erwartetes Verhalten
 
@@ -130,7 +136,8 @@ Dieser Endpunkt ist der externe CDA-Basispfad der Middleware, nicht der FHIR-Ser
 
 Der derzeitige Arbeitsweg ist:
 
-- CDA wird per `POST /cda/import` an die Middleware über BridgeLink gesendet
+- CDA wird extern per `POST https://api.omnilink.ch/v1/cda/convert` an
+  BridgeLink gesendet und an die interne Middleware-Route weitergeleitet
 - Die Middleware wandelt das CDA in ein FHIR Bundle mit einer CH IPS Composition um. Die
   klinischen Ressourcen werden in den zugehörigen Composition-Sections referenziert.
 - Import-Bundles ergänzen für FHIR-DomainResources eine generierte `Narrative`
@@ -140,7 +147,9 @@ Der derzeitige Arbeitsweg ist:
 - BridgeLink schreibt das Bundle an den FHIR-Server und gibt dessen Ergebnis an den Client zurück
 
 Die Python-Middleware selbst verwendet intern die Route `/cda/...`. Der externe
-BridgeLink-CDA-Basispfad ist `https://bridge.omnilink.ch/cda`.
+BridgeLink-CDA-Endpunkt ist seit 2026-10-21
+`https://api.omnilink.ch/v1/cda/convert`. Die internen Middleware-Routen
+bleiben unveraendert; der externe Pfad ist keine zusaetzliche FastAPI-Route.
 
 Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server importieren wollen.
 
@@ -172,6 +181,37 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/fhir/stabilize` | Stabilisiert ein FHIR-Resource-Objekt oder Bundle | FHIR-Importvorbereitung |
 | `POST` | `/fhir/convert` | Stabilisiert, validiert und verarbeitet ein FHIR-Bundle | FHIR-Import |
 | `POST` | `/terminology/{resource_type}/{operation}` | Leitet Terminologieoperationen an TX weiter | Terminologie |
+
+### EchoSOS ueber BridgeLink
+
+| Zugriff | Methode | URL | Antwort |
+|---|---|---|---|
+| Extern ueber BridgeLink | `POST` | `https://api.omnilink.ch/v1/echosos/resolveRequestResponse` | HAPI-Ergebnis als FHIR-Bundle mit `type: transaction-response` |
+| Direkt an die Middleware | `POST` | `https://middleware.local.omnilink.ch/echosos/qr` | FHIR-Bundle mit `type: transaction`, noch ohne Write |
+
+Die Middleware dekodiert den EchoSOS-QR beziehungsweise die PKPass-Datei,
+gleicht den Patienten ab und erstellt das Transaction-Bundle. BridgeLink
+schreibt dieses Bundle nach HAPI und gibt die Transaction-Antwort zurueck.
+Der externe Pfad ist keine zusaetzliche FastAPI-Route.
+
+**Bestaetigter Aufruf vom 2026-10-21:**
+
+- HTTP `200 OK`, beobachtete Laufzeit ca. `2176 ms`
+- `Content-Type: application/json;charset=utf-8`
+- `resourceType: Bundle`, `type: transaction-response`
+- Patient-Eintrag mit `response.status: 200 OK` und
+  `response.location: Patient/{id}/_history/{version}`
+- `response.etag`, `response.lastModified` und ein informatives
+  `OperationOutcome` im Patient-Eintrag
+
+HTTP `200` allein ersetzt nicht die Pruefung der einzelnen
+`entry[].response.status` und gegebenenfalls `OperationOutcome`-Issues.
+Die Transaction-Antwort ist kein Patientendaten-Bundle. Fuer die Notfallansicht
+wird nach erfolgreichem Write separat
+`GET https://fhir.local.omnilink.ch/fhir/Patient/{id}/$everything?_count=500`
+aufgerufen. Die Patient-ID kann aus `response.location` entnommen werden.
+
+Weitere Details: [EchoSOS zu FHIR](docs/echosos-fhir.md).
 
 ### eMediplan-Verordner und refdata.ch
 
@@ -476,7 +516,7 @@ Beispiel-JSON:
 ### Beispiel für den Middleware-Weg
 
 ```http
-POST https://bridge.omnilink.ch/cda
+POST https://api.omnilink.ch/v1/cda/convert
 Authorization: Bearer <JWT>
 Content-Type: multipart/form-data
 ```
@@ -500,6 +540,6 @@ Erwartung:
 ## Kurzfassung
 
 - `https://fhir.local.omnilink.ch/fhir/` = FHIR-Route ueber BridgeLink mit GET, POST, PUT, PATCH und DELETE
-- `https://bridge.omnilink.ch/cda` = einziger externer CDA-Endpunkt ueber BridgeLink
+- `https://api.omnilink.ch/v1/cda/convert` = externer CDA-Endpunkt ueber BridgeLink
 
 Wenn du möchtest, kann ich daraus auch noch eine sauberere Version mit Swagger-ähnlicher Tabellenstruktur oder eine Version für externe Stakeholder im Projekt-Style machen.

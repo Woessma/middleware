@@ -1,23 +1,78 @@
 # EchoSOS zu FHIR
 
-Stand: 2026-09-10
+Stand: 2026-10-21
+
+## Endpunkte und bestaetigter Status
+
+Der externe BridgeLink-Aufruf ist:
+
+```text
+POST https://api.omnilink.ch/v1/echosos/resolveRequestResponse
+```
+
+Dieser Aufruf wurde am 2026-10-21 erfolgreich getestet: HTTP `200 OK`,
+`Content-Type: application/json;charset=utf-8`, Laufzeit ca. `2176 ms`.
+Die Antwort ist ein FHIR-Bundle mit `resourceType: Bundle` und
+`type: transaction-response`. Der beobachtete Patient-Eintrag enthaelt
+`response.status: 200 OK`, eine Location im Format
+`Patient/{id}/_history/{version}`, `etag`, `lastModified` und ein
+`OperationOutcome` mit informativem Issue.
+
+Davon zu unterscheiden ist die direkte Middleware-Route:
+
+```text
+POST https://middleware.local.omnilink.ch/echosos/qr
+```
+
+Sie liefert nur das FHIR-Bundle mit `type: transaction` zurueck und schreibt
+nicht selbst nach HAPI. Der externe Pfad `/v1/echosos/resolveRequestResponse`
+wird von BridgeLink bereitgestellt, nicht von FastAPI.
 
 ## Ablauf
 
-1. BridgeLink sendet EchoSOS-QR, Bild oder PKPass an `POST /echosos/qr`.
+1. Der Client ruft den externen EchoSOS-Endpunkt auf; BridgeLink sendet
+  EchoSOS-QR, Bild oder PKPass an die interne Route `POST /echosos/qr`.
 2. Die Middleware dekodiert die QR-Daten und sucht den Patienten in HAPI anhand
   von Vorname, Nachname und Geburtsdatum. Mehrere Treffer werden abgewiesen.
 3. Die Middleware erstellt ein FHIR-Transaction-Bundle mit Patient, Kontakten,
   Blutgruppe, Allergien, Vorgeschichte und gegebenenfalls Consent.
 4. Die Middleware gibt das Bundle an BridgeLink zurück; sie schreibt die
   Ressourcen nicht selbst nach HAPI.
-5. BridgeLink sendet das Bundle an HAPI und erhält die Transaction-Antwort.
+5. BridgeLink sendet das Bundle an HAPI und gibt dessen Transaction-Antwort
+  (`type: transaction-response`) an den Client zurueck. Die einzelnen
+  `entry[].response.status` und gegebenenfalls `OperationOutcome`-Issues
+  muessen zusaetzlich zum HTTP-Status geprueft werden.
 6. `$everything` ist ein separater Folgeaufruf von BridgeLink nach erfolgreichem
   Write. Die resultierenden Daten können in der EchoSOS-Notfallansicht
   dargestellt werden.
 
 Der QR-Import und die manuelle Patientensuche verwenden damit denselben
 FHIR-Gesamtdatenbestand.
+
+## Deployment und Routenpruefung
+
+Der aktuelle interne Middleware-Endpoint ist `POST /echosos/qr`, nicht
+`/echosos/qr/import`. Extern gilt der oben dokumentierte BridgeLink-Endpunkt.
+Das Docker-Image enthaelt eine Kopie des Quellcodes; Aenderungen werden nicht
+automatisch in einen laufenden Container uebernommen. Nach einer Aktualisierung
+im Projektverzeichnis neu bauen und den Dienst neu erstellen:
+
+```bash
+docker compose up -d --build middleware
+```
+
+Ein POST ohne Nutzdaten prueft die Route, ohne Patientendaten zu verarbeiten:
+
+```bash
+curl -i -X POST https://middleware.local.omnilink.ch/echosos/qr
+```
+
+Erwartet wird HTTP `400` mit
+`{"detail":"No file provided (PKPass, PDF or QR code image)"}`.
+HTTP `404` mit `{"detail":"Not Found"}` bedeutet dagegen, dass die erreichte
+Instanz die Route nicht kennt. In diesem Fall auch direkt gegen
+`http://127.0.0.1:8000/echosos/qr` pruefen, um Deployment und Proxy-Routing
+zu unterscheiden.
 
 ## QR-Daten
 

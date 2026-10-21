@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: 2026-09-24
+Stand: 2026-10-21
 
 ## Zielarchitektur
 
@@ -20,7 +20,7 @@ Quellsystem
 Zusatzpfad fuer EPIC Medikation:
 
 EPIC CDA
-→ BridgeLink `POST https://bridge.omnilink.ch/cda` (CDA-Import)
+→ BridgeLink `POST https://api.omnilink.ch/v1/cda/convert` (CDA-Import)
 → FHIR MedicationStatement/Medication in HAPI
 → BridgeLink `GET /middleware/fhir/medications/epic-cda/from-server?patient_id=<id>&count=100`
 → EPIC CDA Export
@@ -45,7 +45,7 @@ EPIC CDA
 ## Schnittstellen
 
 - CDA-API intern: `/cda/debug`, `/cda/convert`, `/cda/import`, `/cda/umzh/convert`, `/cda/umzh/send`
-- Externer CDA-Import ueber BridgeLink: `POST https://bridge.omnilink.ch/cda`
+- Externer CDA-Import ueber BridgeLink: `POST https://api.omnilink.ch/v1/cda/convert`
 - Interner Browser-Relay: `POST /_proxy/bridge/cda` leitet CDA-Requests mit Bearer-Token an den festen BridgeLink-Endpunkt weiter; dies ist kein zusaetzlicher externer CDA-Endpunkt.
 - Weitere CDA-Funktionen intern: `/cda/debug`, `/cda/convert`, `/cda/etoc/convert`, `/cda/umzh/convert`, `/cda/umzh/send`, `/cda/vacd/convert`, `/cda/vacd/send` (in Konstruktion)
 - CH-VACD-API: `/cda/vacd/convert` fuer CH-VACD Immunization Administration Documents
@@ -67,7 +67,7 @@ EPIC CDA
 - Terminologie: `https://tx.fhir.ch/r4` liefert HTTP 200 nach Redirect.
 - VACD Send: `https://vaccination-demo.raly.ch/api/fhir/metadata` liefert HTTP 200.
 - Direkte Middleware: `https://middleware.local.omnilink.ch` ist erreichbar.
-- BridgeLink `https://bridge.omnilink.ch/cda`: CDA-Import ist aktiv und schreibt
+- BridgeLink `https://api.omnilink.ch/v1/cda/convert`: CDA-Import ist aktiv und schreibt
 	über BridgeLink nach HAPI.
 
 ## eMediplan-Verordner und GLN
