@@ -3,6 +3,16 @@
 `test-client.html` ist eine Browser-Werkbank für die fachlichen Middleware-
 Use-Cases. Sie verarbeitet FHIR JSON, CDA XML, HL7v2 und eMediplan-Payloads und
 stellt auch EPIC-CDA-, UMZH-, Terminologie- und Smoke-Test-Pfade bereit.
+Der freigegebene CDA-Import verwendet Keycloak Authorization Code mit PKCE
+und leitet authentifizierte Requests an
+`https://api.omnilink.ch/v1/cda/convert` weiter. Die Client-ID
+`app-omnilink-cardtest` ist wie beim EchoSOS-Client verborgen vorbelegt.
+Ausgewaehlte UTF-8-XML-Dateien werden ohne Multipart-Huelle als Raw-Body
+mit `Content-Type: application/xml; charset=UTF-8` gesendet. Fuer eingefuegten
+XML-Text gilt derselbe Header. FHIR-`OperationOutcome`-Fehler und fehlgeschlagene
+Bundle-Eintraege werden auch bei HTTP 200 als Fehler angezeigt.
+Die POST-Anzeige nennt den oeffentlichen CDA-Endpunkt; der Request verwendet
+weiterhin den internen Same-Origin-Proxy.
 
 ## Auf der Testlab-VM öffnen
 

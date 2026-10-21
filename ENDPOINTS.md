@@ -77,10 +77,15 @@ https://middleware.local.omnilink.ch/card-analysis-test.html
 ```
 
 Die Clients unterstützen Keycloak Authorization Code mit PKCE `S256`.
-Issuer: `https://idp.omnilink.ch/realms/omnilink`. Im HTML wird die
-öffentliche Client-ID eingegeben; ein Client Secret wird im Browser nicht
-verwendet. Die jeweilige Redirect-URI, zum Beispiel
+Issuer: `https://idp.omnilink.ch/realms/omnilink`. Der API-Werkbank- und
+EchoSOS-Client verwenden die verborgen vorbelegte öffentliche Client-ID
+`app-omnilink-cardtest`; ein Client Secret wird im Browser nicht verwendet.
+Die jeweilige Redirect-URI, zum Beispiel
 `https://middleware.local.omnilink.ch/test-client.html`, muss im Keycloak-Client freigeschaltet sein.
+
+Der CDA-Import der API-Werkbank verlangt einen Keycloak-Bearer-Token. Der
+Same-Origin-Proxy `POST /_proxy/bridge/cda` leitet CDA-Body und Bearer-Token an
+`POST https://api.omnilink.ch/v1/cda/convert` weiter.
 
 Das bedeutet: Die Root-URLs selbst sind nicht öffentlich erreichbar und müssen mit gültigen Zugangsdaten aufgerufen werden.
 

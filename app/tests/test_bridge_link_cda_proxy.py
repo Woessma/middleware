@@ -10,6 +10,12 @@ class BridgeLinkCdaProxyTests(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
 
+    def test_uses_current_external_bridge_link_cda_endpoint(self):
+        self.assertEqual(
+            BRIDGELINK_CDA_URL,
+            "https://api.omnilink.ch/v1/cda/convert",
+        )
+
     @patch("main.requests.post")
     def test_forwards_raw_cda_and_bearer_token_to_fixed_bridge_endpoint(self, mock_post):
         upstream = Mock()
