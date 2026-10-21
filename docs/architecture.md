@@ -63,6 +63,9 @@ EPIC CDA
   Bei mehreren Treffern werden bestehende Ressourcen anhand ihrer ID bzw. ihres
   gemappten Inhalts unterschieden. Mehrdeutige Treffer ohne passenden Inhalt
   fuehren zu einem Fehler statt zum Ueberschreiben eines beliebigen Eintrags.
+  Beim Inhaltsvergleich werden `null`-Felder in Objekten wie fehlende Felder
+  behandelt, da HAPI diese beim Speichern entfernt. Array-Positionen bleiben
+  erhalten.
 - CDA-Consent: Patient und vollstaendig gemappter Inhalt bestimmen eine stabile
   ID und einen Import-Identifier. Alte Eintraege ohne Identifier werden anhand
   desselben Inhalts beim Patienten wiederverwendet; generierte Narrative und

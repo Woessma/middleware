@@ -6,6 +6,28 @@ from fhir.bundle import build_bundle_entry
 
 class BundleEntryTests(unittest.TestCase):
     @patch("fhir.bundle.requests.get")
+    def test_shared_identifier_matches_after_hapi_omits_null_fields(self, mock_get):
+        resource = {
+            "resourceType": "Procedure",
+            "identifier": [{"system": "urn:test", "value": "same-procedure"}],
+            "subject": {"reference": "Patient/p1"},
+            "code": {"coding": [{"system": "urn:test", "code": "123", "display": None}]},
+            "performer": [{"actor": {"display": "Synthetic author"}}],
+        }
+        stored_code = {"coding": [{"system": "urn:test", "code": "123"}]}
+        response = Mock()
+        response.json.return_value = {"entry": [
+            {"resource": {**resource, "id": "other-author", "code": stored_code,
+                          "performer": [{"actor": {"display": "Different author"}}]}},
+            {"resource": {**resource, "id": "same-procedure", "code": stored_code}},
+        ]}
+        mock_get.return_value = response
+
+        entry = build_bundle_entry(resource)
+
+        self.assertEqual(entry["request"]["url"], "Procedure/same-procedure")
+
+    @patch("fhir.bundle.requests.get")
     def test_shared_identifier_selects_matching_clinical_resource(self, mock_get):
         identifier = {
             "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-social-history",
