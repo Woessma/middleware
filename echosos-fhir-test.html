@@ -455,7 +455,19 @@ function authorOf(resource){const actors=resource.performer||resource.author||re
 function pcpRows(resources){return resources.filter(r=>r.resourceType==='CareTeam').flatMap(team=>(team.participant||[]).filter(p=>(p.role||[]).some(role=>(role.coding||[]).some(c=>c.code==='PCP'))).map(p=>{const reference=p.member?.reference||'';const member=resources.find(r=>reference===r.resourceType+'/'+r.id);const name=member?.name?.[0]?nameOf({name:member.name}):member?.name?.text||reference;const contact=(member?.telecom||[]).map(t=>[t.system,t.value].filter(Boolean).join(': ')).join('; ');return [name,contact,reference]}))}
 const renderBase=render;
 render=function(bundle){renderBase(bundle);const entries=bundle?.resourceType==='Bundle'?(bundle.entry||[]):bundle?.resourceType?[{resource:bundle}]:[],rs=entries.map(x=>x.resource||{}),patient=rs.find(x=>x.resourceType==='Patient');if(!patient){$('patientSection').hidden=true;$('clinicalSection').hidden=true;$('resourceSection').hidden=!rs.length;return}$('patientSection').hidden=false;$('patientView').innerHTML='<div class="fields">'+fields(patient).map(x=>'<div class="field"><small>'+clean(x[0])+'</small><div>'+clean(x[1])+'</div></div>').join('')+'</div>'+(patient.contact?.length?summaryTable('Kontakte',['Kategorie','Name','Kontakt'],patient.contact.map(c=>[contactCategory(c),c.name?.text,(c.telecom||[]).map(t=>t.value).join('; ') ])):'')+summaryTable('Hausarzt',['Name','Kontakt','Referenz'],pcpRows(rs));const observations=rs.filter(r=>r.resourceType==='Observation'&&!isEncounterTypeObservation(r)),medications=rs.filter(r=>r.resourceType==='MedicationStatement'),conditions=rs.filter(r=>r.resourceType==='Condition'),allergies=rs.filter(r=>r.resourceType==='AllergyIntolerance'),immunizations=rs.filter(r=>r.resourceType==='Immunization'),encounters=rs.filter(r=>r.resourceType==='Encounter');const clinical=summaryTable('Beobachtungen',['Datum','Befund','Wert','Autor','Status'],observations.map(r=>[formatDate(r.effectiveDateTime||r.issued),coding(r.code),valueOf(r),authorOf(r),r.status])).concat(summaryTable('Medikationen',['Medikation','Autor','Status','Dosierung'],medications.map(r=>[coding(r.medicationCodeableConcept)||r.medicationReference?.reference,authorOf(r),r.status,r.dosage?.[0]?.text]))).concat(summaryTable('Probleme',['Problem','Autor','Status'],conditions.map(r=>[coding(r.code),authorOf(r),coding(r.clinicalStatus)])).concat(summaryTable('Allergien und Unverträglichkeiten',['Allergie','Autor','Kritikalität','Status'],allergies.map(r=>[coding(r.code),authorOf(r),r.criticality,coding(r.clinicalStatus)]))).concat(summaryTable('Immunisierungen',['Datum','Impfstoff','Autor','Status'],immunizations.map(r=>[formatDate(r.occurrenceDateTime||r.recorded),coding(r.vaccineCode),authorOf(r),r.status]))).concat(summaryTable('Begegnungen',['Beginn','Typ','Autor','Status'],encounters.map(r=>[formatDate(r.period?.start),coding(r.class),authorOf(r),r.status]))));$('clinicalView').innerHTML=clinical||'<p class="empty">Keine klinisch relevanten Einträge gefunden.</p>';$('clinicalSection').hidden=false;$('resourceSection').hidden=!rs.length}
-async function request(url,options={}){const r=await fetch(url,{...options,headers:{Accept:'application/fhir+json, application/json',...headers(),...(options.headers||{})},mode:'cors',credentials:'same-origin'});const text=await r.text();let data;try{data=JSON.parse(text)}catch{data=text}if(!r.ok)throw new Error('HTTP '+r.status+': '+(data?.detail||text));return data}
+async function request(url,options={}){
+  const r=await fetch(url,{...options,headers:{Accept:'application/fhir+json, application/json',...headers(),...(options.headers||{})},mode:'cors',credentials:'same-origin'});
+  const text=await r.text();
+  let data;
+  try{
+    data=JSON.parse(text);
+  }catch(error){
+    if(!r.ok)throw new Error('HTTP '+r.status+': '+text);
+    throw new Error('HTTP '+r.status+': Antwort ist kein gültiges JSON (Content-Type: '+(r.headers.get('Content-Type')||'fehlt')+', Länge: '+text.length+').');
+  }
+  if(!r.ok)throw new Error('HTTP '+r.status+': '+(data?.detail||text));
+  return data;
+}
 $('import').onclick=importEcho;
 async function echososPatientRequest(path){return request('/echosos/fhir/Patient'+path)}
 async function loadPatientEverything(id){const data=await echososPatientRequest('/'+encodeURIComponent(id)+'/$everything?_count=500');render(data);return data}
@@ -472,7 +484,7 @@ async function importEcho(){
     form.append('file',cameraValue?new Blob([cameraValue],{type:'text/plain'}):file,cameraValue?'echosos-camera.txt':file.name);
     let result;
     try{
-      result=await request(base('importUrl'),{method:'POST',body:form});
+      result=await request(base('importUrl'),{method:'POST',body:form,headers:{Accept:'application/json'}});
     }catch(error){
       throw new Error('EchoSOS-Import über BridgeLink fehlgeschlagen: '+error.message);
     }
@@ -488,7 +500,15 @@ async function importEcho(){
   }
 }
 function transactionPatientId(result){
-  if(result?.resourceType!=='Bundle'||result.type!=='transaction-response'||!Array.isArray(result.entry)||!result.entry.length)throw new Error('BridgeLink hat kein FHIR-Transaction-Response-Bundle mit Eintraegen zurueckgegeben.');
+  if(result?.resourceType!=='Bundle'||result.type!=='transaction-response'||!Array.isArray(result.entry)||!result.entry.length){
+    const shape={
+      jsonType:result===null?'null':Array.isArray(result)?'array':typeof result,
+      resourceType:typeof result?.resourceType==='string'?result.resourceType:'fehlt',
+      type:typeof result?.type==='string'?result.type:'fehlt',
+      entries:Array.isArray(result?.entry)?result.entry.length:'fehlt'
+    };
+    throw new Error('BridgeLink-Importantwort hat nicht das erwartete Transaction-Response-Format: '+JSON.stringify(shape)+'. Die Patientenabfrage wurde noch nicht gestartet; der Speicherstatus ist unbestätigt.');
+  }
   const patientIds=new Set();
   for(const [index,entry] of result.entry.entries()){
     const response=entry?.response;

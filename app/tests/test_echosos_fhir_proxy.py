@@ -16,7 +16,7 @@ class EchoSosFhirProxyTests(unittest.TestCase):
         upstream = Mock()
         upstream.status_code = 200
         upstream.content = b'{"resourceType":"Bundle","type":"transaction-response"}'
-        upstream.headers = {"Content-Type": "application/fhir+json"}
+        upstream.headers = {"Content-Type": "application/json;charset=utf-8"}
         mock_post.return_value = upstream
         body = b"----boundary\r\npayload\r\n----boundary--\r\n"
         content_type = "multipart/form-data; boundary=boundary"
@@ -27,18 +27,22 @@ class EchoSosFhirProxyTests(unittest.TestCase):
             headers={
                 **self.headers,
                 "Content-Type": content_type,
-                "Accept": "application/fhir+json",
+                "Accept": "application/json",
             },
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, upstream.content)
+        self.assertEqual(
+            response.headers["content-type"],
+            "application/json;charset=utf-8",
+        )
         mock_post.assert_called_once_with(
             "https://api.omnilink.ch/v1/echosos/resolve",
             data=body,
             headers={
                 "Authorization": "Bearer test-token",
-                "Accept": "application/fhir+json",
+                "Accept": "application/json",
                 "Content-Type": content_type,
             },
             timeout=300,

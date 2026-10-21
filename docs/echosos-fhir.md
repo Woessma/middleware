@@ -42,6 +42,12 @@ Patienten-Lesezugriffe und `$everything` an den konfigurierten FHIR-Server
 weiter. Beide Proxy-Routen uebertragen das Keycloak-Bearer-Token; damit
 entfallen Browser-CORS-Abhaengigkeiten fuer Import und FHIR-Abfrage.
 
+Der Import fordert ausdruecklich `Accept: application/json` an. Die Ansicht
+erscheint erst nach dem anschliessenden `$everything`-Aufruf. Eine ungueltige
+Importantwort startet keine Patientenabfrage und bestaetigt keinen
+Speichererfolg. Die Fehlermeldung nennt nur das Antwortformat
+(`resourceType`, `type`, Anzahl der Eintraege), nicht den Patienteninhalt.
+
 ## Browser-Anmeldung: noch offen
 
 Der Client ist deployt und verwendet Keycloak Authorization Code mit PKCE
