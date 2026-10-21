@@ -55,9 +55,10 @@ POST /card/analyze
 Die Anmeldung erfolgt ausschliesslich ueber Keycloak (Authorization Code mit
 PKCE), mit vorbelegter Client-ID `app-omnilink-cardtest`. Die Redirect-URI
 `https://middleware.local.omnilink.ch/echosos-fhir-test.html` muss im
-Keycloak-Client freigeschaltet sein. „Verbindung prüfen“ testet nach Anmeldung
-den Middleware-Health-Endpunkt und FHIR `/metadata`, ohne Daten zu schreiben.
-„Token löschen“ entfernt das Keycloak-Token. Basic Auth und lokale
+Keycloak-Client freigeschaltet sein. Der kompakte Bereich „Input auswählen“
+zeigt wie die Card-Analysis-Seite nur „Mit Keycloak anmelden“ und den
+tatsaechlichen Tokenstatus; die Client-ID ist verborgen vorbelegt.
+Basic Auth und lokale
 Passwortspeicherung werden nicht mehr verwendet; alte gespeicherte
 EchoSOS-Zugangsdaten werden beim Laden entfernt.
 Nach dem Login kann ein EchoSOS-QR mit der mobilen Kamera, als Bild oder als

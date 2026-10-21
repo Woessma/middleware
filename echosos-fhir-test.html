@@ -12,28 +12,21 @@
     .head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:18px}.panel{background:var(--paper);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px rgba(22,43,48,.06);padding:18px}.login{display:grid;grid-template-columns:150px 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:18px}.login .wide{display:none}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field-wide{grid-column:1/-1}label{display:block;margin-bottom:5px;color:var(--muted);font-size:12px;font-weight:800}input,select{width:100%;min-height:40px;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fff;color:var(--ink)}button{min-height:40px;border:1px solid var(--brand);border-radius:6px;padding:8px 14px;background:var(--brand);color:#fff;cursor:pointer;font-weight:800}button.secondary{background:#fff;color:var(--brand)}button.quiet{border-color:var(--line);background:#f5f8f7;color:var(--ink)}button:disabled{opacity:.55;cursor:wait}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.status{display:none;margin-top:12px;padding:10px 12px;border-left:4px solid var(--brand);background:var(--soft)}.status.show{display:block}.status.error{border-color:var(--danger);background:#fff0ee;color:var(--danger)}
     .workspace{display:grid;grid-template-columns:minmax(330px,.8fr) minmax(0,1.6fr);gap:18px}.import-panel h2{margin-bottom:8px}.file-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.file{flex:1;min-width:220px}.hint{margin-top:8px;color:var(--muted);font-size:13px}.query{border-top:1px solid var(--line);margin-top:20px;padding-top:18px}.query .actions{margin-top:10px}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px}.tile{border:1px solid var(--line);border-radius:6px;padding:12px;background:#fbfdfc}.tile strong{display:block;font-size:20px;color:var(--brand)}.tile span{color:var(--muted);font-size:12px}.contact{margin-top:14px;padding:12px;border-left:4px solid var(--brand);background:var(--soft)}.contact strong{display:block}.resource-list{display:grid;gap:10px;margin-top:18px}.resource{border:1px solid var(--line);border-radius:6px;background:#fff}.resource summary{padding:12px;cursor:pointer;font-weight:800}.resource-body{padding:0 12px 12px}.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));border:1px solid var(--line)}.field{padding:9px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}.field small{display:block;color:var(--muted);font-weight:800}.field div{word-break:break-word}.json{max-height:320px;overflow:auto;margin:12px 0 0;padding:12px;border-radius:6px;background:var(--code);color:#dce9e8;font:12px/1.45 "SFMono-Regular",Consolas,monospace;white-space:pre-wrap;word-break:break-word}.empty{color:var(--muted);font-style:italic}.loading{opacity:.7}@media(max-width:900px){.login{grid-template-columns:1fr 1fr}.login .wide{grid-column:1/-1}.workspace{grid-template-columns:1fr}}@media(max-width:560px){main{width:calc(100% - 20px);margin-top:14px}.login,.grid{grid-template-columns:1fr}.login .wide,.field-wide{grid-column:auto}.head{display:block}.file{min-width:100%}}
     .camera-dialog{width:min(560px,calc(100% - 24px));border:1px solid var(--line);border-radius:8px;padding:0;background:var(--paper);color:var(--ink)}.camera-dialog::backdrop{background:rgba(10,28,30,.72)}.camera-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}.camera-head h2{font-size:20px}.camera-body{padding:16px}.camera-video{display:block;width:100%;aspect-ratio:4/3;background:#10191b;object-fit:cover;border-radius:6px}.camera-help{color:var(--muted);font-size:13px}.camera-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}.qr-preview{display:none;margin-top:14px;padding:12px;border:1px solid #8bc9b6;border-left:4px solid var(--brand);border-radius:6px;background:var(--soft)}.qr-preview.show{display:block}.qr-preview strong{display:block;color:var(--brand);margin-bottom:6px}.qr-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font-size:13px}.qr-fields span{color:var(--muted)}.result-section{margin-top:14px;border:1px solid var(--line);border-radius:6px;background:#fff}.result-section summary{padding:12px;cursor:pointer;font-weight:800}.result-body{padding:0 12px 12px}.result-table{width:100%;border-collapse:collapse;font-size:13px}.result-table th,.result-table td{padding:8px;border:1px solid var(--line);text-align:left;vertical-align:top}.result-table th{background:#edf3f2}.result-table-wrap{overflow:auto}
-    .login{grid-template-columns:minmax(220px,320px) auto}.login .actions{margin-top:0}.login #keycloakStatus{align-self:center}@media(max-width:560px){.login{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
 <main>
   <header class="head"><div><div class="eyebrow">EchoSOS / FHIR</div><h1>Notfallpass importieren</h1><p class="subtitle">QR lesen, Patient abgleichen, FHIR-Daten anzeigen.</p></div></header>
-  <section class="panel login" aria-label="Verbindung und Authentifizierung">
-    <div><label for="keycloakClientId">Keycloak Client-ID</label><input id="keycloakClientId" value="app-omnilink-cardtest" placeholder="Public OIDC Client-ID"></div>
-    <div class="actions">
-      <button id="checkBtn" class="secondary" type="button">Verbindung prüfen</button>
-      <button id="keycloakLoginBtn" type="button">Mit Keycloak anmelden</button>
-      <button id="keycloakLogoutBtn" class="quiet" type="button">Token löschen</button>
-      <span id="keycloakStatus" class="muted">Kein Keycloak-Token aktiv.</span>
-    </div>
-    <div class="wide"><label for="importUrl">EchoSOS Import-Endpunkt</label><input id="importUrl" value="https://api.omnilink.ch/v1/echosos/resolveRequestResponse"></div>
-    <div class="wide"><label for="fhirUrl">BridgeLink FHIR Route (nur lesende Abfragen)</label><input id="fhirUrl" value="https://fhir.local.omnilink.ch/fhir/"></div>
-  </section>
   <div id="status" class="status" role="status"></div>
   <div class="workspace">
     <section class="panel import-panel">
-      <h2>Add to FHIR</h2>
-      <p class="muted">EchoSOS QR mit der Kamera erfassen oder eine PKPass-/Bilddatei laden.</p>
+      <h2>Input auswählen</h2>
+      <p class="muted">Die Kamera liefert einen QR-Wert. Dateien werden als Bild oder PKPass an die Middleware gesendet.</p>
+      <div class="actions"><button id="keycloakLoginBtn" type="button">Mit Keycloak anmelden</button></div>
+      <input id="keycloakClientId" type="hidden" value="app-omnilink-cardtest">
+      <p id="keycloakStatus" class="hint" role="status">Kein Keycloak-Token aktiv.</p>
+      <input id="importUrl" type="hidden" value="https://api.omnilink.ch/v1/echosos/resolveRequestResponse">
+      <input id="fhirUrl" type="hidden" value="https://fhir.local.omnilink.ch/fhir/">
       <div class="file-row"><input id="qrFile" class="file" type="file" accept=".pkpass,.png,.jpg,.jpeg,image/png,image/jpeg,application/vnd.apple.pkpass" capture="environment"><button id="camera" class="secondary" type="button">Kamera oeffnen</button></div>
       <div id="qrPreview" class="qr-preview"><strong>QR-Code erkannt</strong><div id="qrFields" class="qr-fields"></div></div>
       <div class="actions"><button id="import" type="button">QR lesen und in FHIR speichern</button><button id="clear" class="quiet" type="button">Leeren</button></div>
@@ -55,27 +48,6 @@ const qrFallbackScript='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
 function base(id){return $(id).value.trim().replace(/\/+$/,'')}
 function headers(){const auth=window.keycloakAuthHeaders();if(!auth.Authorization)throw new Error('Bitte zuerst mit Keycloak anmelden.');return auth}
 function show(message,error=false){$('status').textContent=message;$('status').className='status show'+(error?' error':'')}
-$('checkBtn').onclick=async()=>{
-  $('checkBtn').disabled=true;
-  try{
-    const auth=headers();
-    show('Verbindungen werden geprüft …');
-    const checks=[{name:'Middleware',url:window.location.origin+'/health',headers:{Accept:'application/json'}},{name:'FHIR-Server',url:base('fhirUrl')+'/metadata',headers:{Accept:'application/fhir+json, application/json',...auth}}];
-    const results=await Promise.all(checks.map(async check=>{
-      try{
-        const response=await fetch(check.url,{method:'GET',headers:check.headers,mode:'cors',credentials:'same-origin'});
-        return {ok:response.ok,message:check.name+': HTTP '+response.status};
-      }catch(error){
-        return {ok:false,message:check.name+': Netzwerk- oder CORS-Fehler: '+error.message};
-      }
-    }));
-    show(results.map(result=>result.message).join(' · '),results.some(result=>!result.ok));
-  }catch(error){
-    show(error.message,true);
-  }finally{
-    $('checkBtn').disabled=false;
-  }
-};
 let cameraStream=null,cameraValue='',cameraFrame=null,qrCanvas=null,qrContext=null;
 function stopCamera(){if(cameraFrame){cancelAnimationFrame(cameraFrame);cameraFrame=null}if(cameraStream){cameraStream.getTracks().forEach(track=>track.stop());cameraStream=null}$('cameraVideo').srcObject=null;if($('cameraDialog').open)$('cameraDialog').close()}
 function loadQrFallback(){return new Promise((resolve,reject)=>{if(window.jsQR){resolve();return}const script=document.createElement('script');script.src=qrFallbackScript;script.onload=resolve;script.onerror=()=>reject(new Error('QR-Decoder konnte nicht geladen werden.'));document.head.append(script)})}
