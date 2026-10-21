@@ -39,6 +39,76 @@ COMPACT_QR_URL = (
 
 
 class EchoSosServiceTests(unittest.TestCase):
+    def test_condition_identifier_ignores_url_changes_and_selection_order(self):
+        data = parse_echosos_data(COMPACT_QR_URL)
+        original = _echosos_condition_resources(data, "123")
+        changed = copy.deepcopy(data)
+        changed["source_url"] += "&i=changed"
+        changed["medical_history_selections"].reverse()
+        reordered = _echosos_condition_resources(changed, "123")
+        self.assertEqual(
+            {item["code"]["text"]: item["identifier"] for item in original},
+            {item["code"]["text"]: item["identifier"] for item in reordered},
+        )
+        changed["birth_date"] = "1991-01-15"
+        other_patient = _echosos_condition_resources(changed, "456")
+        self.assertNotEqual(reordered[0]["identifier"], other_patient[0]["identifier"])
+
+    @patch("services.echosos_service.requests.get")
+    def test_condition_reimport_reuses_legacy_record_and_preserves_identifiers(self, get):
+        condition = _echosos_condition_resources(parse_echosos_data(COMPACT_QR_URL), "123")[0]
+        legacy = copy.deepcopy(condition)
+        legacy["id"] = "old-1"
+        legacy["identifier"][0]["value"] = "old-url-hash"
+        duplicate = copy.deepcopy(legacy)
+        duplicate["id"] = "old-2"
+        duplicate["identifier"][0]["value"] = "another-old-url-hash"
+        get.side_effect = [
+            Mock(json=lambda: {"entry": []}),
+            Mock(json=lambda: {"entry": [{"resource": duplicate}, {"resource": legacy}]}),
+        ]
+
+        entry = _transaction_entry(condition)
+
+        self.assertEqual(entry["request"], {"method": "PUT", "url": "Condition/old-1"})
+        self.assertIn(legacy["identifier"][0], entry["resource"]["identifier"])
+        self.assertEqual(len(entry["resource"]["identifier"]), 2)
+        self.assertEqual(get.call_args.kwargs["params"]["patient"], "Patient/123")
+
+    @patch("services.echosos_service.requests.get")
+    def test_condition_legacy_match_preserves_other_sources_patients_and_clinical_details(self, get):
+        condition = _echosos_condition_resources(parse_echosos_data(COMPACT_QR_URL), "123")[0]
+        other_source = copy.deepcopy(condition)
+        other_source["identifier"][0]["system"] = "https://example.org/other"
+        other_patient = copy.deepcopy(condition)
+        other_patient["subject"]["reference"] = "Patient/456"
+        other_status = copy.deepcopy(condition)
+        other_status["clinicalStatus"] = {"coding": [{"code": "resolved"}]}
+        get.side_effect = [
+            Mock(json=lambda: {"entry": []}),
+            Mock(json=lambda: {"entry": [
+                {"resource": item} for item in (other_source, other_patient, other_status)
+            ]}),
+        ]
+
+        entry = _transaction_entry(condition)
+
+        self.assertEqual(entry["request"]["method"], "POST")
+        self.assertIn("ifNoneExist", entry["request"])
+
+    @patch("services.echosos_service.requests.get")
+    def test_condition_reimport_uses_stable_identifier(self, get):
+        condition = _echosos_condition_resources(parse_echosos_data(COMPACT_QR_URL), "123")[0]
+        existing = copy.deepcopy(condition)
+        existing["id"] = "existing"
+        get.return_value = Mock(json=lambda: {"entry": [{"resource": existing}]})
+
+        self.assertEqual(
+            _transaction_entry(condition)["request"],
+            {"method": "PUT", "url": "Condition/existing"},
+        )
+        get.assert_called_once()
+
     def test_allergy_identifier_ignores_url_changes_and_selection_order(self):
         data = parse_echosos_data(COMPACT_QR_URL)
         original = _echosos_allergy_resources(data, "123")
@@ -234,6 +304,9 @@ class EchoSosServiceTests(unittest.TestCase):
     def test_preserves_combined_history_label_without_asserting_both_snomed_alternatives(self):
         conditions = _echosos_condition_resources(
             {
+                "given": "Max",
+                "family": "Beispiel",
+                "birth_date": "1990-01-15",
                 "source_url": "https://eid.echosos.com/#d=L",
                 "medical_history_selections": ["Nierenversagen/Dialyse"],
             },

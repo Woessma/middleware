@@ -55,7 +55,7 @@ kann dort statt des QR-Inhalts als vermeintliche Bilddatei ankommen.
 Ein `OperationOutcome` wird auch bei HTTP 200 als nicht bestaetigter Import
 behandelt; die Issue-Details werden angezeigt und `$everything` nicht gestartet.
 
-### Wiederholte Allergie-Imports und Autorenanzeige
+### Wiederholte Allergie-/Problemlisten-Imports und Autorenanzeige
 
 Allergie-Identifier basieren auf Patientenname, Geburtsdatum, Allergen und
 Reaktion, nicht auf dem gesamten QR-Link oder der Auswahlposition. Ein
@@ -65,6 +65,14 @@ EchoSOS-markierte Allergien desselben Patienten abgeglichen; bestehende
 Identifier bleiben erhalten. Bereits gespeicherte Dubletten werden nicht
 automatisch geloescht oder in der Anzeige verborgen. Unterschiedliche
 Reaktionen und andere Datenquellen werden nicht zusammengefuehrt.
+
+Dasselbe Verfahren gilt fuer die Problemliste (`Condition`): Identifier
+basieren auf Patientenname, Geburtsdatum und Problem, nicht auf dem QR-Link
+oder der Auswahlposition. Klinisch identische alte EchoSOS-Probleme werden
+aktualisiert, ihre bisherigen Identifier bleiben erhalten. Abweichende
+Patienten, klinische Angaben und andere Quellen werden nicht zusammengefuehrt.
+Auch vorhandene Problem-Dubletten werden nur nach ausdruecklicher Freigabe
+bereinigt, nicht automatisch entfernt oder in der Anzeige verborgen.
 
 Die Autorenanzeige loest Referenzen aus dem geladenen Bundle zum Namen auf
 (einschliesslich Patient, Practitioner und Organization). Nur wenn weder

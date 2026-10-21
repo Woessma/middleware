@@ -352,6 +352,18 @@ def _echosos_identifier(data, resource_type, selection_key):
     return hashlib.sha256(source.encode("utf-8")).hexdigest()
 
 
+def _patient_selection_identifier(data, *selection):
+    identity = [
+        data["given"].strip().casefold(),
+        data["family"].strip().casefold(),
+        data["birth_date"],
+        *selection,
+    ]
+    return hashlib.sha256(
+        json.dumps(identity, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
 def _echosos_allergy_resources(data, patient_id):
     patient_reference = _patient_reference(patient_id)
     resources = []
@@ -363,16 +375,7 @@ def _echosos_allergy_resources(data, patient_id):
     for selection in selections:
         allergen = selection["allergen"]
         reaction = selection.get("reaction")
-        identity = [
-            data["given"].strip().casefold(),
-            data["family"].strip().casefold(),
-            data["birth_date"],
-            allergen,
-            reaction or "",
-        ]
-        identifier_value = hashlib.sha256(
-            json.dumps(identity, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        ).hexdigest()
+        identifier_value = _patient_selection_identifier(data, allergen, reaction or "")
 
         allergy = {
             "resourceType": "AllergyIntolerance",
@@ -462,12 +465,12 @@ def _echosos_condition_resources(data, patient_id):
     patient_reference = _patient_reference(patient_id)
     resources = []
 
-    for position, label in enumerate(data.get("medical_history_selections", [])):
+    for label in data.get("medical_history_selections", []):
         condition = {
             "resourceType": "Condition",
             "identifier": [{
                 "system": ECHOSOS_CONDITION_IDENTIFIER_SYSTEM,
-                "value": _echosos_identifier(data, "condition", f"{position}|{label}"),
+                "value": _patient_selection_identifier(data, label),
             }],
             "category": [{
                 "coding": [{
@@ -542,7 +545,7 @@ def _echosos_organ_donation_consents(data, patient_id):
     }]
 
 
-def _allergy_clinical_identity(resource):
+def _clinical_identity(resource):
     payload = copy.deepcopy(resource)
     for key in ("id", "meta", "identifier", "text"):
         payload.pop(key, None)
@@ -582,15 +585,20 @@ def _existing_resource_id(resource):
     entries = response.json().get("entry", [])
     if len(entries) > 1:
         raise ValueError(f"EchoSOS-Identifier fuer {resource_type} ist nicht eindeutig")
-    patient_reference = resource.get("patient", {}).get("reference", "")
+    legacy_system = {
+        "AllergyIntolerance": ECHOSOS_ALLERGY_IDENTIFIER_SYSTEM,
+        "Condition": ECHOSOS_CONDITION_IDENTIFIER_SYSTEM,
+    }.get(resource_type)
+    patient_field = "subject" if resource_type == "Condition" else "patient"
+    patient_reference = resource.get(patient_field, {}).get("reference", "")
     if (
         not entries
-        and resource_type == "AllergyIntolerance"
+        and legacy_system is not None
         and patient_reference.startswith("Patient/")
     ):
-        # Match older URL-based identifiers without merging other allergy sources.
+        # Match older URL-based identifiers without merging other clinical sources.
         response = requests.get(
-            f"{FHIR_BASE}/AllergyIntolerance",
+            f"{FHIR_BASE}/{resource_type}",
             params={"patient": patient_reference, "_count": "100"},
             headers={"Accept": "application/fhir+json"},
             timeout=15,
@@ -598,16 +606,16 @@ def _existing_resource_id(resource):
         response.raise_for_status()
         bundle = response.json()
         if any(link.get("relation") == "next" for link in bundle.get("link", [])):
-            raise ValueError("EchoSOS-Allergieabgleich unvollständig: mehr als eine Ergebnisseite")
-        identity = _allergy_clinical_identity(resource)
+            raise ValueError(f"EchoSOS-{resource_type}-Abgleich unvollständig: mehr als eine Ergebnisseite")
+        identity = _clinical_identity(resource)
         candidates = [
             entry
             for entry in bundle.get("entry", [])
             if any(
-                item.get("system") == ECHOSOS_ALLERGY_IDENTIFIER_SYSTEM
+                item.get("system") == legacy_system
                 for item in entry.get("resource", {}).get("identifier", [])
             )
-            and _allergy_clinical_identity(entry.get("resource", {})) == identity
+            and _clinical_identity(entry.get("resource", {})) == identity
         ]
         entries = sorted(candidates, key=lambda entry: entry["resource"]["id"])[:1]
     if entries:
