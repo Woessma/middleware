@@ -136,7 +136,7 @@ from services.emediplan_service import (
     fetch_medication_bundle_from_fhir_server,
 )
 from services.emediplan_qr_service import extract_emediplan_payload_from_file, resolve_emediplan_payload
-from services.echosos_service import import_echosos
+from services.echosos_service import import_echosos, extract_echosos_url, parse_echosos_data
 from services.card_analysis_service import analyze_card
 from services.terminology_service import (
     call_terminology_operation,
@@ -517,6 +517,23 @@ async def bridge_link_cda_proxy(request: Request):
         status_code=upstream.status_code,
         headers=response_headers,
     )
+
+
+@app.post("/echosos/preview")
+async def echosos_preview(request: Request):
+    authorization = request.headers.get("authorization", "")
+    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
+        raise HTTPException(status_code=401, detail="Bitte zuerst mit Keycloak anmelden.")
+    raw_bytes = await request.body()
+    if not raw_bytes:
+        raise HTTPException(status_code=400, detail="Keine QR-Daten vorhanden.")
+    try:
+        url = await run_in_threadpool(
+            extract_echosos_url, raw_bytes, request.headers.get("content-type"),
+        )
+        return parse_echosos_data(url)
+    except (ValueError, OSError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/echosos/import")

@@ -1,13 +1,61 @@
 import unittest
 import json
+import io
+import zipfile
 from unittest.mock import Mock, patch
 
 from fastapi.testclient import TestClient
 
 from main import FHIR_BASE, app
+from services.echosos_service import parse_echosos_data
 
 
 class EchoSosFhirProxyTests(unittest.TestCase):
+    def test_preview_decodes_all_fields_without_network_or_fhir_writes(self):
+        url = (
+            "https://eid.echosos.com/#a=BHKL&b=1&d=BS&f=Max&g=fGBP&l=Beispiel"
+            "&m=BG&n1=Kontakt%201&p1=%2B41000000001"
+            "&n2=Kontakt%202&p2=%2B41000000002"
+            "&n3=Kontakt%203&p3=%2B41000000003&o=0&s=0&r=ACAE"
+            "&i=Freitext%20%3Ctest%3E&custom=unbekannt"
+        )
+        archive = io.BytesIO()
+        with zipfile.ZipFile(archive, "w") as pkpass:
+            pkpass.writestr("pass.json", json.dumps({"barcodes": [{"message": url}]}))
+        with (
+            patch("main.requests.get") as get,
+            patch("main.requests.post") as post,
+            patch("main.requests.put") as put,
+        ):
+            for body, content_type in (
+                (url.encode(), "text/plain; charset=utf-8"),
+                (archive.getvalue(), "application/vnd.apple.pkpass"),
+            ):
+                response = self.client.post(
+                    "/echosos/preview", content=body,
+                    headers={**self.headers, "Content-Type": content_type},
+                )
+                self.assertEqual(response.status_code, 200)
+                data = response.json()
+                self.assertEqual(data, parse_echosos_data(url))
+                self.assertEqual(len(data["emergency_contacts"]), 3)
+                self.assertEqual(len(data["allergy_selections"]), 4)
+                self.assertEqual(data["medical_history_selections"], ["Asthma", "Diabetes"])
+                self.assertEqual(data["medication_selections"], ["Antihypertensiva", "Antidepressiva"])
+                self.assertEqual(data["other_information"], "Freitext <test>")
+            get.assert_not_called()
+            post.assert_not_called()
+            put.assert_not_called()
+
+    def test_preview_rejects_missing_auth_empty_or_invalid_payload(self):
+        response = self.client.post("/echosos/preview", content=b"anything")
+        self.assertEqual(response.status_code, 401)
+        for body in (b"", b"https://example.org/#f=Test", b"not an image"):
+            response = self.client.post(
+                "/echosos/preview", content=body, headers=self.headers,
+            )
+            self.assertEqual(response.status_code, 400)
+
     def setUp(self):
         self.client = TestClient(app)
         self.headers = {"Authorization": "Bearer test-token"}

@@ -130,6 +130,16 @@ FHIR-Gesamtdatenbestand.
 
 ### Vollstaendige Patientenansicht
 
+Vor dem Import zeigt „QR-Code erkannt“ alle vom gemeinsamen EchoSOS-Decoder
+ausgelesenen Angaben: Name, Geburtsdatum, Blutgruppe, bis zu drei Kontakte,
+Allergien mit Reaktionen, Medikamente, Vorgeschichte, Organspendeangaben und
+Sonstiges. Fehlende Angaben werden als solche bezeichnet. Alle originalen
+QR-Fragmentparameter sind zusaetzlich aufklappbar, auch unbekannte Codes.
+Kamera-URLs und Bild-/PKPass-Dateien verwenden dafuer
+`POST /echosos/preview` mit Bearer-Header und rohem Body. Dieser Endpunkt
+dekodiert ausschliesslich lokal; er schreibt nichts und ruft weder BridgeLink
+noch FHIR auf. Die Vorschau bestaetigt keinen Speichererfolg.
+
 `Patient/{id}/$everything?_count=500` liest alle vom FHIR-Server gelieferten
 Ressourcen, unabhaengig von EchoSOS oder einer anderen Datenquelle.
 `_count=500` ist die Seitengroesse, kein Gesamtlimit. Die Middleware folgt

@@ -220,6 +220,7 @@
       font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     .qr-fields span { color: var(--muted); }
+    .qr-fields > div { white-space: pre-wrap; overflow-wrap: anywhere; }
 
     .action-row {
       display: flex;
@@ -444,7 +445,33 @@ $('clear').onclick=clearPage;
 function clean(value){return String(value??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]))}
 function isEchoSosUrl(value){try{const parsed=new URL(value);return ['http:','https:'].includes(parsed.protocol)&&parsed.hostname==='eid.echosos.com'}catch{return false}}
 function nameOf(p){const n=p?.name?.[0];return n?[...(n.given||[]),n.family||''].filter(Boolean).join(' '):p?.id||''}
-function echoPreview(url){try{const fragment=new URL(url).hash.slice(1),params=new URLSearchParams(fragment),alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_',birth=params.get('g')||'',year=birth.length===4?64*alphabet.indexOf(birth[0])+alphabet.indexOf(birth[1]):0,month=birth.length===4?alphabet.indexOf(birth[2]):0,day=birth.length===4?alphabet.indexOf(birth[3]):0,birthDate=year&&month>0&&day>0?`${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`:'nicht vorhanden',blood=['A-','A+','B-','B+','AB-','AB+','0-','0+','Unbekannt'][Number(params.get('b'))]||'nicht vorhanden',patientName=[params.get('f'),params.get('l')].filter(Boolean).join(' ')||'nicht vorhanden',fields=[['Patient',patientName],['Geburtsdatum',birthDate],['Blutgruppe',blood],['Notfallkontakt',[params.get('n1'),params.get('p1')].filter(Boolean).join(' | ')||'nicht vorhanden']];$('qrFields').innerHTML=fields.map(field=>'<div><span>'+clean(field[0])+':</span> '+clean(field[1])+'</div>').join('');$('qrPreview').classList.add('show');return patientName}catch(error){$('qrPreview').classList.remove('show');return 'unbekannt'}}
+function echoPreview(url){
+  const params=new URLSearchParams(new URL(url).hash.slice(1));
+  const patientName=[params.get('f'),params.get('l')].filter(Boolean).join(' ')||'nicht vorhanden';
+  $('qrFields').textContent='QR-Daten werden vollstaendig dekodiert ...';
+  $('qrPreview').classList.add('show');
+  return patientName;
+}
+function renderEchoPreview(data){
+  const params=new URLSearchParams(new URL(data.source_url).hash.slice(1));
+  const fields=[
+    ['Patient',[data.given,data.family].filter(Boolean).join(' ')],
+    ['Geburtsdatum',data.birth_date],
+    ['Blutgruppe',data.blood_group],
+    ...data.emergency_contacts.map((contact,index)=>['Notfallkontakt '+(index+1),[contact.name,contact.phone].filter(Boolean).join(' | ')]),
+    ...(!data.emergency_contacts.length?[['Notfallkontakte','nicht angegeben']]:[]),
+    ['Allergien / Reaktionen',data.no_known_allergies?'Keine bekannten Allergien':data.allergy_selections.map(selection=>[selection.allergen,selection.reaction].filter(Boolean).join(' / ')).join('; ')],
+    ['Medikamente',data.medication_selections.join('; ')||(params.get('m')==='A'?'Keine':'')],
+    ['Medizinische Vorgeschichte',data.medical_history_selections.join('; ')||(params.get('d')==='A'?'Keine':'')],
+    ['Organspende ausserhalb der Schweiz',({yes:'Ja',no:'Nein',no_information:'Keine Angabe'})[data.organ_donation.outside_switzerland]],
+    ['Schweizer Organspenderegister',({registered:'Registriert',no_entry:'Kein Eintrag'})[data.organ_donation.swiss_registry]],
+    ['Sonstiges',data.other_information]
+  ];
+  $('qrFields').innerHTML=fields.map(([label,value])=>'<div><span>'+clean(label)+':</span> '+clean(value||'nicht angegeben')+'</div>').join('')+
+    '<details><summary>Alle QR-Parameter (Originalwerte)</summary>'+[...params].map(([key,value])=>'<div><span>'+clean(key)+':</span> '+clean(value||'(leer)')+'</div>').join('')+'</details>'+
+    '<p class="hint">QR-Vorschau ist keine Speicherbestaetigung. Medikamente und Sonstiges werden derzeit nicht als eigene FHIR-Ressourcen gespeichert.</p>';
+  $('qrPreview').classList.add('show');
+}
 function coding(x){return x?.text||x?.coding?.[0]?.display||x?.coding?.[0]?.code||''}
 function formatDate(value){if(!value)return '';const date=new Date(value);return Number.isNaN(date.getTime())?value:date.toLocaleString('de-CH',{dateStyle:'short',timeStyle:'short'})}
 function valueOf(r){
@@ -518,6 +545,9 @@ async function importEcho(){
   try{
     const body=cameraValue||file;
     const contentType=cameraValue?'text/plain; charset=utf-8':file.type||(file.name.toLowerCase().endsWith('.pkpass')?'application/vnd.apple.pkpass':'application/octet-stream');
+    $('qrPreview').classList.remove('show');
+    const preview=await request('/echosos/preview',{method:'POST',body,headers:{'Content-Type':contentType}});
+    renderEchoPreview(preview);
     let result;
     try{
       result=await request(base('importUrl'),{method:'POST',body,headers:{Accept:'application/json','Content-Type':contentType}});
