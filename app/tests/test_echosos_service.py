@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 from services.echosos_service import (
     _blood_observations,
+    _clinical_identity,
     _echosos_allergy_resources,
     _echosos_condition_resources,
     _echosos_organ_donation_consents,
@@ -39,6 +40,91 @@ COMPACT_QR_URL = (
 
 
 class EchoSosServiceTests(unittest.TestCase):
+    @patch("services.echosos_service.validate_coding", return_value={"status": "validated"})
+    def test_all_generated_resource_identifiers_ignore_unrelated_qr_changes(self, _validate):
+        data = parse_echosos_data(COMPACT_QR_URL)
+        data["blood_group"] = "A+"
+        changed = copy.deepcopy(data)
+        changed["source_url"] += "&i=updated"
+        changed["allergy_selections"].reverse()
+        changed["medical_history_selections"].reverse()
+        for builder in (
+            lambda item: _blood_observations(item, "123", "patient"),
+            lambda item: _echosos_organ_donation_consents(item, "123"),
+            lambda item: _echosos_allergy_resources(item, "123"),
+            lambda item: _echosos_condition_resources(item, "123"),
+        ):
+            with self.subTest(builder=builder):
+                original = builder(data)
+                updated = builder(changed)
+                self.assertEqual(
+                    sorted(item["identifier"][0]["value"] for item in original),
+                    sorted(item["identifier"][0]["value"] for item in updated),
+                )
+
+    @patch("services.echosos_service.requests.get")
+    @patch("services.echosos_service.validate_coding", return_value={"status": "validated"})
+    def test_blood_and_consent_reuse_legacy_ids_without_merging_different_content(self, _validate, get):
+        data = parse_echosos_data(URL + "&o=0")
+        resources = _blood_observations(data, "123", "patient") + _echosos_organ_donation_consents(data, "123")
+        for resource in resources:
+            with self.subTest(resource_type=resource["resourceType"]):
+                legacy = copy.deepcopy(resource)
+                legacy["id"] = "legacy"
+                legacy["identifier"][0]["value"] = "old-url"
+                if resource["resourceType"] == "Observation":
+                    legacy["effectiveDateTime"] = legacy["issued"] = "2020-01-01T00:00:00Z"
+                different = copy.deepcopy(legacy)
+                different["id"] = "different"
+                if resource["resourceType"] == "Observation":
+                    different["valueCodeableConcept"]["text"] = "B-"
+                else:
+                    different["provision"]["type"] = "deny"
+                other_source = copy.deepcopy(legacy)
+                other_source["identifier"][0]["system"] = "https://example.org/other"
+                get.side_effect = [
+                    Mock(json=lambda: {"entry": []}),
+                    Mock(json=lambda: {"entry": [{"resource": item} for item in (different, other_source, legacy)]}),
+                ]
+                entry = _transaction_entry(resource)
+                self.assertEqual(entry["request"], {"method": "PUT", "url": resource["resourceType"] + "/legacy"})
+                self.assertIn(legacy["identifier"][0], resource["identifier"])
+                if resource["resourceType"] == "Observation":
+                    self.assertEqual(resource["effectiveDateTime"], "2020-01-01T00:00:00Z")
+                    self.assertEqual(resource["issued"], resource["effectiveDateTime"])
+
+    def test_patient_contacts_are_idempotent(self):
+        data = parse_echosos_data(COMPACT_QR_URL)
+        first = _patient_resource(data)
+        self.assertEqual(_patient_resource(data, first), first)
+        self.assertEqual(len(first["contact"]), 3)
+
+    @patch("services.echosos_service.validate_coding", return_value={"status": "validated"})
+    def test_blood_identity_only_ignores_echosos_import_timestamps(self, _validate):
+        original = _blood_observations(parse_echosos_data(URL), "123", "patient")[0]
+        changed_time = copy.deepcopy(original)
+        changed_time["issued"] = changed_time["effectiveDateTime"] = "2020-01-01T00:00:00Z"
+        self.assertEqual(_clinical_identity(original), _clinical_identity(changed_time))
+        for item in (original, changed_time):
+            item["identifier"][0]["system"] = "https://example.org/another-source"
+        self.assertNotEqual(_clinical_identity(original), _clinical_identity(changed_time))
+
+    @patch("services.echosos_service.validate_coding", return_value={"status": "validated"})
+    def test_blood_and_consent_identifiers_separate_patients_and_values(self, _validate):
+        data = parse_echosos_data(URL + "&o=0")
+        for builder in (
+            lambda item: _blood_observations(item, "123", "patient")[0],
+            lambda item: _echosos_organ_donation_consents(item, "123")[0],
+        ):
+            original = builder(data)["identifier"]
+            other = copy.deepcopy(data)
+            other["birth_date"] = "1991-01-15"
+            self.assertNotEqual(original, builder(other)["identifier"])
+            other = copy.deepcopy(data)
+            other["blood_group"] = "B-"
+            other["organ_donation"]["outside_switzerland"] = "no"
+            self.assertNotEqual(original, builder(other)["identifier"])
+
     def test_condition_identifier_ignores_url_changes_and_selection_order(self):
         data = parse_echosos_data(COMPACT_QR_URL)
         original = _echosos_condition_resources(data, "123")
@@ -317,6 +403,7 @@ class EchoSosServiceTests(unittest.TestCase):
 
     def test_builds_consent_for_explicit_organ_donation_choices_only(self):
         consent_data = {
+            **parse_echosos_data(URL),
             "source_url": "https://eid.echosos.com/#o=0",
             "organ_donation": {"outside_switzerland": "yes", "swiss_registry": None},
         }
@@ -324,6 +411,7 @@ class EchoSosServiceTests(unittest.TestCase):
         yes_consent = _echosos_organ_donation_consents(consent_data, "123")[0]
         no_consent = _echosos_organ_donation_consents(
             {
+                **parse_echosos_data(URL),
                 "source_url": "https://eid.echosos.com/#o=1",
                 "organ_donation": {"outside_switzerland": "no", "swiss_registry": None},
             },
@@ -369,6 +457,7 @@ class EchoSosServiceTests(unittest.TestCase):
         )
         swiss_registry_consent = _echosos_organ_donation_consents(
             {
+                **parse_echosos_data(URL),
                 "source_url": "https://eid.echosos.com/#s=0",
                 "organ_donation": {
                     "outside_switzerland": None,
@@ -392,7 +481,7 @@ class EchoSosServiceTests(unittest.TestCase):
     @patch("services.echosos_service.validate_coding", return_value={"status": "validated"})
     def test_blood_observation_has_import_date_and_patient_performer(self, _validate_coding):
         observation = _blood_observations(
-            {"blood_group": "A+", "source_url": URL},
+            {**parse_echosos_data(URL), "blood_group": "A+", "source_url": URL},
             "3323",
             "test-user",
         )[0]

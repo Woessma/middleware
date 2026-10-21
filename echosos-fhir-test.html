@@ -582,6 +582,15 @@ render=function(bundle){
   if(!entries.some(entry=>entry.resource?.resourceType==='Patient'))$('clinicalView').innerHTML='';
   renderWithResolvedAuthors(bundle);
   const resources=entries.map(entry=>entry.resource).filter(Boolean);
+  const patient=resources.find(resource=>resource.resourceType==='Patient');
+  if(patient){
+    $('overview').insertAdjacentHTML('beforeend','<p class="loaded-patient"><strong>Geladener Patient: '+clean(patient.id)+' | '+clean(nameOf(patient))+'</strong></p>');
+  }
+  const oldVaccinationHeading=[...$('clinicalView').querySelectorAll('h3')].find(node=>node.textContent==='Immunisierungen');
+  if(oldVaccinationHeading){oldVaccinationHeading.nextElementSibling?.remove();oldVaccinationHeading.remove()}
+  const vaccinations=resources.filter(resource=>resource.resourceType==='Immunization');
+  const vaccinationView=vaccinations.length?summaryTable('Impfungen ('+vaccinations.length+')',['Datum','Impfstoff','Charge','Durchgefuehrt von','Status'],vaccinations.map(resource=>[formatDate(resource.occurrenceDateTime||resource.recorded)||resource.occurrenceString,coding(resource.vaccineCode),resource.lotNumber,authorOf(resource),resource.status])):'<h3>Impfungen (0)</h3><p class="empty">Fuer den geladenen Patienten '+clean(patient?.id||'')+' hat $everything keine Impfungen geliefert.</p>';
+  $('clinicalView').insertAdjacentHTML('afterbegin',vaccinationView);
   const summarized=new Set(['Patient','Observation','MedicationStatement','Condition','AllergyIntolerance','Immunization','Encounter']);
   const additionalTypes=[...new Set(resources.map(resource=>resource.resourceType))].filter(type=>!summarized.has(type)).sort();
   $('clinicalView').insertAdjacentHTML('beforeend',additionalTypes.map(type=>summaryTable(type,['Eintrag','Autor / Beteiligte','Status'],resources.filter(resource=>resource.resourceType===type).map(resource=>[display(resource),authorOf(resource),resource.status]))).join(''));

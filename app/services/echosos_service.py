@@ -324,7 +324,7 @@ def _blood_observations(data, patient_id, author):
     validation = validate_coding(coding)
     if validation.get("status") != "validated":
         raise ValueError(f"LOINC {BLOOD_GROUP_LOINC} konnte über den TX-Server nicht validiert werden")
-    digest = hashlib.sha256(f"{data['source_url']}|{BLOOD_GROUP_LOINC}".encode()).hexdigest()
+    digest = _patient_selection_identifier(data, BLOOD_GROUP_LOINC, data["blood_group"])
     recorded_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     return [{
         "resourceType": "Observation",
@@ -345,11 +345,6 @@ def _blood_observations(data, patient_id, author):
         "valueCodeableConcept": {"text": data["blood_group"]},
         "performer": [{"reference": _patient_reference(patient_id)}],
     }]
-
-
-def _echosos_identifier(data, resource_type, selection_key):
-    source = f"{data['source_url']}|{resource_type}|{selection_key}"
-    return hashlib.sha256(source.encode("utf-8")).hexdigest()
 
 
 def _patient_selection_identifier(data, *selection):
@@ -522,7 +517,7 @@ def _echosos_organ_donation_consents(data, patient_id):
         "resourceType": "Consent",
         "identifier": [{
             "system": ECHOSOS_CONSENT_IDENTIFIER_SYSTEM,
-            "value": _echosos_identifier(data, "organ-donation-consent", provision_type),
+            "value": _patient_selection_identifier(data, "organ-donation-consent", provision_type),
         }],
         "status": "active",
         "scope": {
@@ -549,6 +544,10 @@ def _clinical_identity(resource):
     payload = copy.deepcopy(resource)
     for key in ("id", "meta", "identifier", "text"):
         payload.pop(key, None)
+    if _is_echosos_blood_observation(resource):
+        # These are import timestamps, not distinct blood-group measurements.
+        for key in ("effectiveDateTime", "issued"):
+            payload.pop(key, None)
 
     def without_display(value):
         if isinstance(value, dict):
@@ -562,6 +561,17 @@ def _clinical_identity(resource):
         return value
 
     return json.dumps(without_display(payload), sort_keys=True, ensure_ascii=False)
+
+
+def _is_echosos_blood_observation(resource):
+    return (
+        resource.get("resourceType") == "Observation"
+        and any(item.get("system") == ECHOSOS_IDENTIFIER_SYSTEM for item in resource.get("identifier", []))
+        and any(
+            item.get("system") == "http://loinc.org" and item.get("code") == BLOOD_GROUP_LOINC
+            for item in resource.get("code", {}).get("coding", [])
+        )
+    )
 
 
 def _existing_resource_id(resource):
@@ -588,8 +598,11 @@ def _existing_resource_id(resource):
     legacy_system = {
         "AllergyIntolerance": ECHOSOS_ALLERGY_IDENTIFIER_SYSTEM,
         "Condition": ECHOSOS_CONDITION_IDENTIFIER_SYSTEM,
+        "Consent": ECHOSOS_CONSENT_IDENTIFIER_SYSTEM,
     }.get(resource_type)
-    patient_field = "subject" if resource_type == "Condition" else "patient"
+    if _is_echosos_blood_observation(resource):
+        legacy_system = ECHOSOS_IDENTIFIER_SYSTEM
+    patient_field = "subject" if resource_type in ("Condition", "Observation") else "patient"
     patient_reference = resource.get(patient_field, {}).get("reference", "")
     if (
         not entries
@@ -619,10 +632,17 @@ def _existing_resource_id(resource):
         ]
         entries = sorted(candidates, key=lambda entry: entry["resource"]["id"])[:1]
     if entries:
-        for item in entries[0].get("resource", {}).get("identifier", []):
+        existing = entries[0].get("resource", {})
+        for item in existing.get("identifier", []):
             if item not in identifiers:
                 identifiers.append(item)
         resource["identifier"] = identifiers
+        if _is_echosos_blood_observation(resource) and _clinical_identity(existing) == _clinical_identity(resource):
+            for key in ("effectiveDateTime", "issued"):
+                if key in existing:
+                    resource[key] = existing[key]
+                else:
+                    resource.pop(key, None)
     return entries[0].get("resource", {}).get("id") if entries else None
 
 

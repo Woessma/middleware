@@ -78,6 +78,17 @@ Die Autorenanzeige loest Referenzen aus dem geladenen Bundle zum Namen auf
 (einschliesslich Patient, Practitioner und Organization). Nur wenn weder
 Anzeigename noch passende Ressource vorhanden ist, bleibt die Referenz sichtbar.
 
+Auch Blutgruppen-Observations und Organspende-Consents verwenden stabile
+patienten- und inhaltsbasierte Identifier. Der klinische Altbestandsabgleich
+beruecksichtigt ausschliesslich die jeweilige EchoSOS-Quelle und denselben
+Patienten. Bei EchoSOS-Blutgruppen (LOINC 882-1) sind die automatisch erzeugten
+Importzeitpunkte kein Unterscheidungsmerkmal; beim Wiederimport bleiben
+urspruengliches Datum und Identifier erhalten. Unterschiedliche Blutgruppen
+und Einwilligungsentscheidungen werden nicht zusammengefuehrt.
+Patientenkontakte werden im bestehenden Patienteneintrag abgeglichen, nicht
+als neue Ressourcen pro Import angelegt. Medikamente und Freitext werden
+derzeit nicht als eigenstaendige klinische Ressourcen aus EchoSOS erzeugt.
+
 ## Browser-Anmeldung: noch offen
 
 Der Client ist deployt und verwendet Keycloak Authorization Code mit PKCE
@@ -134,6 +145,12 @@ strukturiert aufklappbar und zusaetzlich als FHIR-JSON einsehbar. Inhalte
 werden als Text dargestellt, nicht als ungeprueftes FHIR-Narrative-HTML
 ausgefuehrt. Die Ressourcenanzahl bleibt neben der klinischen Uebersicht
 sichtbar.
+
+Die geladene Patient-ID bleibt ausdruecklich sichtbar. Impfungen stehen am
+Anfang der fachlichen Zusammenfassung mit Anzahl, Datum, Impfstoff, Charge,
+Durchfuehrenden und Status. Liefert `$everything` keine Immunization, nennt
+die Ansicht dies explizit mit der Patient-ID. Daten eines anderen Patienten
+werden weder hinzugeladen noch automatisch zusammengefuehrt.
 
 ## Deployment und Routenpruefung
 
