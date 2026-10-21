@@ -1,7 +1,9 @@
 import uuid
 import requests
+from urllib.parse import urlsplit
 
 from config import FHIR_BASE
+from fhir.identifiers import import_resource_identity
 from fhir.narrative import ensure_resource_narrative
 
 from mappers.medication_mapper import (
@@ -27,12 +29,22 @@ def _preserve_existing_careteam_participants(resource, resource_id):
         if existing.get("participant"):
             resource["participant"] = existing["participant"]
 
-def _find_existing_resource_id(resource_type: str, system: str, value: str):
+def _find_existing_resource_id(
+    resource_type: str, system: str, value: str, resource: dict,
+):
+
+    identifier_tokens = [f"{system}|{value}"]
+    current_prefix = "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-"
+    legacy_prefix = "https://woess.ch/fhir/NamingSystem/cda-import-"
+    if system.startswith(current_prefix):
+        identifier_tokens.append(f"{legacy_prefix}{system[len(current_prefix):]}|{value}")
+    elif system.startswith(legacy_prefix):
+        identifier_tokens.append(f"{current_prefix}{system[len(legacy_prefix):]}|{value}")
 
     response = requests.get(
         f"{FHIR_BASE}/{resource_type}",
         params={
-            "identifier": f"{system}|{value}"
+            "identifier": ",".join(identifier_tokens)
         },
         headers={
             "Accept": "application/fhir+json"
@@ -48,7 +60,74 @@ def _find_existing_resource_id(resource_type: str, system: str, value: str):
     if not entries:
         return None
 
-    return entries[0].get("resource", {}).get("id")
+    candidates = [entry.get("resource", {}) for entry in entries]
+    if len(candidates) == 1:
+        return candidates[0].get("id")
+
+    own_id = resource.get("id")
+    for candidate in candidates:
+        if own_id and candidate.get("id") == own_id:
+            return own_id
+    identity = import_resource_identity(resource)
+    matches = [
+        candidate for candidate in candidates
+        if import_resource_identity(candidate) == identity
+    ]
+    if matches:
+        preferred = next(
+            (candidate for candidate in matches
+             if any(identifier.get("system") == system
+                    and identifier.get("value") == value
+                    for identifier in candidate.get("identifier", []))),
+            matches[0],
+        )
+        return preferred.get("id")
+    raise ValueError(f"Ambiguous {resource_type} import identifier; refusing to overwrite")
+
+
+def _find_existing_consent_id(resource: dict) -> str | None:
+    if resource.get("resourceType") != "Consent":
+        return None
+    patient_reference = (resource.get("patient") or {}).get("reference")
+    if not patient_reference:
+        raise ValueError("Consent requires a patient reference for duplicate matching")
+
+    target_identity = import_resource_identity(resource)
+    next_url = f"{FHIR_BASE.rstrip('/')}/Consent"
+    params = {"patient": patient_reference, "_count": "200"}
+    seen_urls = set()
+    base = urlsplit(FHIR_BASE)
+    while next_url:
+        parsed = urlsplit(next_url)
+        if (
+            parsed.scheme != base.scheme
+            or parsed.netloc != base.netloc
+            or not parsed.path.startswith(base.path.rstrip("/") + "/")
+            or next_url in seen_urls
+        ):
+            raise ValueError("Invalid Consent search pagination link")
+        seen_urls.add(next_url)
+        response = requests.get(
+            next_url, params=params,
+            headers={"Accept": "application/fhir+json"}, timeout=60,
+        )
+        response.raise_for_status()
+        bundle = response.json()
+        for entry in bundle.get("entry", []):
+            candidate = entry.get("resource", {})
+            if (
+                candidate.get("resourceType") == "Consent"
+                and candidate.get("patient", {}).get("reference") == patient_reference
+                and import_resource_identity(candidate) == target_identity
+                and candidate.get("id")
+            ):
+                return candidate["id"]
+        next_url = next(
+            (link["url"] for link in bundle.get("link", [])
+             if link.get("relation") == "next"), None,
+        )
+        params = None
+    return None
 
 
 def _extract_primary_code(resource: dict) -> tuple[str | None, str | None]:
@@ -309,7 +388,11 @@ def build_bundle_entry(resource: dict) -> dict:
                 resource["resourceType"],
                 system,
                 value,
+                resource,
             )
+
+            if not existing_resource_id:
+                existing_resource_id = _find_existing_consent_id(resource)
 
             if not existing_resource_id:
                 existing_resource_id = _find_existing_document_reference_id(

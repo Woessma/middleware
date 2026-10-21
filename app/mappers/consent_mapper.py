@@ -1,5 +1,7 @@
 import logging
+import hashlib
 import uuid
+from fhir.identifiers import import_resource_identity
 from mappers.author_helpers import add_author_display
 
 
@@ -55,7 +57,6 @@ def map_consent_section(
 
         consent = {
             "resourceType": "Consent",
-            "id": str(uuid.uuid4()),
             "status": "active",
             "scope": {
                 "coding": [
@@ -69,7 +70,7 @@ def map_consent_section(
                 "reference": patient_reference
             }
         }
-        add_author_display(consent, entry)
+        add_author_display(consent, entry, field="performer")
 
         consent["category"] = [
             {
@@ -83,9 +84,18 @@ def map_consent_section(
             }
         ]
 
-        consent["policyText"] = {
+        consent["policyRule"] = {
             "text": consent_text
         }
+
+        identifier_value = hashlib.sha256(
+            import_resource_identity(consent).encode("utf-8")
+        ).hexdigest()
+        consent["identifier"] = [{
+            "system": "https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-consent",
+            "value": identifier_value,
+        }]
+        consent["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, identifier_value))
 
         resources.append(consent)
 

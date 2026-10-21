@@ -56,6 +56,22 @@ EPIC CDA
 - UMZH Send: Convert + Versandreport mit `destination_base_url` (und optionalem Outbound-Authorization-Header)
 - CH VACD Convert: `Bundle.type=document`, Composition zuerst, CH-VACD Bundle-/Composition-/Immunization-Profile, UUID-Identifier und aufgelöste `fullUrl`-Referenzen
 - FHIR-Import: Einzelressourcen und Dokumentbundles werden vor dem Versand als Transaction-Bundle stabilisiert; fehlende Requests werden aus Ressourcentyp und ID abgeleitet
+- CDA-Reimporte: Identifier unter `https://woess.ch/fhir/NamingSystem/cda-import-*`
+  und `https://fhir.omnilink.ch/fhir/NamingSystem/cda-import-*` werden bei gleichem
+  Wert als dieselbe Importidentitaet gesucht. Neue Ressourcen behalten das aktuelle
+  Identifier-System; bestehende Ressourcen werden aktualisiert statt dupliziert.
+  Bei mehreren Treffern werden bestehende Ressourcen anhand ihrer ID bzw. ihres
+  gemappten Inhalts unterschieden. Mehrdeutige Treffer ohne passenden Inhalt
+  fuehren zu einem Fehler statt zum Ueberschreiben eines beliebigen Eintrags.
+- CDA-Consent: Patient und vollstaendig gemappter Inhalt bestimmen eine stabile
+  ID und einen Import-Identifier. Alte Eintraege ohne Identifier werden anhand
+  desselben Inhalts beim Patienten wiederverwendet; generierte Narrative und
+  technische Metadaten sind kein Unterscheidungsmerkmal.
+  Freitext der Einwilligung steht in `Consent.policyRule.text`, Autoren in
+  `Consent.performer`; die nicht definierten Felder `policyText` und `author`
+  werden nicht mehr gesendet. Historische Einwilligungen ohne gespeicherten
+  Inhalt werden nicht pauschal mit neuen, inhaltlich bekannten Eintraegen
+  gleichgesetzt.
 - EchoSOS-Import: QR/PKPass -> Patientensuche nach Vorname/Nachname/Geburtsdatum -> Transaction-Bundle -> BridgeLink-Write nach HAPI -> separate `$everything`-Abfrage -> Notfallansicht
 - Kontaktmodell: `Patient.contact` plus `RelatedPerson`; PCP über `CareTeam.participant` und `Practitioner`-Referenz
 - EchoSOS-Ansicht gruppiert Observations nach `vital-signs`, `laboratory` und `social-history`; unklassifizierte Observations und Encounter werden ausgeblendet

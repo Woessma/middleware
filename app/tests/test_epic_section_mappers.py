@@ -4,6 +4,7 @@ from xml.etree import ElementTree as ET
 
 from converter.section_dispatcher import get_section_mapper
 from mappers.condition_mapper import map_condition_section
+from mappers.consent_mapper import map_consent_section
 from mappers.encounter_mapper import map_encounter_section
 from mappers.lab_mapper import map_lab_section
 from mappers.medication_mapper import map_medication_section
@@ -12,6 +13,32 @@ from parser.cda.section_parser import extract_sections
 
 
 class EpicSectionMapperTests(unittest.TestCase):
+    def test_consent_identity_is_stable_on_reimport(self):
+        section = {"entries": [{"value": {"text": "Synthetic directive"}}]}
+        first = map_consent_section(section, "Patient/p1", {})[0]
+        repeated = map_consent_section(section, "Patient/p1", {})[0]
+        self.assertEqual(first["id"], repeated["id"])
+        self.assertEqual(first["identifier"], repeated["identifier"])
+        other_patient = map_consent_section(section, "Patient/p2", {})[0]
+        self.assertNotEqual(first["id"], other_patient["id"])
+        changed = map_consent_section(
+            {"entries": [{"value": {"text": "Changed directive"}}]}, "Patient/p1", {},
+        )[0]
+        self.assertNotEqual(first["id"], changed["id"])
+
+    def test_consent_uses_persistable_fhir_fields_for_text_and_author(self):
+        consent = map_consent_section(
+            {"entries": [{
+                "value": {"text": "Synthetic directive"},
+                "authorDisplay": "Synthetic author",
+            }]},
+            "Patient/p1", {},
+        )[0]
+        self.assertEqual(consent["policyRule"], {"text": "Synthetic directive"})
+        self.assertEqual(consent["performer"], [{"display": "Synthetic author"}])
+        self.assertNotIn("policyText", consent)
+        self.assertNotIn("author", consent)
+
     @patch("mappers.medication_mapper.resolve_medication_identity")
     def test_cda_medication_adds_canonical_gtin_for_pharmacode(self, mock_resolve):
         mock_resolve.return_value = {

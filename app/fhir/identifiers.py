@@ -1,5 +1,18 @@
 # app/fhir/identifiers.py
 
+import copy
+import json
+
+
+def import_resource_identity(resource: dict) -> str:
+    normalized = copy.deepcopy(resource)
+    for field in ("id", "meta", "identifier"):
+        normalized.pop(field, None)
+    if normalized.get("text", {}).get("status") == "generated":
+        normalized.pop("text")
+    return json.dumps(normalized, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
 def get_cda_identifier_value(
     root: str | None,
     extension: str | None = None
