@@ -52,6 +52,14 @@ POST /card/analyze
 ## EchoSOS + FHIR kombiniert
 
 `echosos-fhir-test.html` verbindet den EchoSOS-Import mit der Patientensuche.
+Die Anmeldung erfolgt ausschliesslich ueber Keycloak (Authorization Code mit
+PKCE), mit vorbelegter Client-ID `app-omnilink-cardtest`. Die Redirect-URI
+`https://middleware.local.omnilink.ch/echosos-fhir-test.html` muss im
+Keycloak-Client freigeschaltet sein. „Verbindung prüfen“ testet nach Anmeldung
+den Middleware-Health-Endpunkt und FHIR `/metadata`, ohne Daten zu schreiben.
+„Token löschen“ entfernt das Keycloak-Token. Basic Auth und lokale
+Passwortspeicherung werden nicht mehr verwendet; alte gespeicherte
+EchoSOS-Zugangsdaten werden beim Laden entfernt.
 Nach dem Login kann ein EchoSOS-QR mit der mobilen Kamera, als Bild oder als
 PKPass-Datei eingelesen werden. Die Middleware sucht den Patienten nach Name
 und Geburtsdatum und erstellt ein Transaction-Bundle. BridgeLink schreibt es
