@@ -421,8 +421,11 @@ Clinical Notes, DocumentReference, Binary und ein erstes UMZH-orientiertes Diagn
 - EchoSOS-QR-Auswahlen dekodiert: Allergien mit positionsbezogenen Reaktionen, medizinische Vorgeschichte sowie bis zu drei Notfallkontakte werden aus dem kompakten QR gelesen
 - EchoSOS-FHIR-Persistenz erweitert: SNOMED-`AllergyIntolerance` und SNOMED-`Condition`; Patient als Recorder/Asserter und als Performer der Blutgruppen-Observation
 - Explizite EchoSOS-Organspende-Angabe als `Consent` mit Scope `adr` und LOINC `42348-3`; nur Zustimmung/Ablehnung erzeugen Consent, Schweizer „kein Registereintrag“ und „keine Angabe“ nicht
-- EchoSOS-Medikamentenauswahlen, Organspende und Freitext werden dekodiert, sind aber noch nicht als eigene FHIR-Ressourcen persistiert
+- EchoSOS-Medikamentenauswahlen und Freitext werden dekodiert, sind aber noch nicht als eigene FHIR-Ressourcen persistiert; explizite Organspendeangaben erzeugen Consent wie oben beschrieben
 - EchoSOS-Namensräume auf `https://fhir.omnilink.ch/fhir/NamingSystem/...` migriert; identifier-basierte Reimports bleiben beim Systemwechsel idempotent
+- Stand 2026-10-21: EchoSOS-HTML nutzt `POST https://api.omnilink.ch/v1/echosos/resolveRequestResponse` ohne zusaetzlichen FHIR-POST; Patient-ID aus `transaction-response`, danach lesender `$everything`-Aufruf ueber `https://fhir.local.omnilink.ch/fhir/`
+- EchoSOS-HTML: kompakter Bereich „Input auswählen“, Keycloak-Anmeldung mit verborgen vorbelegter Client-ID `app-omnilink-cardtest`; Basic Auth und lokale Passwortspeicherung entfernt
+- Offen: Live-EchoSOS-Login meldet `Invalid parameter: redirect_uri`; gespeicherte Keycloak-Freigabe fuer `https://middleware.local.omnilink.ch/echosos-fhir-test.html` noch nicht verifiziert. Browserablauf nur mit synthetischem Token und simulierten Antworten getestet; Details in [TEST-CLIENT.md](../TEST-CLIENT.md#offener-keycloak-login-stand-2026-10-21)
 - Schwangerschaftsstatus als Observation mit LOINC `82810-3` und SNOMED CT `77386006` abgebildet
 - CDA-Autoren dokumentbezogen aufgeloest: ID-only-Authoren werden, wenn im selben CDA benannt, auf den vorhandenen Namen zurueckgefuehrt
 - HAPI-Testbestand gezielt bereinigt: doppelte Patient-, Practitioner-, PractitionerRole-, Organization-, Observation- und CareTeam-Datensaetze entfernt

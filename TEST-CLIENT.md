@@ -58,8 +58,7 @@ PKCE), mit vorbelegter Client-ID `app-omnilink-cardtest`. Die Redirect-URI
 Keycloak-Client freigeschaltet sein. Der kompakte Bereich „Input auswählen“
 zeigt wie die Card-Analysis-Seite nur „Mit Keycloak anmelden“ und den
 tatsaechlichen Tokenstatus; die Client-ID ist verborgen vorbelegt.
-Basic Auth und lokale
-Passwortspeicherung werden nicht mehr verwendet; alte gespeicherte
+Basic Auth und lokale Passwortspeicherung werden nicht mehr verwendet; alte gespeicherte
 EchoSOS-Zugangsdaten werden beim Laden entfernt.
 Nach dem Login kann ein EchoSOS-QR mit der mobilen Kamera, als Bild oder als
 PKPass-Datei eingelesen werden. Die Middleware sucht den Patienten nach Name
@@ -86,6 +85,35 @@ Eintragsstatus und Fehler-Issues. Die Patient-ID wird aus
 `$everything`-GET verwenden weiterhin
 `https://fhir.local.omnilink.ch/fhir/`. Ein Fehler beim anschliessenden Lesen
 wird ausdruecklich vom bereits erfolgreichen Import unterschieden.
+
+### Offener Keycloak-Login (Stand 2026-10-21)
+
+Der Live-Login der EchoSOS-Seite ist noch nicht erfolgreich bestaetigt:
+Keycloak meldet fuer `app-omnilink-cardtest`
+`Invalid parameter: redirect_uri`. Die funktionierende Anmeldung der
+Card-Analysis-Seite gibt die EchoSOS-Ruecksprungadresse nicht automatisch frei.
+
+In der Keycloak-Administration unter Realm `omnilink` -> Clients ->
+`app-omnilink-cardtest` -> Settings -> **Valid redirect URIs** muss exakt
+dieser Eintrag gespeichert sein:
+
+```text
+https://middleware.local.omnilink.ch/echosos-fhir-test.html
+```
+
+Bestehende Eintraege, insbesondere fuer `card-analysis-test.html`, beibehalten.
+Nicht die komplette `/protocol/openid-connect/auth?...`-Anmelde-URL eintragen.
+**Web origins** und **Valid post logout redirect URIs** ersetzen diese
+Login-Freigabe nicht. Als Web Origin gilt
+`https://middleware.local.omnilink.ch`.
+Nach dem Speichern die Anmeldung von der EchoSOS-Seite neu starten.
+Die tatsaechlich gespeicherte Keycloak-Konfiguration wurde hier nicht
+eingesehen oder geaendert.
+
+UI, Tokenstatus, Import und lesende Folgeabfragen wurden im Browser mit
+simulierten Antworten und einem synthetischen Token geprueft. Das ist kein
+Nachweis fuer einen erfolgreichen Live-Keycloak-Login oder End-to-End-Import
+aus dem Browser.
 
 ## FHIR-Abfragen visualisieren
 

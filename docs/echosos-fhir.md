@@ -34,6 +34,22 @@ und Fehler-Issues der Transaction-Antwort und liest die Patient-ID aus
 `response.location`. Patientensuche und `$everything` bleiben lesende
 Aufrufe ueber `https://fhir.local.omnilink.ch/fhir/`.
 
+## Browser-Anmeldung: noch offen
+
+Der Client ist deployt und verwendet Keycloak Authorization Code mit PKCE
+`S256`, Client-ID `app-omnilink-cardtest`. Der kompakte Bereich
+„Input auswählen“ zeigt die Anmeldeschaltflaeche und den tatsaechlichen
+Tokenstatus.
+
+Am 2026-10-21 scheitert der Live-Login noch mit
+`Invalid parameter: redirect_uri`. Die EchoSOS-Ruecksprungadresse muss im
+Realm `omnilink` fuer diesen Client als **Valid redirect URI** freigegeben
+sein; die gespeicherte Konfiguration wurde nicht verifiziert. Der erfolgreiche
+API-Aufruf oben ist getrennt davon zu betrachten. Browserpruefungen mit
+simulierten Antworten bestaetigen den Clientablauf, nicht den Live-Login.
+Konfigurationsschritte und genaue URI:
+[TEST-CLIENT.md](../TEST-CLIENT.md#offener-keycloak-login-stand-2026-10-21).
+
 ## Ablauf
 
 1. Der Client ruft den externen EchoSOS-Endpunkt auf; BridgeLink sendet
@@ -48,8 +64,8 @@ Aufrufe ueber `https://fhir.local.omnilink.ch/fhir/`.
   (`type: transaction-response`) an den Client zurueck. Die einzelnen
   `entry[].response.status` und gegebenenfalls `OperationOutcome`-Issues
   muessen zusaetzlich zum HTTP-Status geprueft werden.
-6. `$everything` ist ein separater Folgeaufruf von BridgeLink nach erfolgreichem
-  Write. Die resultierenden Daten können in der EchoSOS-Notfallansicht
+6. Der Browser ruft `$everything` separat ueber die BridgeLink-FHIR-Route nach
+  erfolgreichem Write ab. Die resultierenden Daten können in der EchoSOS-Notfallansicht
   dargestellt werden.
 
 Der QR-Import und die manuelle Patientensuche verwenden damit denselben

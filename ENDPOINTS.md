@@ -212,6 +212,11 @@ wird nach erfolgreichem Write separat
 aufgerufen. Die Patient-ID kann aus `response.location` entnommen werden.
 
 Weitere Details: [EchoSOS zu FHIR](docs/echosos-fhir.md).
+Der erfolgreiche API-Test ist vom Browser-Login zu unterscheiden:
+Der EchoSOS-Keycloak-Login meldet am 2026-10-21 noch
+`Invalid parameter: redirect_uri`. Die gespeicherte Redirect-Freigabe ist
+noch nicht verifiziert; siehe
+[offener Keycloak-Login](TEST-CLIENT.md#offener-keycloak-login-stand-2026-10-21).
 
 ### eMediplan-Verordner und refdata.ch
 
