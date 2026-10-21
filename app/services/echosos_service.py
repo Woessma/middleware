@@ -360,14 +360,19 @@ def _echosos_allergy_resources(data, patient_id):
     if data.get("no_known_allergies") and not selections:
         selections = [{"allergen": "Keine", "reaction": None}]
 
-    for position, selection in enumerate(selections):
+    for selection in selections:
         allergen = selection["allergen"]
         reaction = selection.get("reaction")
-        identifier_value = _echosos_identifier(
-            data,
-            "allergy",
-            f"{position}|{allergen}|{reaction or ''}",
-        )
+        identity = [
+            data["given"].strip().casefold(),
+            data["family"].strip().casefold(),
+            data["birth_date"],
+            allergen,
+            reaction or "",
+        ]
+        identifier_value = hashlib.sha256(
+            json.dumps(identity, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
 
         allergy = {
             "resourceType": "AllergyIntolerance",
@@ -537,6 +542,25 @@ def _echosos_organ_donation_consents(data, patient_id):
     }]
 
 
+def _allergy_clinical_identity(resource):
+    payload = copy.deepcopy(resource)
+    for key in ("id", "meta", "identifier", "text"):
+        payload.pop(key, None)
+
+    def without_display(value):
+        if isinstance(value, dict):
+            return {
+                key: without_display(item)
+                for key, item in value.items()
+                if key != "display"
+            }
+        if isinstance(value, list):
+            return [without_display(item) for item in value]
+        return value
+
+    return json.dumps(without_display(payload), sort_keys=True, ensure_ascii=False)
+
+
 def _existing_resource_id(resource):
     resource_type = resource["resourceType"]
     identifiers = resource.get("identifier", [])
@@ -558,6 +582,39 @@ def _existing_resource_id(resource):
     entries = response.json().get("entry", [])
     if len(entries) > 1:
         raise ValueError(f"EchoSOS-Identifier fuer {resource_type} ist nicht eindeutig")
+    patient_reference = resource.get("patient", {}).get("reference", "")
+    if (
+        not entries
+        and resource_type == "AllergyIntolerance"
+        and patient_reference.startswith("Patient/")
+    ):
+        # Match older URL-based identifiers without merging other allergy sources.
+        response = requests.get(
+            f"{FHIR_BASE}/AllergyIntolerance",
+            params={"patient": patient_reference, "_count": "100"},
+            headers={"Accept": "application/fhir+json"},
+            timeout=15,
+        )
+        response.raise_for_status()
+        bundle = response.json()
+        if any(link.get("relation") == "next" for link in bundle.get("link", [])):
+            raise ValueError("EchoSOS-Allergieabgleich unvollständig: mehr als eine Ergebnisseite")
+        identity = _allergy_clinical_identity(resource)
+        candidates = [
+            entry
+            for entry in bundle.get("entry", [])
+            if any(
+                item.get("system") == ECHOSOS_ALLERGY_IDENTIFIER_SYSTEM
+                for item in entry.get("resource", {}).get("identifier", [])
+            )
+            and _allergy_clinical_identity(entry.get("resource", {})) == identity
+        ]
+        entries = sorted(candidates, key=lambda entry: entry["resource"]["id"])[:1]
+    if entries:
+        for item in entries[0].get("resource", {}).get("identifier", []):
+            if item not in identifiers:
+                identifiers.append(item)
+        resource["identifier"] = identifiers
     return entries[0].get("resource", {}).get("id") if entries else None
 
 

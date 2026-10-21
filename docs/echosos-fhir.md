@@ -55,6 +55,21 @@ kann dort statt des QR-Inhalts als vermeintliche Bilddatei ankommen.
 Ein `OperationOutcome` wird auch bei HTTP 200 als nicht bestaetigter Import
 behandelt; die Issue-Details werden angezeigt und `$everything` nicht gestartet.
 
+### Wiederholte Allergie-Imports und Autorenanzeige
+
+Allergie-Identifier basieren auf Patientenname, Geburtsdatum, Allergen und
+Reaktion, nicht auf dem gesamten QR-Link oder der Auswahlposition. Ein
+wiederholter Import aktualisiert die vorhandene Ressource. Fuer alte
+URL-basierte Identifier werden ausschliesslich klinisch identische,
+EchoSOS-markierte Allergien desselben Patienten abgeglichen; bestehende
+Identifier bleiben erhalten. Bereits gespeicherte Dubletten werden nicht
+automatisch geloescht oder in der Anzeige verborgen. Unterschiedliche
+Reaktionen und andere Datenquellen werden nicht zusammengefuehrt.
+
+Die Autorenanzeige loest Referenzen aus dem geladenen Bundle zum Namen auf
+(einschliesslich Patient, Practitioner und Organization). Nur wenn weder
+Anzeigename noch passende Ressource vorhanden ist, bleibt die Referenz sichtbar.
+
 ## Browser-Anmeldung: noch offen
 
 Der Client ist deployt und verwendet Keycloak Authorization Code mit PKCE

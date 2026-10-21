@@ -451,7 +451,22 @@ function render(bundle){const entries=bundle?.resourceType==='Bundle'?(bundle.en
 function summaryTable(title,headers,rows){return rows.length?'<h3>'+clean(title)+'</h3><div class="result-table-wrap"><table class="result-table"><thead><tr>'+headers.map(x=>'<th>'+clean(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(x=>'<td>'+clean(x||'')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':''}
 function contactCategory(contact){return (contact.relationship||[]).some(r=>(r.coding||[]).some(c=>c.code==='ECON'))?'Notfallkontakt':'Andere Kontakte'}
 function isEncounterTypeObservation(resource){return (resource.code?.coding||[]).some(c=>c.system==='http://terminology.hl7.org/CodeSystem/v3-ActCode'&&['AMB','EMER','IMP','ACUTE','NONAC'].includes(c.code))}
-function authorOf(resource){const actors=resource.performer||resource.author||resource.participant||resource.recorder||resource.informationSource||[];const list=Array.isArray(actors)?actors:[actors];return list.map(actor=>actor.display||actor.actor?.display||actor.actor?.reference||actor.individual?.display||actor.individual?.reference||actor.reference).filter(Boolean).join('; ')||'-'}
+let authorResources=new Map();
+function authorOf(resource){
+  const actors=resource.performer||resource.author||resource.participant||resource.recorder||resource.asserter||resource.informationSource||[];
+  const list=Array.isArray(actors)?actors:[actors];
+  return list.map(actor=>{
+    const reference=actor.actor||actor.individual||actor;
+    if(reference.display)return reference.display;
+    const key=reference.reference||'';
+    const relative=key.match(/(?:^|\/)([A-Z][A-Za-z]+\/[A-Za-z0-9.-]+)(?:\/_history\/[^/]+)?$/)?.[1];
+    const target=key.startsWith('#')?(resource.contained||[]).find(item=>'#'+item.id===key):authorResources.get(key)||authorResources.get(relative);
+    if(!target)return key;
+    if(typeof target.name==='string')return target.name;
+    const name=target.name?.[0];
+    return name?.text||[...(name?.given||[]),name?.family||''].filter(Boolean).join(' ')||key;
+  }).filter(Boolean).join('; ')||'-';
+}
 function pcpRows(resources){return resources.filter(r=>r.resourceType==='CareTeam').flatMap(team=>(team.participant||[]).filter(p=>(p.role||[]).some(role=>(role.coding||[]).some(c=>c.code==='PCP'))).map(p=>{const reference=p.member?.reference||'';const member=resources.find(r=>reference===r.resourceType+'/'+r.id);const name=member?.name?.[0]?nameOf({name:member.name}):member?.name?.text||reference;const contact=(member?.telecom||[]).map(t=>[t.system,t.value].filter(Boolean).join(': ')).join('; ');return [name,contact,reference]}))}
 const renderBase=render;
 render=function(bundle){renderBase(bundle);const entries=bundle?.resourceType==='Bundle'?(bundle.entry||[]):bundle?.resourceType?[{resource:bundle}]:[],rs=entries.map(x=>x.resource||{}),patient=rs.find(x=>x.resourceType==='Patient');if(!patient){$('patientSection').hidden=true;$('clinicalSection').hidden=true;$('resourceSection').hidden=!rs.length;return}$('patientSection').hidden=false;$('patientView').innerHTML='<div class="fields">'+fields(patient).map(x=>'<div class="field"><small>'+clean(x[0])+'</small><div>'+clean(x[1])+'</div></div>').join('')+'</div>'+(patient.contact?.length?summaryTable('Kontakte',['Kategorie','Name','Kontakt'],patient.contact.map(c=>[contactCategory(c),c.name?.text,(c.telecom||[]).map(t=>t.value).join('; ') ])):'')+summaryTable('Hausarzt',['Name','Kontakt','Referenz'],pcpRows(rs));const observations=rs.filter(r=>r.resourceType==='Observation'&&!isEncounterTypeObservation(r)),medications=rs.filter(r=>r.resourceType==='MedicationStatement'),conditions=rs.filter(r=>r.resourceType==='Condition'),allergies=rs.filter(r=>r.resourceType==='AllergyIntolerance'),immunizations=rs.filter(r=>r.resourceType==='Immunization'),encounters=rs.filter(r=>r.resourceType==='Encounter');const clinical=summaryTable('Beobachtungen',['Datum','Befund','Wert','Autor','Status'],observations.map(r=>[formatDate(r.effectiveDateTime||r.issued),coding(r.code),valueOf(r),authorOf(r),r.status])).concat(summaryTable('Medikationen',['Medikation','Autor','Status','Dosierung'],medications.map(r=>[coding(r.medicationCodeableConcept)||r.medicationReference?.reference,authorOf(r),r.status,r.dosage?.[0]?.text]))).concat(summaryTable('Probleme',['Problem','Autor','Status'],conditions.map(r=>[coding(r.code),authorOf(r),coding(r.clinicalStatus)])).concat(summaryTable('Allergien und Unverträglichkeiten',['Allergie','Autor','Kritikalität','Status'],allergies.map(r=>[coding(r.code),authorOf(r),r.criticality,coding(r.clinicalStatus)]))).concat(summaryTable('Immunisierungen',['Datum','Impfstoff','Autor','Status'],immunizations.map(r=>[formatDate(r.occurrenceDateTime||r.recorded),coding(r.vaccineCode),authorOf(r),r.status]))).concat(summaryTable('Begegnungen',['Beginn','Typ','Autor','Status'],encounters.map(r=>[formatDate(r.period?.start),coding(r.class),authorOf(r),r.status]))));$('clinicalView').innerHTML=clinical||'<p class="empty">Keine klinisch relevanten Einträge gefunden.</p>';$('clinicalSection').hidden=false;$('resourceSection').hidden=!rs.length}
@@ -543,6 +558,18 @@ const renderWithoutOtherObservations=render;
 render=function(bundle){renderWithoutOtherObservations(bundle);const heading=[...$('clinicalView').querySelectorAll('h3')].find(node=>node.textContent==='Weitere Beobachtungen');if(heading){heading.nextElementSibling?.remove();heading.remove()}};
 const renderWithPregnancyStatus=render;
 render=function(bundle){renderWithPregnancyStatus(bundle);const resources=(bundle?.entry||[]).map(entry=>entry.resource||{});const pregnancyObservation=resources.find(resource=>resource.resourceType==='Observation'&&(resource.code?.coding||[]).some(codingItem=>codingItem.system==='http://loinc.org'&&codingItem.code==='82810-3'));const primigravida=resources.some(resource=>resource.resourceType==='Condition'&&(resource.code?.coding||[]).some(codingItem=>codingItem.system==='http://snomed.info/sct'&&codingItem.code==='127364007')&&(resource.clinicalStatus?.coding||[]).some(codingItem=>codingItem.code==='active'));const pregnancyValue=valueOf(pregnancyObservation||{});const pregnant=pregnancyValue|| (primigravida?'Ja':'-');const tile=[...$('overview').querySelectorAll('.tile')].find(tile=>tile.querySelector('span')?.textContent==='Ressourcen geladen');if(tile){tile.querySelector('strong').textContent=pregnant;tile.querySelector('span').textContent='Schwangerschaft'}};
+const renderWithResolvedAuthors=render;
+render=function(bundle){
+  authorResources=new Map();
+  const entries=bundle?.resourceType==='Bundle'?(bundle.entry||[]):bundle?.resourceType?[{resource:bundle}]:[];
+  for(const entry of entries){
+    const resource=entry.resource;
+    if(!resource)continue;
+    if(resource.id)authorResources.set(resource.resourceType+'/'+resource.id,resource);
+    if(entry.fullUrl)authorResources.set(entry.fullUrl,resource);
+  }
+  renderWithResolvedAuthors(bundle);
+};
 </script>
 </body>
 </html>

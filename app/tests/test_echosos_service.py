@@ -1,8 +1,9 @@
+import copy
 import io
 import json
 import unittest
 import zipfile
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from services.echosos_service import (
     _blood_observations,
@@ -10,6 +11,7 @@ from services.echosos_service import (
     _echosos_condition_resources,
     _echosos_organ_donation_consents,
     _patient_resource,
+    _transaction_entry,
     extract_echosos_url,
     import_echosos,
     parse_echosos_data,
@@ -37,6 +39,75 @@ COMPACT_QR_URL = (
 
 
 class EchoSosServiceTests(unittest.TestCase):
+    def test_allergy_identifier_ignores_url_changes_and_selection_order(self):
+        data = parse_echosos_data(COMPACT_QR_URL)
+        original = _echosos_allergy_resources(data, "123")
+        changed = copy.deepcopy(data)
+        changed["source_url"] += "&i=changed"
+        changed["allergy_selections"].reverse()
+        reordered = _echosos_allergy_resources(changed, "123")
+        self.assertEqual(
+            {item["code"]["text"]: item["identifier"] for item in original},
+            {item["code"]["text"]: item["identifier"] for item in reordered},
+        )
+        changed["birth_date"] = "1991-01-15"
+        other_patient = _echosos_allergy_resources(changed, "456")
+        self.assertNotEqual(reordered[0]["identifier"], other_patient[0]["identifier"])
+
+    @patch("services.echosos_service.requests.get")
+    def test_reimport_reuses_legacy_allergy_and_preserves_identifiers(self, get):
+        allergy = _echosos_allergy_resources(parse_echosos_data(COMPACT_QR_URL), "123")[0]
+        legacy = copy.deepcopy(allergy)
+        legacy["id"] = "old-1"
+        legacy["identifier"][0]["value"] = "old-url-hash"
+        duplicate = copy.deepcopy(legacy)
+        duplicate["id"] = "old-2"
+        duplicate["identifier"][0]["value"] = "another-old-url-hash"
+        get.side_effect = [
+            Mock(json=lambda: {"entry": []}),
+            Mock(json=lambda: {"entry": [{"resource": legacy}, {"resource": duplicate}]}),
+        ]
+
+        entry = _transaction_entry(allergy)
+
+        self.assertEqual(entry["request"], {"method": "PUT", "url": "AllergyIntolerance/old-1"})
+        self.assertEqual(len(entry["resource"]["identifier"]), 2)
+        self.assertIn(legacy["identifier"][0], entry["resource"]["identifier"])
+        self.assertEqual(get.call_args.kwargs["params"]["patient"], "Patient/123")
+
+    @patch("services.echosos_service.requests.get")
+    def test_legacy_match_does_not_merge_other_sources_or_different_reactions(self, get):
+        allergy = _echosos_allergy_resources(parse_echosos_data(COMPACT_QR_URL), "123")[0]
+        other_source = copy.deepcopy(allergy)
+        other_source["id"] = "other-source"
+        other_source["identifier"][0]["system"] = "https://example.org/other"
+        other_reaction = copy.deepcopy(allergy)
+        other_reaction["id"] = "other-reaction"
+        other_reaction["reaction"] = []
+        get.side_effect = [
+            Mock(json=lambda: {"entry": []}),
+            Mock(json=lambda: {"entry": [
+                {"resource": other_source}, {"resource": other_reaction},
+            ]}),
+        ]
+
+        entry = _transaction_entry(allergy)
+
+        self.assertEqual(entry["request"]["method"], "POST")
+        self.assertIn("ifNoneExist", entry["request"])
+
+    @patch("services.echosos_service.requests.get")
+    def test_reimport_uses_stable_identifier_without_legacy_search(self, get):
+        allergy = _echosos_allergy_resources(parse_echosos_data(COMPACT_QR_URL), "123")[0]
+        existing = copy.deepcopy(allergy)
+        existing["id"] = "existing"
+        get.return_value = Mock(json=lambda: {"entry": [{"resource": existing}]})
+
+        entry = _transaction_entry(allergy)
+
+        self.assertEqual(entry["request"], {"method": "PUT", "url": "AllergyIntolerance/existing"})
+        get.assert_called_once()
+
     def test_medical_history_mapping_uses_only_snomed(self):
         self.assertEqual(len(ECHOSOS_MEDICAL_HISTORY), 17)
 
@@ -146,6 +217,9 @@ class EchoSosServiceTests(unittest.TestCase):
     def test_builds_no_known_allergy_as_snomed_absence_assertion(self):
         allergies = _echosos_allergy_resources(
             {
+                "given": "Max",
+                "family": "Beispiel",
+                "birth_date": "1990-01-15",
                 "source_url": "https://eid.echosos.com/#a=A",
                 "allergy_selections": [],
                 "no_known_allergies": True,
