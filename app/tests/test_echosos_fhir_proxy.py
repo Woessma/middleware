@@ -49,6 +49,40 @@ class EchoSosFhirProxyTests(unittest.TestCase):
         )
 
     @patch("main.requests.post")
+    def test_forwards_raw_camera_and_file_bodies_unchanged(self, mock_post):
+        upstream = Mock()
+        upstream.status_code = 200
+        upstream.content = b'{"resourceType":"Bundle","type":"transaction-response"}'
+        upstream.headers = {"Content-Type": "application/json"}
+        mock_post.return_value = upstream
+
+        for body, content_type in (
+            (
+                b"https://eid.echosos.com/#f=Test&l=Beispiel&g=fGBP",
+                "text/plain; charset=utf-8",
+            ),
+            (b"\x89PNG\r\n\x1a\nsynthetic", "image/png"),
+            (b"PKsynthetic", "application/vnd.apple.pkpass"),
+        ):
+            with self.subTest(content_type=content_type):
+                response = self.client.post(
+                    "/echosos/import",
+                    content=body,
+                    headers={
+                        **self.headers,
+                        "Content-Type": content_type,
+                        "Accept": "application/json",
+                    },
+                )
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(mock_post.call_args.kwargs["data"], body)
+                self.assertEqual(
+                    mock_post.call_args.kwargs["headers"]["Content-Type"],
+                    content_type,
+                )
+
+    @patch("main.requests.post")
     def test_rejects_echo_import_without_bearer_token(self, mock_post):
         response = self.client.post("/echosos/import", content=b"payload")
 

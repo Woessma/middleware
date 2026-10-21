@@ -48,6 +48,13 @@ Importantwort startet keine Patientenabfrage und bestaetigt keinen
 Speichererfolg. Die Fehlermeldung nennt nur das Antwortformat
 (`resourceType`, `type`, Anzahl der Eintraege), nicht den Patienteninhalt.
 
+Der Browser sendet den Kamera-QR direkt als `text/plain; charset=utf-8` und
+Dateien als binaeren Body mit ihrem Content-Type, nicht als Multipart-Upload.
+BridgeLink leitet diesen Body an den Decoder weiter. Eine Multipart-Huelle
+kann dort statt des QR-Inhalts als vermeintliche Bilddatei ankommen.
+Ein `OperationOutcome` wird auch bei HTTP 200 als nicht bestaetigter Import
+behandelt; die Issue-Details werden angezeigt und `$everything` nicht gestartet.
+
 ## Browser-Anmeldung: noch offen
 
 Der Client ist deployt und verwendet Keycloak Authorization Code mit PKCE
