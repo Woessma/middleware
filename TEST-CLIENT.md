@@ -54,8 +54,8 @@ POST /card/analyze
 `echosos-fhir-test.html` verbindet den EchoSOS-Import mit der Patientensuche.
 Nach dem Login kann ein EchoSOS-QR mit der mobilen Kamera, als Bild oder als
 PKPass-Datei eingelesen werden. Die Middleware sucht den Patienten nach Name
-und Geburtsdatum, legt ihn bei Bedarf an beziehungsweise aktualisiert ihn,
-speichert Notfallkontakt und Blutgruppe und laedt danach `Patient/{id}/$everything`.
+und Geburtsdatum und erstellt ein Transaction-Bundle. BridgeLink schreibt es
+nach HAPI; der Browser sendet keinen weiteren FHIR-POST.
 Die Antwort wird als Patientenuebersicht und aufklappbare FHIR-Ressourcen
 visualisiert. Nach dem Speichern wird automatisch
 `Patient/{id}/$everything?_count=500` abgefragt, sodass auch vorhandene
@@ -68,8 +68,15 @@ https://middleware.local.omnilink.ch/echosos-fhir-test.html
 Der Import verwendet:
 
 ```text
-POST /echosos/qr
+POST https://api.omnilink.ch/v1/echosos/resolveRequestResponse
 ```
+
+Der Client prueft das `transaction-response`-Bundle einschliesslich aller
+Eintragsstatus und Fehler-Issues. Die Patient-ID wird aus
+`entry[].response.location` gelesen. Patientensuche und der separate
+`$everything`-GET verwenden weiterhin
+`https://fhir.local.omnilink.ch/fhir/`. Ein Fehler beim anschliessenden Lesen
+wird ausdruecklich vom bereits erfolgreichen Import unterschieden.
 
 ## FHIR-Abfragen visualisieren
 

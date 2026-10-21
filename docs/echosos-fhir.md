@@ -28,6 +28,12 @@ Sie liefert nur das FHIR-Bundle mit `type: transaction` zurueck und schreibt
 nicht selbst nach HAPI. Der externe Pfad `/v1/echosos/resolveRequestResponse`
 wird von BridgeLink bereitgestellt, nicht von FastAPI.
 
+Der Browserclient `echosos-fhir-test.html` verwendet den externen Endpunkt
+direkt und sendet keinen zusaetzlichen FHIR-POST. Er prueft die Eintragsstatus
+und Fehler-Issues der Transaction-Antwort und liest die Patient-ID aus
+`response.location`. Patientensuche und `$everything` bleiben lesende
+Aufrufe ueber `https://fhir.local.omnilink.ch/fhir/`.
+
 ## Ablauf
 
 1. Der Client ruft den externen EchoSOS-Endpunkt auf; BridgeLink sendet
