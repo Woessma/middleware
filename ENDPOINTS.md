@@ -187,7 +187,9 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | Zugriff | Methode | URL | Antwort |
 |---|---|---|---|
 | Extern ueber BridgeLink | `POST` | `https://api.omnilink.ch/v1/echosos/resolveRequestResponse` | HAPI-Ergebnis als FHIR-Bundle mit `type: transaction-response` |
+| Browser-Import ueber Same-Origin-Proxy | `POST` | `/echosos/import` | Leitet den authentifizierten Request an den festen BridgeLink-Endpunkt weiter |
 | Direkt an die Middleware | `POST` | `https://middleware.local.omnilink.ch/echosos/qr` | FHIR-Bundle mit `type: transaction`, noch ohne Write |
+| Same-Origin-FHIR-Leseproxy | `GET` | `/echosos/fhir/Patient`, `/echosos/fhir/Patient/{id}` oder `/echosos/fhir/Patient/{id}/$everything` | Leitet authentifizierte Patient-Lesezugriffe an `FHIR_BASE` weiter |
 
 Die Middleware dekodiert den EchoSOS-QR beziehungsweise die PKPass-Datei,
 gleicht den Patienten ab und erstellt das Transaction-Bundle. BridgeLink
@@ -208,8 +210,10 @@ HTTP `200` allein ersetzt nicht die Pruefung der einzelnen
 `entry[].response.status` und gegebenenfalls `OperationOutcome`-Issues.
 Die Transaction-Antwort ist kein Patientendaten-Bundle. Fuer die Notfallansicht
 wird nach erfolgreichem Write separat
-`GET https://fhir.local.omnilink.ch/fhir/Patient/{id}/$everything?_count=500`
-aufgerufen. Die Patient-ID kann aus `response.location` entnommen werden.
+`GET /echosos/fhir/Patient/{id}/$everything?_count=500` aufgerufen. Die
+Same-Origin-Route leitet die Anfrage mit dem Keycloak-Bearer-Token an den
+konfigurierten FHIR-Server weiter. Die Patient-ID kann aus `response.location`
+entnommen werden.
 
 Weitere Details: [EchoSOS zu FHIR](docs/echosos-fhir.md).
 Der erfolgreiche API-Test ist vom Browser-Login zu unterscheiden:

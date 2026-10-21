@@ -162,6 +162,7 @@ from config import (
 UMZH_SEND_BASE_URL = os.getenv("UMZH_SEND_BASE_URL", "")
 UMZH_SEND_TIMEOUT = int(os.getenv("UMZH_SEND_TIMEOUT", "60"))
 BRIDGELINK_CDA_URL = "https://bridge.omnilink.ch/cda"
+ECHOSOS_IMPORT_URL = "https://api.omnilink.ch/v1/echosos/resolveRequestResponse"
 
 def _validate_bundle(bundle):
     enrichment_report = enrich_bundle_terminology(bundle)
@@ -353,7 +354,17 @@ def admin_dashboard():
         return dashboard_file.read()
 
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 def _app_file(filename):
+    candidates = [
+        os.path.join(PROJECT_ROOT, filename),
+        os.path.join(os.path.dirname(__file__), filename),
+    ]
+    for candidate in candidates:
+        if os.path.isfile(candidate):
+            return candidate
     return os.path.join(os.path.dirname(__file__), filename)
 
 
@@ -504,6 +515,103 @@ async def bridge_link_cda_proxy(request: Request):
         content=upstream.content,
         status_code=upstream.status_code,
         headers=response_headers,
+    )
+
+
+@app.post("/echosos/import")
+async def echosos_import_proxy(request: Request):
+    authorization = request.headers.get("authorization", "")
+    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
+        raise HTTPException(
+            status_code=401,
+            detail="A Keycloak ****** is required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    headers = {"Authorization": authorization}
+    for header_name in ("accept", "content-type"):
+        header_value = request.headers.get(header_name)
+        if header_value:
+            headers[header_name.title()] = header_value
+
+    body = await request.body()
+    try:
+        upstream = await run_in_threadpool(
+            requests.post,
+            ECHOSOS_IMPORT_URL,
+            data=body,
+            headers=headers,
+            timeout=300,
+        )
+    except requests.RequestException as exc:
+        logger.warning("BridgeLink EchoSOS import failed: %s", exc)
+        raise HTTPException(
+            status_code=502,
+            detail="BridgeLink EchoSOS endpoint unavailable",
+        ) from exc
+
+    response_headers = {
+        header_name: upstream.headers[header_name]
+        for header_name in ("Content-Type", "WWW-Authenticate", "Retry-After", "Location")
+        if header_name in upstream.headers
+    }
+    return Response(
+        content=upstream.content,
+        status_code=upstream.status_code,
+        headers=response_headers,
+    )
+
+
+@app.get("/echosos/fhir/{patient_path:path}")
+async def echosos_fhir_proxy(patient_path: str, request: Request):
+    authorization = request.headers.get("authorization", "")
+    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
+        raise HTTPException(
+            status_code=401,
+            detail="A Keycloak ****** is required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    segments = patient_path.split("/")
+    valid_resource_path = segments == ["Patient"]
+    if len(segments) in (2, 3) and segments[0] == "Patient":
+        patient_id = segments[1]
+        valid_patient_id = bool(patient_id) and all(
+            character in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-"
+            for character in patient_id
+        )
+        valid_resource_path = valid_patient_id and (
+            len(segments) == 2 or segments[2] == "$everything"
+        )
+    if not valid_resource_path:
+        raise HTTPException(status_code=404, detail="FHIR-Abfrage nicht verfügbar")
+
+    headers = {
+        "Accept": request.headers.get(
+            "accept",
+            "application/fhir+json, application/json",
+        ),
+        "Authorization": authorization,
+    }
+    try:
+        upstream = await run_in_threadpool(
+            requests.get,
+            f"{FHIR_BASE.rstrip('/')}/{patient_path}",
+            params=list(request.query_params.multi_items()),
+            headers=headers,
+            timeout=30,
+        )
+    except requests.RequestException as exc:
+        logger.warning("EchoSOS FHIR query failed: %s", exc)
+        raise HTTPException(
+            status_code=502,
+            detail="FHIR-Abfrage nicht verfügbar",
+        ) from exc
+
+    return Response(
+        content=upstream.content,
+        status_code=upstream.status_code,
+        media_type=upstream.headers.get("Content-Type"),
     )
 
 
@@ -1948,4 +2056,3 @@ async def cda_etoc_convert(
             status_code=500,
             detail=str(ex)
         )
-

@@ -76,15 +76,18 @@ https://middleware.local.omnilink.ch/echosos-fhir-test.html
 Der Import verwendet:
 
 ```text
-POST https://api.omnilink.ch/v1/echosos/resolveRequestResponse
+POST /echosos/import
 ```
 
+Die Middleware leitet diesen authentifizierten Same-Origin-Aufruf an den
+festen BridgeLink-Endpunkt `https://api.omnilink.ch/v1/echosos/resolveRequestResponse`
+weiter. So muss der Browser keine Cross-Origin-Anfrage an BridgeLink senden.
 Der Client prueft das `transaction-response`-Bundle einschliesslich aller
 Eintragsstatus und Fehler-Issues. Die Patient-ID wird aus
 `entry[].response.location` gelesen. Patientensuche und der separate
-`$everything`-GET verwenden weiterhin
-`https://fhir.local.omnilink.ch/fhir/`. Ein Fehler beim anschliessenden Lesen
-wird ausdruecklich vom bereits erfolgreichen Import unterschieden.
+`$everything`-GET laufen ueber `/echosos/fhir/Patient/...` als Same-Origin-
+Middleware-Proxy an `FHIR_BASE`. Ein Fehler beim anschliessenden Lesen wird
+ausdruecklich vom bereits erfolgreichen Import unterschieden.
 
 ### Offener Keycloak-Login (Stand 2026-10-21)
 

@@ -2,40 +2,421 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="cache-control" content="no-store">
-  <title>EchoSOS - FHIR Test</title>
+  <title>EchoSOS / FHIR</title>
   <style>
-    :root{--bg:#edf3f2;--paper:#fff;--ink:#182528;--muted:#627276;--line:#d5e0df;--brand:#006b5e;--soft:#e1f1ed;--danger:#b42318;--code:#142027}
-    *{box-sizing:border-box} body{margin:0;background:linear-gradient(125deg,rgba(0,107,94,.1),transparent 38%),repeating-linear-gradient(0deg,transparent,transparent 31px,rgba(24,37,40,.025) 32px),var(--bg);color:var(--ink);font:15px/1.45 "Aptos","Segoe UI",sans-serif}
-    main{width:min(1420px,calc(100% - 32px));margin:24px auto 48px} h1,h2,h3{font-family:Georgia,"Times New Roman",serif;font-weight:500} h1{margin:0;font-size:clamp(30px,4vw,48px)} h2{margin:0;font-size:24px} h3{margin:0 0 10px;font-size:19px}.eyebrow{color:var(--brand);font-size:12px;font-weight:800;text-transform:uppercase}.subtitle,.muted{color:var(--muted)}
-    .head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:18px}.panel{background:var(--paper);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px rgba(22,43,48,.06);padding:18px}.login{display:grid;grid-template-columns:150px 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:18px}.login .wide{display:none}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field-wide{grid-column:1/-1}label{display:block;margin-bottom:5px;color:var(--muted);font-size:12px;font-weight:800}input,select{width:100%;min-height:40px;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fff;color:var(--ink)}button{min-height:40px;border:1px solid var(--brand);border-radius:6px;padding:8px 14px;background:var(--brand);color:#fff;cursor:pointer;font-weight:800}button.secondary{background:#fff;color:var(--brand)}button.quiet{border-color:var(--line);background:#f5f8f7;color:var(--ink)}button:disabled{opacity:.55;cursor:wait}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.status{display:none;margin-top:12px;padding:10px 12px;border-left:4px solid var(--brand);background:var(--soft)}.status.show{display:block}.status.error{border-color:var(--danger);background:#fff0ee;color:var(--danger)}
-    .workspace{display:grid;grid-template-columns:minmax(330px,.8fr) minmax(0,1.6fr);gap:18px}.import-panel h2{margin-bottom:8px}.file-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.file{flex:1;min-width:220px}.hint{margin-top:8px;color:var(--muted);font-size:13px}.query{border-top:1px solid var(--line);margin-top:20px;padding-top:18px}.query .actions{margin-top:10px}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px}.tile{border:1px solid var(--line);border-radius:6px;padding:12px;background:#fbfdfc}.tile strong{display:block;font-size:20px;color:var(--brand)}.tile span{color:var(--muted);font-size:12px}.contact{margin-top:14px;padding:12px;border-left:4px solid var(--brand);background:var(--soft)}.contact strong{display:block}.resource-list{display:grid;gap:10px;margin-top:18px}.resource{border:1px solid var(--line);border-radius:6px;background:#fff}.resource summary{padding:12px;cursor:pointer;font-weight:800}.resource-body{padding:0 12px 12px}.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));border:1px solid var(--line)}.field{padding:9px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}.field small{display:block;color:var(--muted);font-weight:800}.field div{word-break:break-word}.json{max-height:320px;overflow:auto;margin:12px 0 0;padding:12px;border-radius:6px;background:var(--code);color:#dce9e8;font:12px/1.45 "SFMono-Regular",Consolas,monospace;white-space:pre-wrap;word-break:break-word}.empty{color:var(--muted);font-style:italic}.loading{opacity:.7}@media(max-width:900px){.login{grid-template-columns:1fr 1fr}.login .wide{grid-column:1/-1}.workspace{grid-template-columns:1fr}}@media(max-width:560px){main{width:calc(100% - 20px);margin-top:14px}.login,.grid{grid-template-columns:1fr}.login .wide,.field-wide{grid-column:auto}.head{display:block}.file{min-width:100%}}
-    .camera-dialog{width:min(560px,calc(100% - 24px));border:1px solid var(--line);border-radius:8px;padding:0;background:var(--paper);color:var(--ink)}.camera-dialog::backdrop{background:rgba(10,28,30,.72)}.camera-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}.camera-head h2{font-size:20px}.camera-body{padding:16px}.camera-video{display:block;width:100%;aspect-ratio:4/3;background:#10191b;object-fit:cover;border-radius:6px}.camera-help{color:var(--muted);font-size:13px}.camera-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}.qr-preview{display:none;margin-top:14px;padding:12px;border:1px solid #8bc9b6;border-left:4px solid var(--brand);border-radius:6px;background:var(--soft)}.qr-preview.show{display:block}.qr-preview strong{display:block;color:var(--brand);margin-bottom:6px}.qr-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font-size:13px}.qr-fields span{color:var(--muted)}.result-section{margin-top:14px;border:1px solid var(--line);border-radius:6px;background:#fff}.result-section summary{padding:12px;cursor:pointer;font-weight:800}.result-body{padding:0 12px 12px}.result-table{width:100%;border-collapse:collapse;font-size:13px}.result-table th,.result-table td{padding:8px;border:1px solid var(--line);text-align:left;vertical-align:top}.result-table th{background:#edf3f2}.result-table-wrap{overflow:auto}
+    :root {
+      --bg: #e8efef;
+      --paper: #f5f7f7;
+      --panel: #ffffff;
+      --ink: #1a2323;
+      --muted: #576b6f;
+      --line: #d3dfe0;
+      --teal: #0d7d73;
+      --teal-dark: #0a645f;
+      --teal-soft: #dfeeea;
+      --danger: #d94d4d;
+      --danger-soft: #f6d0d0;
+      --chip: #f1f5f3;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 16px/1.5 Georgia, "Times New Roman", serif;
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 22px 32px;
+    }
+    .eyebrow {
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 {
+      margin-top: 8px;
+      font-size: clamp(3rem, 4.8vw, 6rem);
+      line-height: 0.98;
+      letter-spacing: -0.06em;
+      font-weight: 500;
+    }
+    .subtitle {
+      margin-top: 18px;
+      font-size: 17px;
+      color: var(--muted);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .status {
+      display: none;
+      margin-top: 18px;
+      padding: 14px 18px;
+      color: var(--teal-dark);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--teal-soft);
+      border-left: 4px solid var(--teal);
+    }
+    .status.error { color: #b42318; background: #fff0ee; border-left-color: var(--danger); }
+    .status.show,
+    .status.error {
+      display: block;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.14fr) minmax(280px, 0.86fr);
+      gap: 26px;
+      margin-top: 18px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(22, 43, 48, 0.05);
+    }
+    .import-panel {
+      padding-bottom: 10px;
+    }
+    h2 {
+      font-size: clamp(1.9rem, 2.1vw, 3rem);
+      line-height: 1.2;
+      letter-spacing: -0.04em;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .muted, .hint {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.5;
+      max-width: 620px;
+    }
+    .keycloak-row {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    button {
+      appearance: none;
+      border: 1px solid var(--teal);
+      background: var(--teal);
+      color: #fff;
+      border-radius: 6px;
+      font: 700 17px/1.2 Georgia, "Times New Roman", serif;
+      padding: 13px 18px;
+      cursor: pointer;
+      min-height: 46px;
+      transition: background 0.15s ease;
+    }
+    button:hover { background: var(--teal-dark); }
+    button:disabled { opacity: 0.55; cursor: wait; }
+    button.secondary {
+      background: #eef3f3;
+      border-color: var(--line);
+      color: var(--ink);
+    }
+    button.secondary:hover { background: #e3eceb; }
+    button.ghost {
+      background: #f0f3f2;
+      border-color: #d0d7d6;
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    .keycloak-status {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .file-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .file-picker {
+      flex: 1 1 300px;
+      min-height: 48px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.2);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      color: var(--muted);
+      font-size: 16px;
+      font-family: Georgia, "Times New Roman", serif;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .file-picker:focus-within { outline: 3px solid rgba(13, 125, 115, 0.18); }
+    .file-picker input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .file-label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .file-row button {
+      min-width: 170px;
+      font-size: 16px;
+    }
+
+    .qr-card {
+      display: none;
+      margin-top: 28px;
+      background: var(--teal-soft);
+      border: 1px solid #9fcec5;
+      padding: 18px 18px 14px;
+      border-radius: 4px;
+    }
+    .qr-card.show { display: block; }
+    .qr-card-title {
+      color: var(--ink);
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .qr-card .patient-line {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .qr-card .patient-line strong {
+      font-weight: 700;
+    }
+    .qr-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 18px;
+      font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .qr-fields span { color: var(--muted); }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+    .action-row .primary {
+      min-width: 320px;
+      font-size: 18px;
+    }
+    .action-row .ghost {
+      min-width: 110px;
+      font-size: 18px;
+    }
+    .footer-note {
+      margin-top: 18px;
+      max-width: 520px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .right-panel {
+      padding-top: 3px;
+    }
+    .right-panel h2 {
+      font-size: clamp(2rem, 2.8vw, 3.2rem);
+      margin-bottom: 18px;
+      font-weight: 500;
+    }
+    .right-panel .empty {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.6;
+      font-style: normal;
+    }
+    .left-panel-inner > .hint, .left-panel-inner > .actions, .left-panel-inner > .file-picker {
+      display: none;
+    }
+    .query { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 18px; }
+    .query-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .query label { display: block; margin-bottom: 5px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .query input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); font: 15px/1.4 ui-sans-serif, system-ui, sans-serif; }
+    .query-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .result-section[hidden] { display: none; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .tile, .field {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .tile strong, .tile span, .field small { display: block; }
+    .tile strong { overflow-wrap: anywhere; font-size: 18px; }
+    .tile span, .field small { color: var(--muted); font-size: 12px; }
+    .contact {
+      margin-top: 12px;
+      padding: 12px;
+      border-left: 4px solid var(--teal);
+      background: var(--teal-soft);
+    }
+    .contact strong { display: block; }
+    .result-section { margin-top: 14px; border-top: 1px solid var(--line); }
+    .result-section summary, .resource summary { padding: 10px 0; cursor: pointer; font-weight: 700; }
+    .result-body { padding: 10px 0; }
+    .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    .field div { overflow-wrap: anywhere; }
+    .resource-list { display: grid; gap: 8px; }
+    .resource { border-top: 1px solid var(--line); }
+    .resource-body { padding-bottom: 12px; }
+    .json {
+      max-height: 280px;
+      overflow: auto;
+      margin: 10px 0 0;
+      padding: 12px;
+      background: #142224;
+      color: #dce9e8;
+      font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .empty { color: var(--muted); font-style: italic; }
+    .result-table-wrap { overflow: auto; }
+    .result-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .result-table th, .result-table td { padding: 7px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .camera-dialog { width: min(560px, calc(100% - 24px)); border: 1px solid var(--line); border-radius: 8px; padding: 0; background: var(--panel); color: var(--ink); }
+    .camera-dialog::backdrop { background: rgba(10, 28, 30, 0.72); }
+    .camera-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+    .camera-head h2 { font-size: 20px; }
+    .camera-body { padding: 16px; }
+    .camera-video { display: block; width: 100%; aspect-ratio: 4 / 3; background: #10191b; object-fit: cover; border-radius: 6px; }
+    .camera-help { margin-top: 10px; color: var(--muted); font-size: 13px; }
+    .camera-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+    @media (max-width: 560px) { .query-grid { grid-template-columns: 1fr; } }
+
+    @media (max-width: 860px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+      .action-row .primary {
+        min-width: 0;
+        width: 100%;
+      }
+      .file-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .file-row > * {
+        width: 100%;
+      }
+      main {
+        padding-inline: 16px;
+      }
+    }
   </style>
 </head>
 <body>
-<main>
-  <header class="head"><div><div class="eyebrow">EchoSOS / FHIR</div><h1>Notfallpass importieren</h1><p class="subtitle">QR lesen, Patient abgleichen, FHIR-Daten anzeigen.</p></div></header>
-  <div id="status" class="status" role="status"></div>
-  <div class="workspace">
-    <section class="panel import-panel">
-      <h2>Input auswählen</h2>
-      <p class="muted">Die Kamera liefert einen QR-Wert. Dateien werden als Bild oder PKPass an die Middleware gesendet.</p>
-      <div class="actions"><button id="keycloakLoginBtn" type="button">Mit Keycloak anmelden</button></div>
-      <input id="keycloakClientId" type="hidden" value="app-omnilink-cardtest">
-      <p id="keycloakStatus" class="hint" role="status">Kein Keycloak-Token aktiv.</p>
-      <input id="importUrl" type="hidden" value="https://api.omnilink.ch/v1/echosos/resolveRequestResponse">
-      <input id="fhirUrl" type="hidden" value="https://fhir.local.omnilink.ch/fhir/">
-      <div class="file-row"><input id="qrFile" class="file" type="file" accept=".pkpass,.png,.jpg,.jpeg,image/png,image/jpeg,application/vnd.apple.pkpass" capture="environment"><button id="camera" class="secondary" type="button">Kamera oeffnen</button></div>
-      <div id="qrPreview" class="qr-preview"><strong>QR-Code erkannt</strong><div id="qrFields" class="qr-fields"></div></div>
-      <div class="actions"><button id="import" type="button">QR lesen und in FHIR speichern</button><button id="clear" class="quiet" type="button">Leeren</button></div>
-      <p class="hint">Der Patient wird über BridgeLink gesucht und verarbeitet. Ein bestehender Patient wird aktualisiert, sonst angelegt. Der Notfallkontakt und die Blutgruppe werden ebenfalls gespeichert.</p>
-      <section class="query"><h2>Query PAT</h2><div class="grid"><div><label for="patientId">Patient-ID oder Identifier</label><input id="patientId" placeholder="FHIR-ID, MRN oder Identifier-Wert"></div><div><label for="family">Nachname</label><input id="family" placeholder="Wöss"></div><div><label for="given">Vorname</label><input id="given" placeholder="Markus"></div><div><label for="birthDate">Geburtsdatum</label><input id="birthDate" type="date"></div></div><div class="actions"><button id="find" class="secondary" type="button">Patient suchen und laden</button><button id="everything" class="secondary" type="button">Alle Daten laden</button></div></section>
-    </section>
-    <section class="panel"><h2>FHIR Visualisierung</h2><div id="overview" class="empty">Noch keine Daten geladen.</div><details id="patientSection" class="result-section" hidden open><summary>Patient</summary><div id="patientView" class="result-body"></div></details><details id="clinicalSection" class="result-section" hidden open><summary>Fachliche Zusammenfassung</summary><div id="clinicalView" class="result-body"></div></details><details id="resourceSection" class="result-section" hidden><summary>Einträge im Detail</summary><div id="resources" class="resource-list"></div></details></section>
-  </div>
-</main>
+  <main>
+    <div class="eyebrow">ECHOSOS / FHIR</div>
+    <h1>Notfallpass importieren</h1>
+    <p class="subtitle">QR lesen, Patient abgleichen, FHIR-Daten anzeigen.</p>
+
+    <div id="status" class="status" role="status"></div>
+    <input id="keycloakClientId" type="hidden" value="app-omnilink-cardtest">
+    <input id="importUrl" type="hidden" value="/echosos/import">
+    <div class="workspace">
+      <section class="panel import-panel">
+        <div class="left-panel-inner">
+          <h2>Input auswählen</h2>
+          <p class="muted">Die Kamera liefert einen QR-Wert. Dateien werden als Bild oder PKPass an die Middleware gesendet.</p>
+
+          <div class="keycloak-row">
+            <button type="button" id="keycloakLoginBtn">Mit Keycloak anmelden</button>
+          </div>
+          <span id="keycloakStatus" class="keycloak-status" role="status">Kein Keycloak-Token aktiv.</span>
+
+          <div class="file-row">
+            <label class="file-picker" aria-label="Datei auswählen">
+              <span id="fileLabel" class="file-label">Datei auswählen</span>
+              <input id="qrFile" type="file" accept=".pkpass,.png,.jpg,.jpeg,image/png,image/jpeg,application/vnd.apple.pkpass">
+            </label>
+            <button type="button" id="camera" class="secondary">Kamera öffnen</button>
+          </div>
+
+          <div id="qrPreview" class="qr-card" aria-live="polite">
+            <div class="qr-card-title">QR-Code erkannt</div>
+            <div id="qrFields" class="qr-fields"></div>
+          </div>
+
+          <div class="action-row">
+            <button type="button" class="primary" id="import">QR lesen und in FHIR speichern</button>
+            <button type="button" class="ghost" id="clear">Leeren</button>
+          </div>
+
+          <div class="footer-note">Der Patient wird über BridgeLink gesucht und verarbeitet. Ein bestehender Patient wird aktualisiert, sonst angelegt. Der Notfallkontakt und die Blutgruppe werden ebenfalls gespeichert.</div>
+
+          <section class="query">
+            <h2>Query PAT</h2>
+            <div class="query-grid">
+              <div><label for="patientId">Patient-ID oder Identifier</label><input id="patientId" placeholder="FHIR-ID, MRN oder Identifier-Wert"></div>
+              <div><label for="family">Nachname</label><input id="family" placeholder="Wöss"></div>
+              <div><label for="given">Vorname</label><input id="given" placeholder="Markus"></div>
+              <div><label for="birthDate">Geburtsdatum</label><input id="birthDate" type="date"></div>
+            </div>
+            <div class="query-actions">
+              <button id="find" class="secondary" type="button">Patient suchen und laden</button>
+              <button id="everything" class="secondary" type="button">Alle Daten laden</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <aside class="panel right-panel">
+        <h2>FHIR Visualisierung</h2>
+        <div id="overview" class="empty">Noch keine Daten geladen.</div>
+        <details id="patientSection" class="result-section" hidden open>
+          <summary>Patient</summary>
+          <div id="patientView" class="result-body"></div>
+        </details>
+        <details id="clinicalSection" class="result-section" hidden open>
+          <summary>Fachliche Zusammenfassung</summary>
+          <div id="clinicalView" class="result-body"></div>
+        </details>
+        <details id="resourceSection" class="result-section" hidden>
+          <summary>Einträge im Detail</summary>
+          <div id="resources" class="resource-list"></div>
+        </details>
+      </aside>
+    </div>
+  </main>
 <dialog id="cameraDialog" class="camera-dialog">
   <div class="camera-head"><h2>QR mit Kamera lesen</h2><button id="closeCamera" class="quiet" type="button">Schliessen</button></div>
   <div class="camera-body"><video id="cameraVideo" class="camera-video" autoplay playsinline muted></video><p id="cameraHelp" class="camera-help">Kamera wird gestartet. Halte den EchoSOS-QR-Code vor die Kamera.</p><div class="camera-actions"><button id="stopCamera" class="secondary" type="button">Abbrechen</button></div></div>
@@ -43,6 +424,7 @@
 <script src="keycloak-auth.js"></script>
 <script>
 const $=id=>document.getElementById(id);
+ $('qrFile').addEventListener('change',()=>{$('fileLabel').textContent=$('qrFile').files[0]?.name||'Datei auswählen'});
 localStorage.removeItem('echosos-fhir-login');
 const qrFallbackScript='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
 function base(id){return $(id).value.trim().replace(/\/+$/,'')}
@@ -54,7 +436,7 @@ function loadQrFallback(){return new Promise((resolve,reject)=>{if(window.jsQR){
 async function scanCamera(){if(!cameraStream)return;try{let value='';if('BarcodeDetector' in window){const detector=new BarcodeDetector({formats:['qr_code']});const codes=await detector.detect($('cameraVideo'));value=codes[0]?.rawValue||''}else{const video=$('cameraVideo');if(!video.videoWidth||!video.videoHeight){cameraFrame=requestAnimationFrame(scanCamera);return}qrCanvas.width=video.videoWidth;qrCanvas.height=video.videoHeight;qrContext.drawImage(video,0,0,qrCanvas.width,qrCanvas.height);const imageData=qrContext.getImageData(0,0,qrCanvas.width,qrCanvas.height);const result=window.jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'attemptBoth'});value=result?.data||''}if(value){stopCamera();if(!isEchoSosUrl(value)){show('Kein EchoSOS-QR-Code. Import abgebrochen.',true);return}cameraValue=value;const patientName=echoPreview(value);show('QR-Code erkannt: '+patientName+'. Import und FHIR-Anzeige werden gestartet.');await importEcho();return}}catch(error){$('cameraHelp').textContent='QR-Erkennung fehlgeschlagen: '+error.message}cameraFrame=requestAnimationFrame(scanCamera)}
 $('camera').onclick=async()=>{try{if(!navigator.mediaDevices?.getUserMedia)throw new Error('Dieser Browser erlaubt keinen Kamerazugriff.');if(!('BarcodeDetector' in window))await loadQrFallback();$('cameraDialog').showModal();cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});$('cameraVideo').srcObject=cameraStream;await $('cameraVideo').play();qrCanvas=document.createElement('canvas');qrContext=qrCanvas.getContext('2d',{willReadFrequently:true});scanCamera()}catch(error){stopCamera();show(error.message,true)}};
 $('closeCamera').onclick=stopCamera;$('stopCamera').onclick=stopCamera;
-function clearPage(){stopCamera();cameraValue='';$('qrFile').value='';$('qrPreview').classList.remove('show');$('qrFields').replaceChildren();$('patientId').value='';$('family').value='';$('given').value='';$('birthDate').value='';$('overview').innerHTML='<p class="empty">Noch keine Daten geladen.</p>';$('patientView').replaceChildren();$('clinicalView').replaceChildren();$('resources').replaceChildren();$('patientSection').hidden=true;$('clinicalSection').hidden=true;$('resourceSection').hidden=true;$('status').className='status';$('status').textContent=''}
+function clearPage(){stopCamera();cameraValue='';$('qrFile').value='';$('fileLabel').textContent='Datei auswählen';$('qrPreview').classList.remove('show');$('qrFields').replaceChildren();$('patientId').value='';$('family').value='';$('given').value='';$('birthDate').value='';$('overview').innerHTML='<p class="empty">Noch keine Daten geladen.</p>';$('patientView').replaceChildren();$('clinicalView').replaceChildren();$('resources').replaceChildren();$('patientSection').hidden=true;$('clinicalSection').hidden=true;$('resourceSection').hidden=true;$('status').className='status';$('status').textContent=''}
 $('clear').onclick=clearPage;
 function clean(value){return String(value??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]))}
 function isEchoSosUrl(value){try{const parsed=new URL(value);return ['http:','https:'].includes(parsed.protocol)&&parsed.hostname==='eid.echosos.com'}catch{return false}}
@@ -75,8 +457,9 @@ const renderBase=render;
 render=function(bundle){renderBase(bundle);const entries=bundle?.resourceType==='Bundle'?(bundle.entry||[]):bundle?.resourceType?[{resource:bundle}]:[],rs=entries.map(x=>x.resource||{}),patient=rs.find(x=>x.resourceType==='Patient');if(!patient){$('patientSection').hidden=true;$('clinicalSection').hidden=true;$('resourceSection').hidden=!rs.length;return}$('patientSection').hidden=false;$('patientView').innerHTML='<div class="fields">'+fields(patient).map(x=>'<div class="field"><small>'+clean(x[0])+'</small><div>'+clean(x[1])+'</div></div>').join('')+'</div>'+(patient.contact?.length?summaryTable('Kontakte',['Kategorie','Name','Kontakt'],patient.contact.map(c=>[contactCategory(c),c.name?.text,(c.telecom||[]).map(t=>t.value).join('; ') ])):'')+summaryTable('Hausarzt',['Name','Kontakt','Referenz'],pcpRows(rs));const observations=rs.filter(r=>r.resourceType==='Observation'&&!isEncounterTypeObservation(r)),medications=rs.filter(r=>r.resourceType==='MedicationStatement'),conditions=rs.filter(r=>r.resourceType==='Condition'),allergies=rs.filter(r=>r.resourceType==='AllergyIntolerance'),immunizations=rs.filter(r=>r.resourceType==='Immunization'),encounters=rs.filter(r=>r.resourceType==='Encounter');const clinical=summaryTable('Beobachtungen',['Datum','Befund','Wert','Autor','Status'],observations.map(r=>[formatDate(r.effectiveDateTime||r.issued),coding(r.code),valueOf(r),authorOf(r),r.status])).concat(summaryTable('Medikationen',['Medikation','Autor','Status','Dosierung'],medications.map(r=>[coding(r.medicationCodeableConcept)||r.medicationReference?.reference,authorOf(r),r.status,r.dosage?.[0]?.text]))).concat(summaryTable('Probleme',['Problem','Autor','Status'],conditions.map(r=>[coding(r.code),authorOf(r),coding(r.clinicalStatus)])).concat(summaryTable('Allergien und Unverträglichkeiten',['Allergie','Autor','Kritikalität','Status'],allergies.map(r=>[coding(r.code),authorOf(r),r.criticality,coding(r.clinicalStatus)]))).concat(summaryTable('Immunisierungen',['Datum','Impfstoff','Autor','Status'],immunizations.map(r=>[formatDate(r.occurrenceDateTime||r.recorded),coding(r.vaccineCode),authorOf(r),r.status]))).concat(summaryTable('Begegnungen',['Beginn','Typ','Autor','Status'],encounters.map(r=>[formatDate(r.period?.start),coding(r.class),authorOf(r),r.status]))));$('clinicalView').innerHTML=clinical||'<p class="empty">Keine klinisch relevanten Einträge gefunden.</p>';$('clinicalSection').hidden=false;$('resourceSection').hidden=!rs.length}
 async function request(url,options={}){const r=await fetch(url,{...options,headers:{Accept:'application/fhir+json, application/json',...headers(),...(options.headers||{})},mode:'cors',credentials:'same-origin'});const text=await r.text();let data;try{data=JSON.parse(text)}catch{data=text}if(!r.ok)throw new Error('HTTP '+r.status+': '+(data?.detail||text));return data}
 $('import').onclick=importEcho;
-async function loadPatientEverything(id){const data=await request(base('fhirUrl')+'/Patient/'+encodeURIComponent(id)+'/$everything?_count=500');render(data);return data}
-$('find').onclick=async()=>{try{const id=$('patientId').value.trim();if(id){let patient;try{patient=await request(base('fhirUrl')+'/Patient/'+encodeURIComponent(id))}catch(error){if(!error.message.startsWith('HTTP 404'))throw error;const identifierBundle=await request(base('fhirUrl')+'/Patient?identifier='+encodeURIComponent(id));const identifierEntries=identifierBundle.entry||[];if(!identifierEntries.length)throw new Error('Kein Patient mit dieser ID oder diesem Identifier gefunden.');if((identifierBundle.total??identifierEntries.length)!==1)throw new Error((identifierBundle.total??identifierEntries.length)+' Patienten haben diesen Identifier. Bitte den Identifier mit System angeben.');patient=identifierEntries[0].resource}$('patientId').value=patient.id;await loadPatientEverything(patient.id);show('Patient '+patient.id+' über ID oder Identifier und alle Daten geladen.');return}const p=new URLSearchParams();if($('family').value.trim())p.set('family',$('family').value.trim());if($('given').value.trim())p.set('given',$('given').value.trim());if($('birthDate').value)p.set('birthdate',$('birthDate').value);if(!p.toString())throw new Error('Bitte Patient-ID, Identifier oder Suchkriterien eingeben.');const data=await request(base('fhirUrl')+'/Patient?'+p);const entries=data.entry||[];if(!entries.length){show('Kein Patient gefunden.',true);render({resourceType:'Bundle',entry:[]});return}if((data.total??entries.length)!==1){show((data.total??entries.length)+' Patienten gefunden. Bitte die Suche mit Patient-ID, Identifier oder Geburtsdatum eindeutig machen.',true);render({resourceType:'Bundle',entry:entries});return}const patient=entries[0].resource;$('patientId').value=patient.id;await loadPatientEverything(patient.id);show('Eindeutiger Patient '+patient.id+' und alle Daten geladen.')}catch(e){show(e.message,true)}};
+async function echososPatientRequest(path){return request('/echosos/fhir/Patient'+path)}
+async function loadPatientEverything(id){const data=await echososPatientRequest('/'+encodeURIComponent(id)+'/$everything?_count=500');render(data);return data}
+$('find').onclick=async()=>{try{const id=$('patientId').value.trim();if(id){let patient;try{patient=await echososPatientRequest('/'+encodeURIComponent(id))}catch(error){if(!error.message.startsWith('HTTP 404'))throw error;const identifierBundle=await echososPatientRequest('?identifier='+encodeURIComponent(id));const identifierEntries=identifierBundle.entry||[];if(!identifierEntries.length)throw new Error('Kein Patient mit dieser ID oder diesem Identifier gefunden.');if((identifierBundle.total??identifierEntries.length)!==1)throw new Error((identifierBundle.total??identifierEntries.length)+' Patienten haben diesen Identifier. Bitte den Identifier mit System angeben.');patient=identifierEntries[0].resource}$('patientId').value=patient.id;await loadPatientEverything(patient.id);show('Patient '+patient.id+' über ID oder Identifier und alle Daten geladen.');return}const p=new URLSearchParams();if($('family').value.trim())p.set('family',$('family').value.trim());if($('given').value.trim())p.set('given',$('given').value.trim());if($('birthDate').value)p.set('birthdate',$('birthDate').value);if(!p.toString())throw new Error('Bitte Patient-ID, Identifier oder Suchkriterien eingeben.');const data=await echososPatientRequest('?'+p);const entries=data.entry||[];if(!entries.length){show('Kein Patient gefunden.',true);render({resourceType:'Bundle',entry:[]});return}if((data.total??entries.length)!==1){show((data.total??entries.length)+' Patienten gefunden. Bitte die Suche mit Patient-ID, Identifier oder Geburtsdatum eindeutig machen.',true);render({resourceType:'Bundle',entry:entries});return}const patient=entries[0].resource;$('patientId').value=patient.id;await loadPatientEverything(patient.id);show('Eindeutiger Patient '+patient.id+' und alle Daten geladen.')}catch(e){show(e.message,true)}};
 $('everything').onclick=async()=>{try{const id=$('patientId').value.trim();if(!id)throw new Error('Bitte zuerst eine Patient-ID eingeben oder einen eindeutigen Patienten suchen.');await loadPatientEverything(id);show('Alle Patientendaten geladen.')}catch(e){show(e.message,true)}};
 async function importEcho(){
   const file=$('qrFile').files[0];
@@ -87,7 +470,12 @@ async function importEcho(){
   try{
     const form=new FormData();
     form.append('file',cameraValue?new Blob([cameraValue],{type:'text/plain'}):file,cameraValue?'echosos-camera.txt':file.name);
-    const result=await request(base('importUrl'),{method:'POST',body:form});
+    let result;
+    try{
+      result=await request(base('importUrl'),{method:'POST',body:form});
+    }catch(error){
+      throw new Error('EchoSOS-Import über BridgeLink fehlgeschlagen: '+error.message);
+    }
     patientId=transactionPatientId(result);
     cameraValue='';
     $('patientId').value=patientId;
