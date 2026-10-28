@@ -1085,3 +1085,13 @@ FHIR Clinical Order and Referral Integration Platform
 ```
 
 fuer Placer- und Fulfiller-Szenarien innerhalb des UMZH-Connect-Oekosystems.
+
+## Epic FHIR Sandbox: Backend-OAuth mit Bruno (Stand 2026-10-28)
+
+- Token-Endpunkt: `POST https://fhir.epic.com/interconnect-fhir-oauth/oauth2/token` mit `grant_type=client_credentials` und `client_assertion` (RS256-JWT, `kid=epic-key-1`).
+- Client-Assertion: Pre-Request-Script erzeugt sie pro Request neu (`jti` = neue UUID, `exp` = jetzt + 300 s). Der Private Key liegt nur als Secret `PEM` im Bruno-Environment `omnilink`, nie im Repo. Auf dem Server liegt nur der Public Key fuer das JWKS (`/.well-known/jwks.json`).
+- Post-Response-Script speichert `accessToken` und `tokenExpiresAt` (ISO, UTC, 60 s Puffer) als Runtime-Variablen und loggt Scopes sowie Erneuerungszeit.
+- FHIR-Requests: Auth-Typ Bearer Token mit `{{accessToken}}` (Inherit vom Ordner). Der Token-Request selbst steht auf No Auth.
+- Scopes bestimmt Epic ueber die App-Registrierung auf fhir.epic.com, der `scope`-Parameter im Request wird ignoriert (Trenner waere ohnehin Leerzeichen).
+- Ergebnis: `GET Patient/{id}` liefert 200 nach Freigabe von Patient.Read. `Immunization?patient=` und `Observation?patient=&category=vital-signs` liefern 403 `insufficient_scope`; vermutet wird, dass die Search-APIs an der App fehlen (nicht verifiziert).
+- Offen: Search-APIs (Immunization, Observation, Patient, List) in der Epic-App ergaenzen, neuen Token holen, erneut testen. `Patient?identifier=FHIR|<id>` lieferte 404 (Code 59008, ungueltige FHIR-ID); Request-Pfad noch zu pruefen.
