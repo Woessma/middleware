@@ -23,6 +23,35 @@ Der Endpunkt akzeptiert CDA-XML in beiden Formen:
 
 BridgeLink leitet das erzeugte FHIR-Transaction-Bundle an HAPI FHIR weiter.
 
+### Epic JWKS
+
+Die Middleware stellt `GET /.well-known/jwks.json` bereit. BridgeLink bildet
+`GET https://api.omnilink.ch/v1/.well-known/jwks.json` ohne Authentifizierung
+auf diese Route ab. Die separate GET-Destination umgeht die FHIR-Verarbeitung;
+Destination 99 reicht den JWKS-Body und HTTP-Status unveraendert weiter.
+
+Compose bindet nur den oeffentlichen RSA-Schluessel read-only unter
+`/run/epic/epic-public.pem` ein und setzt `EPIC_PUBLIC_KEY_PATH` entsprechend.
+Die Host-Datei liegt standardmaessig unter
+`/home/ansibleadmin/.local/share/omnilink/epic/epic-public.pem`.
+Bei anderen Installationen vor dem Start `EPIC_PUBLIC_KEY_HOST_PATH` auf den
+absoluten Host-Pfad setzen; die Datei muss bereits existieren.
+`EPIC_JWKS_KID` ist standardmaessig `epic-key-1` und muss dem `kid` im
+JWT-Header entsprechen.
+
+Das zugehoerige `epic-private.pem` liegt im selben geschuetzten Host-Verzeichnis
+(Verzeichnisrechte `700`, Dateirechte `600`), ausserhalb des Repositorys und
+Docker-Build-Kontexts. Es wird nicht in die Middleware eingebunden.
+Den privaten Schluessel sicher sichern und nur dem spaeteren JWT-Signierer
+zugaenglich machen. Das Bereitstellen des JWKS implementiert noch keinen
+JWT-Signierablauf.
+
+Der Endpoint antwortet bei fehlender oder ungueltiger Schluesselkonfiguration
+mit HTTP `503`, ansonsten mit HTTP `200` und einem RSA-JWKS fuer `RS256`.
+Bei einem Schluesselwechsel den neuen oeffentlichen Schluessel und eine neue
+`kid` koordiniert mit dem Signierer ausrollen; das aktuelle JWKS enthaelt nur
+einen Schluessel und bietet noch keine Ueberlappungsphase fuer Rotation.
+
 ✅ **EchoSOS erfolgreich getestet am 2026-10-21:**
 `POST https://api.omnilink.ch/v1/echosos/resolve`
 liefert nach dem HAPI-Write HTTP `200 OK` mit einem FHIR-Bundle vom Typ

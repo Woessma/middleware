@@ -8,6 +8,15 @@ services:
       - FHIR_BASE=${FHIR_BASE:-http://hapi-fhir:8080/fhir}
       - TERMINOLOGY_BASE_URL=https://tx.fhir.ch/r4
       - REFDATA_API_KEY=${REFDATA_API_KEY:-}
+      - EPIC_PUBLIC_KEY_PATH=/run/epic/epic-public.pem
+      - EPIC_JWKS_KID=${EPIC_JWKS_KID:-epic-key-1}
+    volumes:
+      - type: bind
+        source: ${EPIC_PUBLIC_KEY_HOST_PATH:-/home/ansibleadmin/.local/share/omnilink/epic/epic-public.pem}
+        target: /run/epic/epic-public.pem
+        read_only: true
+        bind:
+          create_host_path: false
     container_name: python-middleware
     ports:
       - "8000:8000"

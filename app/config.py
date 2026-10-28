@@ -17,3 +17,6 @@ REFDATA_BASE_URL = os.getenv(
 )
 REFDATA_API_KEY = os.getenv("REFDATA_API_KEY", "")
 REFDATA_TIMEOUT = int(os.getenv("REFDATA_TIMEOUT", "15"))
+
+EPIC_PUBLIC_KEY_PATH = os.getenv("EPIC_PUBLIC_KEY_PATH", "")
+EPIC_JWKS_KID = os.getenv("EPIC_JWKS_KID", "epic-key-1")

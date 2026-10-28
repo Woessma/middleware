@@ -152,12 +152,15 @@ from parser.cda.helpers import (
 )
 
 from config import (
+    EPIC_JWKS_KID,
+    EPIC_PUBLIC_KEY_PATH,
     FHIR_BASE,
     TERMINOLOGY_BASE_URL,
     TERMINOLOGY_VALIDATION_MODE,
     VACD_SEND_BASE_URL,
     VACD_SEND_TIMEOUT,
 )
+from services.jwks_service import JwksConfigurationError, build_jwks
 
 
 UMZH_SEND_BASE_URL = os.getenv("UMZH_SEND_BASE_URL", "")
@@ -313,6 +316,28 @@ def health():
         "status": "ok",
         "service": "OmniLink Python Middleware"
     }
+
+
+@app.get("/.well-known/jwks.json")
+def get_epic_jwks(response: Response):
+    if not EPIC_PUBLIC_KEY_PATH:
+        raise HTTPException(
+            status_code=503,
+            detail="JWKS is not configured",
+        )
+
+    try:
+        jwks = build_jwks(EPIC_PUBLIC_KEY_PATH, EPIC_JWKS_KID)
+    except JwksConfigurationError as exc:
+        logger.error("Unable to provide Epic JWKS: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail="JWKS public key is unavailable or invalid",
+        ) from exc
+
+    response.headers["Cache-Control"] = "public, max-age=300"
+    return jwks
+
 
 cors_origins = [
     origin.strip()
