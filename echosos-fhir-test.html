@@ -76,12 +76,13 @@
 
     .workspace {
       display: grid;
-      grid-template-columns: minmax(0, 1.14fr) minmax(280px, 0.86fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
       gap: 26px;
       margin-top: 18px;
       align-items: start;
     }
     .panel {
+      min-width: 0;
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -153,7 +154,8 @@
       flex-wrap: wrap;
     }
     .file-picker {
-      flex: 1 1 300px;
+      flex: 1 1 200px;
+      min-width: 0;
       min-height: 48px;
       border: 1px solid var(--line);
       background: rgba(255,255,255,0.2);
@@ -215,7 +217,7 @@
     }
     .qr-fields {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: 1fr;
       gap: 6px 18px;
       font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
@@ -230,7 +232,8 @@
       margin-top: 22px;
     }
     .action-row .primary {
-      min-width: 320px;
+      min-width: 0;
+      width: 100%;
       font-size: 18px;
     }
     .action-row .ghost {
@@ -341,6 +344,9 @@
       .file-row > * {
         width: 100%;
       }
+      .file-picker {
+        flex-basis: auto;
+      }
       main {
         padding-inline: 16px;
       }
@@ -360,7 +366,7 @@
       <section class="panel import-panel">
         <div class="left-panel-inner">
           <h2>Input auswählen</h2>
-          <p class="muted">Die Kamera liefert einen QR-Wert. Dateien werden als Bild oder PKPass an die Middleware gesendet.</p>
+          <p class="muted">Die Kamera liefert einen QR-Wert. Bilder und PKPass-Dateien werden von der Middleware dekodiert. Für den Import wird nur der erkannte EchoSOS-Link über BridgeLink gesendet.</p>
 
           <div class="keycloak-row">
             <button type="button" id="keycloakLoginBtn">Mit Keycloak anmelden</button>
@@ -512,8 +518,43 @@ function authorOf(resource){
   }).filter(Boolean).join('; ')||'-';
 }
 function pcpRows(resources){return resources.filter(r=>r.resourceType==='CareTeam').flatMap(team=>(team.participant||[]).filter(p=>(p.role||[]).some(role=>(role.coding||[]).some(c=>c.code==='PCP'))).map(p=>{const reference=p.member?.reference||'';const member=resources.find(r=>reference===r.resourceType+'/'+r.id);const name=member?.name?.[0]?nameOf({name:member.name}):member?.name?.text||reference;const contact=(member?.telecom||[]).map(t=>[t.system,t.value].filter(Boolean).join(': ')).join('; ');return [name,contact,reference]}))}
+function allergySummaryTable(allergies){
+  return summaryTable('Allergien und Unverträglichkeiten',
+    ['Allergie','Reaktionen','Autor','Kritikalität','Klinischer Status','Verifizierung','Typ','Kategorie'],
+    allergies.map(resource=>{
+      const reactions=(resource.reaction||[]).map(reaction=>{
+        const manifestations=(reaction.manifestation||[]).map(coding).filter(Boolean).join(', ');
+        return [
+          manifestations,
+          reaction.description,
+          reaction.severity?'Schweregrad: '+reaction.severity:'',
+          reaction.onset?'Beginn: '+formatDate(reaction.onset):'',
+          reaction.exposureRoute?'Expositionsweg: '+coding(reaction.exposureRoute):''
+        ].filter(Boolean).join('; ');
+      }).filter(Boolean).join(' | ');
+      return [
+        coding(resource.code)||'nicht angegeben',
+        reactions||'nicht angegeben',
+        authorOf(resource),
+        resource.criticality||'nicht angegeben',
+        coding(resource.clinicalStatus)||'nicht angegeben',
+        allergyVerificationLabel(resource),
+        resource.type||'nicht angegeben',
+        (resource.category||[]).join(', ')||'nicht angegeben'
+      ];
+    }));
+}
+function allergyVerificationLabel(resource){
+  const status=coding(resource.verificationStatus);
+  const unconfirmed=(resource.verificationStatus?.coding||[]).some(item=>
+    item.system==='http://terminology.hl7.org/CodeSystem/allergyintolerance-verification'&&item.code==='unconfirmed');
+  if(unconfirmed&&resource.asserter?.reference===resource.patient?.reference&&resource.patient?.reference){
+    return 'Unbestätigt – Patientenangabe';
+  }
+  return unconfirmed?'Unbestätigt':status||'nicht angegeben';
+}
 const renderBase=render;
-render=function(bundle){renderBase(bundle);const entries=bundle?.resourceType==='Bundle'?(bundle.entry||[]):bundle?.resourceType?[{resource:bundle}]:[],rs=entries.map(x=>x.resource||{}),patient=rs.find(x=>x.resourceType==='Patient');if(!patient){$('patientSection').hidden=true;$('clinicalSection').hidden=true;$('resourceSection').hidden=!rs.length;return}$('patientSection').hidden=false;$('patientView').innerHTML='<div class="fields">'+fields(patient).map(x=>'<div class="field"><small>'+clean(x[0])+'</small><div>'+clean(x[1])+'</div></div>').join('')+'</div>'+(patient.contact?.length?summaryTable('Kontakte',['Kategorie','Name','Kontakt'],patient.contact.map(c=>[contactCategory(c),c.name?.text,(c.telecom||[]).map(t=>t.value).join('; ') ])):'')+summaryTable('Hausarzt',['Name','Kontakt','Referenz'],pcpRows(rs));const observations=rs.filter(r=>r.resourceType==='Observation'&&!isEncounterTypeObservation(r)),medications=rs.filter(r=>r.resourceType==='MedicationStatement'),conditions=rs.filter(r=>r.resourceType==='Condition'),allergies=rs.filter(r=>r.resourceType==='AllergyIntolerance'),immunizations=rs.filter(r=>r.resourceType==='Immunization'),encounters=rs.filter(r=>r.resourceType==='Encounter');const clinical=summaryTable('Beobachtungen',['Datum','Befund','Wert','Autor','Status'],observations.map(r=>[formatDate(r.effectiveDateTime||r.issued),coding(r.code),valueOf(r),authorOf(r),r.status])).concat(summaryTable('Medikationen',['Medikation','Autor','Status','Dosierung'],medications.map(r=>[coding(r.medicationCodeableConcept)||r.medicationReference?.reference,authorOf(r),r.status,r.dosage?.[0]?.text]))).concat(summaryTable('Probleme',['Problem','Autor','Status'],conditions.map(r=>[coding(r.code),authorOf(r),coding(r.clinicalStatus)])).concat(summaryTable('Allergien und Unverträglichkeiten',['Allergie','Autor','Kritikalität','Status'],allergies.map(r=>[coding(r.code),authorOf(r),r.criticality,coding(r.clinicalStatus)]))).concat(summaryTable('Immunisierungen',['Datum','Impfstoff','Autor','Status'],immunizations.map(r=>[formatDate(r.occurrenceDateTime||r.recorded),coding(r.vaccineCode),authorOf(r),r.status]))).concat(summaryTable('Begegnungen',['Beginn','Typ','Autor','Status'],encounters.map(r=>[formatDate(r.period?.start),coding(r.class),authorOf(r),r.status]))));$('clinicalView').innerHTML=clinical||'<p class="empty">Keine klinisch relevanten Einträge gefunden.</p>';$('clinicalSection').hidden=false;$('resourceSection').hidden=!rs.length}
+render=function(bundle){renderBase(bundle);const entries=bundle?.resourceType==='Bundle'?(bundle.entry||[]):bundle?.resourceType?[{resource:bundle}]:[],rs=entries.map(x=>x.resource||{}),patient=rs.find(x=>x.resourceType==='Patient');if(!patient){$('patientSection').hidden=true;$('clinicalSection').hidden=true;$('resourceSection').hidden=!rs.length;return}$('patientSection').hidden=false;$('patientView').innerHTML='<div class="fields">'+fields(patient).map(x=>'<div class="field"><small>'+clean(x[0])+'</small><div>'+clean(x[1])+'</div></div>').join('')+'</div>'+(patient.contact?.length?summaryTable('Kontakte',['Kategorie','Name','Kontakt'],patient.contact.map(c=>[contactCategory(c),c.name?.text,(c.telecom||[]).map(t=>t.value).join('; ') ])):'')+summaryTable('Hausarzt',['Name','Kontakt','Referenz'],pcpRows(rs));const observations=rs.filter(r=>r.resourceType==='Observation'&&!isEncounterTypeObservation(r)),medications=rs.filter(r=>r.resourceType==='MedicationStatement'),conditions=rs.filter(r=>r.resourceType==='Condition'),allergies=rs.filter(r=>r.resourceType==='AllergyIntolerance'),immunizations=rs.filter(r=>r.resourceType==='Immunization'),encounters=rs.filter(r=>r.resourceType==='Encounter');const clinical=summaryTable('Beobachtungen',['Datum','Befund','Wert','Autor','Status'],observations.map(r=>[formatDate(r.effectiveDateTime||r.issued),coding(r.code),valueOf(r),authorOf(r),r.status])).concat(summaryTable('Medikationen',['Medikation','Autor','Status','Dosierung'],medications.map(r=>[coding(r.medicationCodeableConcept)||r.medicationReference?.reference,authorOf(r),r.status,r.dosage?.[0]?.text]))).concat(summaryTable('Probleme',['Problem','Autor','Status'],conditions.map(r=>[coding(r.code),authorOf(r),coding(r.clinicalStatus)])).concat(allergySummaryTable(allergies)).concat(summaryTable('Immunisierungen',['Datum','Impfstoff','Autor','Status'],immunizations.map(r=>[formatDate(r.occurrenceDateTime||r.recorded),coding(r.vaccineCode),authorOf(r),r.status]))).concat(summaryTable('Begegnungen',['Beginn','Typ','Autor','Status'],encounters.map(r=>[formatDate(r.period?.start),coding(r.class),authorOf(r),r.status]))));$('clinicalView').innerHTML=clinical||'<p class="empty">Keine klinisch relevanten Einträge gefunden.</p>';$('clinicalSection').hidden=false;$('resourceSection').hidden=!rs.length}
 async function request(url,options={}){
   const r=await fetch(url,{...options,headers:{Accept:'application/fhir+json, application/json',...headers(),...(options.headers||{})},mode:'cors',credentials:'same-origin'});
   const text=await r.text();
@@ -547,10 +588,13 @@ async function importEcho(){
     const contentType=cameraValue?'text/plain; charset=utf-8':file.type||(file.name.toLowerCase().endsWith('.pkpass')?'application/vnd.apple.pkpass':'application/octet-stream');
     $('qrPreview').classList.remove('show');
     const preview=await request('/echosos/preview',{method:'POST',body,headers:{'Content-Type':contentType}});
+    if(typeof preview?.source_url!=='string'||!isEchoSosUrl(preview.source_url)){
+      throw new Error('Die QR-Vorschau enthält keinen gültigen EchoSOS-Link. Import abgebrochen.');
+    }
     renderEchoPreview(preview);
     let result;
     try{
-      result=await request(base('importUrl'),{method:'POST',body,headers:{Accept:'application/json','Content-Type':contentType}});
+      result=await request(base('importUrl'),{method:'POST',body:preview.source_url,headers:{Accept:'application/json','Content-Type':'text/plain; charset=utf-8'}});
     }catch(error){
       throw new Error('EchoSOS-Import über BridgeLink fehlgeschlagen: '+error.message);
     }

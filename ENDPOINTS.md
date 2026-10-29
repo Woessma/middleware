@@ -231,6 +231,13 @@ gleicht den Patienten ab und erstellt das Transaction-Bundle. BridgeLink
 schreibt dieses Bundle nach HAPI und gibt die Transaction-Antwort zurueck.
 Der externe Pfad ist keine zusaetzliche FastAPI-Route.
 
+Seit 2026-10-29 sendet der Browser Bild-/PKPass-Dateien nur an die lokale
+Vorschau `/echosos/preview`. Fuer den anschliessenden Import ueber
+`/echosos/import` und BridgeLink verwendet er ausschliesslich den geprueften
+`source_url`-EchoSOS-Link als `text/plain; charset=utf-8`.
+Neue EchoSOS-Allergieangaben werden als `unconfirmed` mit dem Patienten als
+`asserter` angelegt; vorhandene Bewertungen bleiben beim Wiederimport erhalten.
+
 **Bestaetigter Aufruf vom 2026-10-21:**
 
 - HTTP `200 OK`, beobachtete Laufzeit ca. `2176 ms`

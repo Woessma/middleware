@@ -74,10 +74,29 @@ Nach dem Login kann ein EchoSOS-QR mit der mobilen Kamera, als Bild oder als
 PKPass-Datei eingelesen werden. Die Middleware sucht den Patienten nach Name
 und Geburtsdatum und erstellt ein Transaction-Bundle. BridgeLink schreibt es
 nach HAPI; der Browser sendet keinen weiteren FHIR-POST.
+Vor dem Import dekodiert `/echosos/preview` die Eingabe ohne FHIR-Schreibzugriff.
+Der Browser sendet anschliessend nur den geprueften `source_url`-EchoSOS-Link
+als `text/plain; charset=utf-8` ueber `/echosos/import` an BridgeLink, nicht
+erneut die Bild- oder PKPass-Datei. Eine fehlgeschlagene Vorschau oder ein
+ungueltiger Link verhindert den Import.
 Die Antwort wird als Patientenuebersicht und aufklappbare FHIR-Ressourcen
 visualisiert. Nach dem Speichern wird automatisch
 `Patient/{id}/$everything?_count=500` abgefragt, sodass auch vorhandene
 FHIR-Kontakte, PCP-Referenzen und klinische Daten sichtbar werden.
+Auf breiten Bildschirmen belegt die Eingabe ein Drittel und die
+FHIR-Visualisierung zwei Drittel der Spaltenbreite. Bis 860 Pixel
+Bildschirmbreite werden die Bereiche untereinander angezeigt.
+Die Allergietabelle zeigt auch alle gespeicherten Reaktionen (einschliesslich
+vorhandener Beschreibung, Schweregrad, Beginn und Expositionsweg),
+Verifizierungsstatus, Typ und Kategorien. Fehlende Angaben werden als
+„nicht angegeben“ dargestellt; eine Reaktionsschwere wird nicht als
+Kritikalitaet der Allergie interpretiert. Technische FHIR-Felder bleiben unter
+„Alle Ressourcen und Felder“ einsehbar.
+Neue EchoSOS-Allergieangaben, einschliesslich „keine bekannten Allergien“,
+werden als `unconfirmed` mit dem Patienten als `asserter` importiert und als
+„Unbestaetigt – Patientenangabe“ angezeigt. Beim Wiederimport bleiben vorhandene
+Verifizierungsstatus und Quellenangaben erhalten. Historische automatisch
+gesetzte `confirmed`-Werte werden nicht pauschal rueckwirkend geaendert.
 
 ```text
 https://middleware.local.omnilink.ch/echosos-fhir-test.html

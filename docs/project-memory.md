@@ -1,6 +1,42 @@
 # BridgeLink - Project Memory
 
-Stand: 2026-10-21
+Stand: 2026-10-29
+
+## Tagesabschluss 2026-10-29: EchoSOS-Import und Darstellung
+
+- Dateieingaben gehen nur noch zur lokalen `/echosos/preview`-Route.
+  Anschliessend importiert der Browser den geprueften `source_url`-Link als
+  `text/plain; charset=utf-8` ueber BridgeLink, nicht erneut das Bild/PKPass.
+  Fehlende oder ungueltige Vorschau-Links verhindern den Import.
+- Der Benutzer hat nach der Umstellung einen erfolgreichen Bildimport mit
+  anschliessender FHIR-Anzeige gezeigt. Die lokale Vorschau allein ist
+  weiterhin keine Speicherbestaetigung.
+- Desktop-Layout: Eingabe ein Drittel, FHIR-Visualisierung zwei Drittel.
+  Bis 860 Pixel untereinander; fuenf Bildschirmbreiten ohne Seitenueberlauf
+  geprueft. Allergietabelle um Reaktionen, Verifizierung, Typ und Kategorien
+  erweitert; fehlende Angaben explizit, technische Rohfelder weiterhin sichtbar.
+- Neue EchoSOS-Allergien einschliesslich negativer Allergieangaben erhalten
+  `unconfirmed` und den Patienten als `asserter`. Bestehende Verifizierung,
+  `asserter` und `recorder` bleiben beim Wiederimport erhalten. Der
+  EchoSOS-Altbestandsabgleich ignoriert diese Bewertungs-/Quellenfelder,
+  damit die Umstellung keine zusaetzlichen Dubletten erzeugt.
+- Auf ausdruecklichen Wunsch alle vier aktiven EchoSOS-Allergieeintraege
+  anhand ihres Identifier-Systems logisch geloescht. Danach null Treffer und
+  HTTP 410 fuer alle vier Ressourcen verifiziert. FHIR-Historie, Patienten
+  und andere Ressourcen blieben erhalten. Ein erneuter Import nach dieser
+  Loeschung wurde nicht durchgefuehrt.
+- Validierung: 14 JavaScript-Clienttests und 40 Python-EchoSOS-Tests erfolgreich.
+  Darstellung zusaetzlich im Browser mit synthetischen Daten geprueft.
+  Middleware neu gebaut und deployt, Health und ausgelieferten Client geprueft.
+- BridgeLink: Authentifizierungsfehler durch nicht definiertes
+  `omnilinkJwtAuthenticate()` diagnostiziert; kein Channel-Export im Repository.
+  Filter fuer D1/D2 (POST) und JWKS (exakter GET) sowie Destination-99-Antworten
+  im Dialog besprochen, aber deren abschliessender Live-Stand ist hier nicht
+  versioniert. Fehlerantworten aus D1 duerfen nicht als FHIR-Bundle an D2 gehen;
+  Original-HTTP-Fehlerstatus nicht pauschal durch 200 ersetzen.
+- Epic-FHIR-GET meldete `insufficient_scope`; unabhaengig vom JWKS-Endpunkt.
+  Epic-App-/Scope-Freigaben und separater GET-Workflow bleiben offen.
+- Persoenliches Testbild und vorhandene Backup-Datei nicht versionieren.
 
 ## Tagesabschluss 2026-10-21: CDA und EchoSOS
 

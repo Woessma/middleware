@@ -392,12 +392,13 @@ def _echosos_allergy_resources(data, patient_id):
             "verificationStatus": {
                 "coding": [{
                     "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
-                    "code": "confirmed",
+                    "code": "unconfirmed",
                 }]
             },
             "type": "allergy",
             "patient": {"reference": patient_reference},
             "recorder": {"reference": patient_reference},
+            "asserter": {"reference": patient_reference},
         }
 
         if allergen == "Keine":
@@ -544,6 +545,9 @@ def _clinical_identity(resource):
     payload = copy.deepcopy(resource)
     for key in ("id", "meta", "identifier", "text"):
         payload.pop(key, None)
+    if resource.get("resourceType") == "AllergyIntolerance":
+        for key in ("verificationStatus", "asserter", "recorder"):
+            payload.pop(key, None)
     if _is_echosos_blood_observation(resource):
         # These are import timestamps, not distinct blood-group measurements.
         for key in ("effectiveDateTime", "issued"):
@@ -633,6 +637,11 @@ def _existing_resource_id(resource):
         entries = sorted(candidates, key=lambda entry: entry["resource"]["id"])[:1]
     if entries:
         existing = entries[0].get("resource", {})
+        if resource_type == "AllergyIntolerance":
+            # A patient reimport must not replace an existing clinical assessment.
+            for key in ("verificationStatus", "asserter", "recorder"):
+                if key in existing:
+                    resource[key] = copy.deepcopy(existing[key])
         for item in existing.get("identifier", []):
             if item not in identifiers:
                 identifiers.append(item)

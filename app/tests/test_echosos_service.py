@@ -214,6 +214,8 @@ class EchoSosServiceTests(unittest.TestCase):
     def test_reimport_reuses_legacy_allergy_and_preserves_identifiers(self, get):
         allergy = _echosos_allergy_resources(parse_echosos_data(COMPACT_QR_URL), "123")[0]
         legacy = copy.deepcopy(allergy)
+        legacy["verificationStatus"]["coding"][0]["code"] = "confirmed"
+        legacy.pop("asserter")
         legacy["id"] = "old-1"
         legacy["identifier"][0]["value"] = "old-url-hash"
         duplicate = copy.deepcopy(legacy)
@@ -263,6 +265,32 @@ class EchoSosServiceTests(unittest.TestCase):
 
         self.assertEqual(entry["request"], {"method": "PUT", "url": "AllergyIntolerance/existing"})
         get.assert_called_once()
+
+    def test_patient_allergy_assertions_are_unconfirmed(self):
+        for data in (
+            parse_echosos_data(COMPACT_QR_URL),
+            {"given": "Test", "family": "Example", "birth_date": "1990-01-01",
+             "allergy_selections": [], "no_known_allergies": True},
+        ):
+            allergies = _echosos_allergy_resources(data, "123")
+            self.assertTrue(allergies)
+            for allergy in allergies:
+                self.assertEqual(allergy["verificationStatus"]["coding"][0]["code"], "unconfirmed")
+                self.assertEqual(allergy["asserter"], {"reference": "Patient/123"})
+
+    @patch("services.echosos_service.requests.get")
+    def test_reimport_preserves_existing_allergy_assessment_and_source(self, get):
+        for status in ("confirmed", "refuted", "entered-in-error", "unconfirmed"):
+            allergy = _echosos_allergy_resources(parse_echosos_data(COMPACT_QR_URL), "123")[0]
+            existing = copy.deepcopy(allergy)
+            existing["id"] = "existing"
+            existing["verificationStatus"]["coding"][0]["code"] = status
+            existing["asserter"] = {"reference": "Practitioner/doctor"}
+            existing["recorder"] = {"reference": "Practitioner/recorder"}
+            get.return_value = Mock(json=lambda: {"entry": [{"resource": existing}]})
+            result = _transaction_entry(allergy)["resource"]
+            for key in ("verificationStatus", "asserter", "recorder"):
+                self.assertEqual(result[key], existing[key])
 
     def test_medical_history_mapping_uses_only_snomed(self):
         self.assertEqual(len(ECHOSOS_MEDICAL_HISTORY), 17)

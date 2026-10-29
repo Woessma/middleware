@@ -1,6 +1,31 @@
 # EchoSOS zu FHIR
 
-Stand: 2026-10-21
+Stand: 2026-10-29
+
+## Tagesstand 2026-10-29
+
+Nach Umstellung auf den Vorschau-Link wurde vom Benutzer ein erfolgreicher
+Bildimport mit anschliessender FHIR-Anzeige bestaetigt. Die Desktop-Aufteilung
+betraegt ein Drittel Eingabe und zwei Drittel FHIR-Visualisierung; bis 860 Pixel
+stehen die Bereiche untereinander.
+
+Die Allergiezusammenfassung zeigt Reaktionen, Verifizierungsstatus, Typ und
+Kategorien sowie vorhandene Reaktionsbeschreibung, Schweregrad, Beginn und
+Expositionsweg. Fehlende Angaben sind als solche gekennzeichnet.
+
+Neue Patientenangaben erhalten `verificationStatus: unconfirmed` und den
+Patienten als `asserter`, auch bei „keine bekannten Allergien“. Vorhandene
+Verifizierung und Quellenangaben werden beim Wiederimport erhalten, nicht
+pauschal ueberschrieben. Diese Felder werden beim klinischen Altbestandsabgleich
+nicht zur Unterscheidung ansonsten identischer EchoSOS-Allergien verwendet.
+
+Alle vier aktiven EchoSOS-Allergieeintraege wurden auf Benutzerwunsch logisch
+geloescht; null verbleibende Treffer und HTTP 410 wurden verifiziert.
+Die Historie und andere Ressourcen blieben erhalten. Noch kein erneuter
+Import nach dieser Loeschung; neue Eintraege sollen `unconfirmed` tragen.
+
+Validierung: 14 Clienttests, 40 Python-Tests und Browserpruefung mit
+synthetischen Daten erfolgreich. Stand deployt.
 
 ## Endpunkte und bestaetigter Status
 
@@ -48,10 +73,15 @@ Importantwort startet keine Patientenabfrage und bestaetigt keinen
 Speichererfolg. Die Fehlermeldung nennt nur das Antwortformat
 (`resourceType`, `type`, Anzahl der Eintraege), nicht den Patienteninhalt.
 
-Der Browser sendet den Kamera-QR direkt als `text/plain; charset=utf-8` und
-Dateien als binaeren Body mit ihrem Content-Type, nicht als Multipart-Upload.
-BridgeLink leitet diesen Body an den Decoder weiter. Eine Multipart-Huelle
-kann dort statt des QR-Inhalts als vermeintliche Bilddatei ankommen.
+Vor jedem Import sendet der Browser den Kamera-Link oder die Bild-/PKPass-Datei
+an `POST /echosos/preview`. Dateien werden dabei als binaerer Body mit ihrem
+Content-Type uebertragen, nicht als Multipart-Upload. Die Middleware dekodiert
+den QR-Inhalt ohne FHIR-Schreibzugriff und liefert ihn als `source_url` zurueck.
+Nach erfolgreicher Vorschau prueft der Browser den EchoSOS-Link und sendet
+ausschliesslich diesen Link als `text/plain; charset=utf-8` an
+`POST /echosos/import`. BridgeLink erhaelt somit auch bei Dateieingaben keine
+Bild- oder PKPass-Bytes. Bei fehlgeschlagener Vorschau oder ungueltigem Link
+wird kein Import gestartet; die Middleware validiert den Link erneut.
 Ein `OperationOutcome` wird auch bei HTTP 200 als nicht bestaetigter Import
 behandelt; die Issue-Details werden angezeigt und `$everything` nicht gestartet.
 
