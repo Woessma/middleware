@@ -86,8 +86,10 @@ EPIC CDA
 - Terminologie: `https://tx.fhir.ch/r4` liefert HTTP 200 nach Redirect.
 - VACD Send: `https://vaccination-demo.raly.ch/api/fhir/metadata` liefert HTTP 200.
 - Direkte Middleware: `https://middleware.local.omnilink.ch` ist erreichbar.
-- BridgeLink `https://api.omnilink.ch/v1/cda/convert`: CDA-Import ist aktiv und schreibt
-	über BridgeLink nach HAPI.
+- BridgeLink `https://api.omnilink.ch/v1/cda/convert`: reine Konvertierung,
+	Antwort ist das Transaction-Bundle, kein HAPI-Write (seit 2026-10-30).
+- BridgeLink `https://api.omnilink.ch/v1/cda/import`: CDA-Import ist aktiv und schreibt
+	über BridgeLink nach HAPI (Antwort: transaction-response).
 
 ## eMediplan-Verordner und GLN
 
