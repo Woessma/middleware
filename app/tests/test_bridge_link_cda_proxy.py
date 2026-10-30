@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 from fastapi.testclient import TestClient
 
-from main import BRIDGELINK_CDA_URL, app
+from main import BRIDGELINK_CDA_IMPORT_URL, BRIDGELINK_CDA_URL, app
 
 
 class BridgeLinkCdaProxyTests(unittest.TestCase):
@@ -15,6 +15,9 @@ class BridgeLinkCdaProxyTests(unittest.TestCase):
             BRIDGELINK_CDA_URL,
             "https://api.omnilink.ch/v1/cda/convert",
         )
+
+    def test_cda_import_defaults_to_current_bridge_link_endpoint(self):
+        self.assertEqual(BRIDGELINK_CDA_IMPORT_URL, BRIDGELINK_CDA_URL)
 
     @patch("main.requests.post")
     def test_forwards_raw_cda_and_bearer_token_to_fixed_bridge_endpoint(self, mock_post):
@@ -90,3 +93,49 @@ class BridgeLinkCdaProxyTests(unittest.TestCase):
             mock_post.call_args.kwargs["headers"]["Content-Type"],
             content_type,
         )
+
+class CdaImportProxyTests(unittest.TestCase):
+    def setUp(self):
+        self.client = TestClient(app)
+
+    @patch("main.requests.post")
+    def test_forwards_raw_cda_and_bearer_token_to_import_endpoint(self, mock_post):
+        upstream = Mock()
+        upstream.status_code = 200
+        upstream.content = b'{"resourceType":"Bundle","type":"transaction-response"}'
+        upstream.headers = {"Content-Type": "application/fhir+json"}
+        mock_post.return_value = upstream
+
+        response = self.client.post(
+            "/cda/import",
+            content=b"<ClinicalDocument />",
+            headers={
+                "Authorization": "Bearer test-token",
+                "Content-Type": "application/xml",
+                "Accept": "application/fhir+json",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, upstream.content)
+        mock_post.assert_called_once_with(
+            BRIDGELINK_CDA_IMPORT_URL,
+            data=b"<ClinicalDocument />",
+            headers={
+                "Authorization": "Bearer test-token",
+                "Accept": "application/fhir+json",
+                "Content-Type": "application/xml",
+            },
+            timeout=300,
+        )
+
+    @patch("main.requests.post")
+    def test_rejects_requests_without_bearer_token(self, mock_post):
+        response = self.client.post(
+            "/cda/import",
+            content=b"<ClinicalDocument />",
+            headers={"Content-Type": "application/xml"},
+        )
+
+        self.assertEqual(response.status_code, 401)
+        mock_post.assert_not_called()

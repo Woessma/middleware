@@ -76,7 +76,17 @@ POST https://api.omnilink.ch/v1/cda/convert
 
 Der interne FastAPI-Testpfad `/cda/import` wurde mit `app/tests/data/CDA-AT.xml`
 erfolgreich verarbeitet (`HTTP 200`, Transaction-Bundle mit 43 Einträgen).
-Dieser interne Aufruf konvertiert und validiert nur; er schreibt nicht nach HAPI.
+
+Seit der Trennung von Convert und Import gilt:
+
+- `POST /cda/convert` konvertiert und validiert nur; er schreibt nicht nach HAPI.
+- `POST /cda/import` ist ein Proxy: Er leitet CDA-Body und Keycloak-Bearer-Token
+  an BridgeLink weiter, und BridgeLink schreibt das Bundle nach HAPI FHIR.
+  Das Ziel ist per `BRIDGELINK_CDA_IMPORT_URL` konfigurierbar und zeigt
+  übergangsweise auf `https://api.omnilink.ch/v1/cda/convert`. Sobald BridgeLink
+  die Route `POST /v1/cda/import` bereitstellt, wird die Env-Variable auf
+  `https://api.omnilink.ch/v1/cda/import` umgestellt; `v1/cda/convert` bleibt
+  während der Übergangsphase für Bruno/Bestandsclients erhalten.
 
 Der externe CDA-Endpunkt `https://api.omnilink.ch/v1/cda/convert` ist der dokumentierte
 BridgeLink-Aufruf. BridgeLink leitet das Ergebnis an HAPI FHIR weiter.
@@ -113,8 +123,9 @@ Die jeweilige Redirect-URI, zum Beispiel
 `https://middleware.local.omnilink.ch/test-client.html`, muss im Keycloak-Client freigeschaltet sein.
 
 Der CDA-Import der API-Werkbank verlangt einen Keycloak-Bearer-Token. Der
-Same-Origin-Proxy `POST /_proxy/bridge/cda` leitet CDA-Body und Bearer-Token an
-`POST https://api.omnilink.ch/v1/cda/convert` weiter.
+Same-Origin-Proxy `POST /cda/import` (ebenso der ältere Alias
+`POST /_proxy/bridge/cda`) leitet CDA-Body und Bearer-Token an
+BridgeLink weiter (aktuell `POST https://api.omnilink.ch/v1/cda/convert`).
 
 Das bedeutet: Die Root-URLs selbst sind nicht öffentlich erreichbar und müssen mit gültigen Zugangsdaten aufgerufen werden.
 
@@ -195,7 +206,7 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `GET` | `/metadata` | Liefert CapabilityStatement im Debug-Modus | FHIR-Metadaten |
 | `POST` | `/cda/debug` | Parst CDA und liefert Profil, Patient, Header und Sections | CDA-Diagnose |
 | `POST` | `/cda/convert` | Konvertiert CDA in ein FHIR-Bundle | CDA -> FHIR |
-| `POST` | `/cda/import` | Erzeugt und validiert ein Transaction-Bundle für den BridgeLink-Import | CDA -> BridgeLink -> HAPI |
+| `POST` | `/cda/import` | Proxy: leitet CDA mit Bearer-Token an BridgeLink; BridgeLink schreibt nach HAPI | CDA -> BridgeLink -> HAPI |
 | `POST` | `/cda/etoc/convert` | Erzeugt ein CH-eTOC-Dokumentbundle | CDA -> CH-eTOC |
 | `POST` | `/cda/umzh/convert` | Erzeugt ein UMZH-FHIR-Bundle | CDA -> UMZH |
 | `POST` | `/cda/umzh/send` | Konvertiert CDA und versendet den UMZH-Workflow | UMZH-Sendefluss |

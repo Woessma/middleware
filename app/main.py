@@ -166,6 +166,14 @@ from services.jwks_service import JwksConfigurationError, build_jwks
 UMZH_SEND_BASE_URL = os.getenv("UMZH_SEND_BASE_URL", "")
 UMZH_SEND_TIMEOUT = int(os.getenv("UMZH_SEND_TIMEOUT", "60"))
 BRIDGELINK_CDA_URL = "https://api.omnilink.ch/v1/cda/convert"
+# Ziel fuer /cda/import. Default ist uebergangsweise der bestehende
+# BridgeLink-Convert-Kanal (der schreibt bereits nach HAPI). Sobald
+# BridgeLink die Route /v1/cda/import bereitstellt, per Env umschalten:
+# BRIDGELINK_CDA_IMPORT_URL=https://api.omnilink.ch/v1/cda/import
+BRIDGELINK_CDA_IMPORT_URL = os.getenv(
+    "BRIDGELINK_CDA_IMPORT_URL",
+    BRIDGELINK_CDA_URL,
+)
 ECHOSOS_IMPORT_URL = "https://api.omnilink.ch/v1/echosos/resolve"
 
 def _validate_bundle(bundle):
@@ -500,8 +508,7 @@ def admin_document(document_id: str):
     }
 
 
-@app.post("/_proxy/bridge/cda")
-async def bridge_link_cda_proxy(request: Request):
+async def _bridge_link_cda_post(request: Request, target_url: str) -> Response:
     authorization = request.headers.get("authorization", "")
     if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
         raise HTTPException(
@@ -520,7 +527,7 @@ async def bridge_link_cda_proxy(request: Request):
     try:
         upstream = await run_in_threadpool(
             requests.post,
-            BRIDGELINK_CDA_URL,
+            target_url,
             data=body,
             headers=headers,
             timeout=300,
@@ -542,6 +549,11 @@ async def bridge_link_cda_proxy(request: Request):
         status_code=upstream.status_code,
         headers=response_headers,
     )
+
+
+@app.post("/_proxy/bridge/cda")
+async def bridge_link_cda_proxy(request: Request):
+    return await _bridge_link_cda_post(request, BRIDGELINK_CDA_URL)
 
 
 @app.post("/echosos/preview")
@@ -1459,6 +1471,7 @@ async def cda_convert(
             xml_content,
             bundle_type=normalized_bundle_type,
         )
+        _warn_duplicate_observation_identifiers(bundle)
         return _validate_bundle(bundle)
  
     except ET.ParseError as ex:
@@ -1594,98 +1607,35 @@ async def cda_vacd_send(
         )
 
 
+def _warn_duplicate_observation_identifiers(bundle):
+    obs_identifiers = {}
+
+    for entry in bundle.get("entry", []):
+        resource = entry.get("resource", {})
+
+        if resource.get("resourceType") != "Observation":
+            continue
+
+        for identifier in resource.get("identifier", []):
+            key = (
+                identifier.get("system"),
+                identifier.get("value"),
+            )
+            obs_identifiers[key] = obs_identifiers.get(key, 0) + 1
+
+    for key, count in obs_identifiers.items():
+        if count > 1:
+            logger.warning(
+                "DUPLICATE OBSERVATION IDENTIFIER: %s -> %s",
+                key,
+                count,
+            )
+
+
 @app.post("/cda/import")
-async def cda_import_bundle(
-    request: Request,
-    file: Optional[UploadFile] = File(None),
-    raw_xml: Optional[str] = Form(None)
-):
-
-    
-    if file is not None:
-
-        xml_content = await file.read()
-
-    elif raw_xml:
-
-        xml_content = raw_xml.encode("utf-8")
-
-    else:
-
-        xml_content = await request.body()
-
-        if not xml_content:
-            raise HTTPException(
-                status_code=400,
-                detail="No CDA content provided"
-            )
-
-
-    try:
-
-        bundle = cda_to_fhir_bundle(
-            xml_content
-        )
-        _validate_bundle(bundle)
-
-        obs_identifiers = {}
-
-        for entry in bundle.get("entry", []):
-
-            resource = entry.get(
-                "resource",
-                {}
-            )
-
-            if (
-                resource.get("resourceType")
-                != "Observation"
-            ):
-                continue
-
-            for identifier in resource.get(
-                "identifier",
-                []
-            ):
-
-                key = (
-                    identifier.get("system"),
-                    identifier.get("value")
-                )
-
-                obs_identifiers[key] = (
-                    obs_identifiers.get(
-                        key,
-                        0
-                    ) + 1
-                )
-
-        for key, count in obs_identifiers.items():
-
-            if count > 1:
-                logger.warning(
-                    "DUPLICATE OBSERVATION IDENTIFIER: %s -> %s",
-                    key,
-                    count,
-                )
-
-        return bundle
-
-    except ET.ParseError as ex:
-
-        raise HTTPException(
-            status_code=400,
-            detail=f"XML Parse Error: {str(ex)}"
-        )
-
-    except Exception as ex:
-
-        traceback.print_exc()
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(ex)
-        )
+async def cda_import_proxy(request: Request):
+    """Importiert CDA ueber BridgeLink; BridgeLink schreibt das Bundle nach HAPI FHIR."""
+    return await _bridge_link_cda_post(request, BRIDGELINK_CDA_IMPORT_URL)
 
 
 @app.post("/emediplan/convert")
