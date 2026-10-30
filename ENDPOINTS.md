@@ -82,11 +82,12 @@ Seit der Trennung von Convert und Import gilt:
 - `POST /cda/convert` konvertiert und validiert nur; er schreibt nicht nach HAPI.
 - `POST /cda/import` ist ein Proxy: Er leitet CDA-Body und Keycloak-Bearer-Token
   an BridgeLink weiter, und BridgeLink schreibt das Bundle nach HAPI FHIR.
-  Das Ziel ist per `BRIDGELINK_CDA_IMPORT_URL` konfigurierbar und zeigt
-  übergangsweise auf `https://api.omnilink.ch/v1/cda/convert`. Sobald BridgeLink
-  die Route `POST /v1/cda/import` bereitstellt, wird die Env-Variable auf
-  `https://api.omnilink.ch/v1/cda/import` umgestellt; `v1/cda/convert` bleibt
-  während der Übergangsphase für Bruno/Bestandsclients erhalten.
+  Das Ziel ist per `BRIDGELINK_CDA_IMPORT_URL` konfigurierbar; seit 2026-10-30
+  zeigt es auf `https://api.omnilink.ch/v1/cda/import` (im Compose gesetzt,
+  BridgeLink-Route getestet). `v1/cda/convert` bleibt während der
+  Übergangsphase für Bruno/Bestandsclients erhalten und schreibt vorerst
+  ebenfalls nach HAPI; nach der Bruno-Migration wird dort der HAPI-Write
+  deaktiviert (`responseTarget` im BridgeLink-Dispatcher).
 
 Der externe CDA-Endpunkt `https://api.omnilink.ch/v1/cda/convert` ist der dokumentierte
 BridgeLink-Aufruf. BridgeLink leitet das Ergebnis an HAPI FHIR weiter.
