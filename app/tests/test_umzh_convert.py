@@ -17,9 +17,9 @@ class UmzhConvertTests(unittest.TestCase):
 
     def test_cda_to_umzh_bundle_returns_service_request_and_task(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch("services.cda_bundle_service.get_or_create_patient", return_value="123"), \
-             patch("services.cda_bundle_service.get_or_create_practitioner", return_value="456"), \
-             patch("services.cda_bundle_service.get_or_create_organization", return_value={"id": "789"}):
+             patch("services.cda_bundle_service.resolve_patient_id", return_value="123"), \
+             patch("services.cda_bundle_service.resolve_practitioner_id", return_value="456"), \
+             patch("services.cda_bundle_service.resolve_organization_id", return_value="789"):
             bundle = cda_to_umzh_bundle(self.epic_path.read_bytes())
 
         self.assertEqual(bundle["resourceType"], "Bundle")
@@ -76,9 +76,9 @@ class UmzhConvertTests(unittest.TestCase):
 
     def test_cda_to_umzh_bundle_updated_stage_adds_questionnaire_output(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch("services.cda_bundle_service.get_or_create_patient", return_value="123"), \
-             patch("services.cda_bundle_service.get_or_create_practitioner", return_value="456"), \
-             patch("services.cda_bundle_service.get_or_create_organization", return_value={"id": "789"}):
+             patch("services.cda_bundle_service.resolve_patient_id", return_value="123"), \
+             patch("services.cda_bundle_service.resolve_practitioner_id", return_value="456"), \
+             patch("services.cda_bundle_service.resolve_organization_id", return_value="789"):
             bundle = cda_to_umzh_bundle(
                 self.epic_path.read_bytes(),
                 workflow_stage="updated",
@@ -111,9 +111,9 @@ class UmzhConvertTests(unittest.TestCase):
 
     def test_cda_to_umzh_bundle_completed_stage_adds_questionnaire_response(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch("services.cda_bundle_service.get_or_create_patient", return_value="123"), \
-             patch("services.cda_bundle_service.get_or_create_practitioner", return_value="456"), \
-             patch("services.cda_bundle_service.get_or_create_organization", return_value={"id": "789"}):
+             patch("services.cda_bundle_service.resolve_patient_id", return_value="123"), \
+             patch("services.cda_bundle_service.resolve_practitioner_id", return_value="456"), \
+             patch("services.cda_bundle_service.resolve_organization_id", return_value="789"):
             bundle = cda_to_umzh_bundle(
                 self.epic_path.read_bytes(),
                 workflow_stage="completed",
@@ -143,9 +143,9 @@ class UmzhConvertTests(unittest.TestCase):
 
     def test_cda_to_umzh_bundle_sandbox_target_uses_sandbox_urls(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch("services.cda_bundle_service.get_or_create_patient", return_value="123"), \
-             patch("services.cda_bundle_service.get_or_create_practitioner", return_value="456"), \
-             patch("services.cda_bundle_service.get_or_create_organization", return_value={"id": "789"}):
+             patch("services.cda_bundle_service.resolve_patient_id", return_value="123"), \
+             patch("services.cda_bundle_service.resolve_practitioner_id", return_value="456"), \
+             patch("services.cda_bundle_service.resolve_organization_id", return_value="789"):
             bundle = cda_to_umzh_bundle(
                 self.epic_path.read_bytes(),
                 workflow_stage="initial",
@@ -177,9 +177,9 @@ class UmzhConvertTests(unittest.TestCase):
 
     def test_cda_to_etoc_document_bundle_builds_document_bundle(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch("services.cda_bundle_service.get_or_create_patient", return_value="123"), \
-             patch("services.cda_bundle_service.get_or_create_practitioner", return_value="456"), \
-             patch("services.cda_bundle_service.get_or_create_organization", return_value={"id": "789"}):
+             patch("services.cda_bundle_service.resolve_patient_id", return_value="123"), \
+             patch("services.cda_bundle_service.resolve_practitioner_id", return_value="456"), \
+             patch("services.cda_bundle_service.resolve_organization_id", return_value="789"):
             bundle = cda_to_etoc_document_bundle(
                 self.epic_path.read_bytes(),
                 workflow_stage="initial",
@@ -205,9 +205,9 @@ class UmzhConvertTests(unittest.TestCase):
 
     def test_cda_to_etoc_document_bundle_contains_order_referral_section(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch("services.cda_bundle_service.get_or_create_patient", return_value="123"), \
-             patch("services.cda_bundle_service.get_or_create_practitioner", return_value="456"), \
-             patch("services.cda_bundle_service.get_or_create_organization", return_value={"id": "789"}):
+             patch("services.cda_bundle_service.resolve_patient_id", return_value="123"), \
+             patch("services.cda_bundle_service.resolve_practitioner_id", return_value="456"), \
+             patch("services.cda_bundle_service.resolve_organization_id", return_value="789"):
             bundle = cda_to_etoc_document_bundle(
                 self.epic_path.read_bytes(),
                 workflow_stage="initial",
@@ -243,9 +243,9 @@ class UmzhConvertTests(unittest.TestCase):
 
     def test_cda_to_etoc_document_bundle_applies_lab_observation_profile(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch("services.cda_bundle_service.get_or_create_patient", return_value="123"), \
-             patch("services.cda_bundle_service.get_or_create_practitioner", return_value="456"), \
-             patch("services.cda_bundle_service.get_or_create_organization", return_value={"id": "789"}):
+             patch("services.cda_bundle_service.resolve_patient_id", return_value="123"), \
+             patch("services.cda_bundle_service.resolve_practitioner_id", return_value="456"), \
+             patch("services.cda_bundle_service.resolve_organization_id", return_value="789"):
             bundle = cda_to_etoc_document_bundle(
                 self.epic_path.read_bytes(),
                 workflow_stage="initial",

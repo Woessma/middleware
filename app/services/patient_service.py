@@ -65,6 +65,34 @@ def update_patient(patient_id, patient_resource):
     return response.json()
  
  
+def resolve_patient_id(patient_resource):
+    """Sucht den Patient in HAPI (read-only); None, wenn nicht vorhanden."""
+    identifiers = patient_resource.get("identifier", [])
+
+    if not identifiers:
+        raise ValueError(
+            "Patient enthält keinen Identifier."
+        )
+
+    identifier = identifiers[0]
+
+    existing = find_patient(
+        identifier.get("system"),
+        identifier.get("value")
+    )
+
+    if existing:
+        logger.info("Patient gefunden: %s", existing["id"])
+        return existing["id"]
+
+    logger.info(
+        "Patient nicht in HAPI vorhanden; Anlage erfolgt erst beim Import: %s",
+        identifier.get("value"),
+    )
+
+    return None
+
+
 def get_or_create_patient(patient_resource):
     identifiers = patient_resource.get("identifier", [])
  

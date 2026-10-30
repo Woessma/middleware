@@ -153,6 +153,39 @@ def update_practitioner(
     return response.json()
 
 
+def resolve_practitioner_id(
+    practitioner: dict
+):
+    """Sucht den Practitioner in HAPI (read-only); None, wenn nicht vorhanden."""
+    identifiers = practitioner.get(
+        "identifier",
+        []
+    )
+
+    if not identifiers:
+        raise ValueError(
+            "Practitioner besitzt keinen Identifier"
+        )
+
+    identifier = identifiers[0]
+
+    existing = find_practitioner(
+        identifier["system"],
+        identifier["value"]
+    )
+
+    if existing:
+        logger.info("Practitioner gefunden: %s", existing["id"])
+        return existing["id"]
+
+    logger.info(
+        "Practitioner nicht in HAPI vorhanden; Anlage erfolgt erst beim Import: %s",
+        identifier.get("value"),
+    )
+
+    return None
+
+
 def get_or_create_practitioner(
     practitioner: dict
 ):

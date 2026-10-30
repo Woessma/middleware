@@ -209,6 +209,31 @@ def update_organization(
     return response.json()
 
 
+def resolve_organization_id(
+    identifier_system: str,
+    identifier_value: str
+):
+    """Sucht die Organization in HAPI (read-only); None, wenn nicht vorhanden."""
+    existing = find_organization(
+        identifier_system,
+        identifier_value
+    )
+
+    if existing:
+        logger.info(
+            "Organization gefunden: Organization/%s",
+            existing["id"]
+        )
+        return existing["id"]
+
+    logger.info(
+        "Organization nicht in HAPI vorhanden; Anlage erfolgt erst beim Import: %s",
+        identifier_value,
+    )
+
+    return None
+
+
 def get_or_create_organization(
     identifier_system: str,
     identifier_value: str,

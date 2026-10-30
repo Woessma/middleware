@@ -33,9 +33,9 @@ class CdaVariantImportTests(unittest.TestCase):
 
     def test_cda_to_fhir_bundle_builds_bundle_for_both_documents(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch.object(cda_bundle_service, "get_or_create_patient", return_value="123"), \
-             patch.object(cda_bundle_service, "get_or_create_practitioner", return_value="456"), \
-             patch.object(cda_bundle_service, "get_or_create_organization", return_value={"id": "789"}):
+             patch.object(cda_bundle_service, "resolve_patient_id", return_value="123"), \
+             patch.object(cda_bundle_service, "resolve_practitioner_id", return_value="456"), \
+             patch.object(cda_bundle_service, "resolve_organization_id", return_value="789"):
             epic_bundle = cda_bundle_service.cda_to_fhir_bundle(self.epic_path.read_bytes())
             at_bundle = cda_bundle_service.cda_to_fhir_bundle(self.at_path.read_bytes())
 
@@ -97,9 +97,9 @@ class CdaVariantImportTests(unittest.TestCase):
 
     def test_at_bundle_contains_single_encounter_resource(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch.object(cda_bundle_service, "get_or_create_patient", return_value="123"), \
-             patch.object(cda_bundle_service, "get_or_create_practitioner", return_value="456"), \
-             patch.object(cda_bundle_service, "get_or_create_organization", return_value={"id": "789"}):
+             patch.object(cda_bundle_service, "resolve_patient_id", return_value="123"), \
+             patch.object(cda_bundle_service, "resolve_practitioner_id", return_value="456"), \
+             patch.object(cda_bundle_service, "resolve_organization_id", return_value="789"):
             bundle = cda_bundle_service.cda_to_fhir_bundle(self.at_path.read_bytes())
 
         encounter_entries = [
@@ -118,9 +118,9 @@ class CdaVariantImportTests(unittest.TestCase):
 
     def test_generated_bundles_keep_multiple_posts_per_resource_type(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch.object(cda_bundle_service, "get_or_create_patient", return_value="123"), \
-             patch.object(cda_bundle_service, "get_or_create_practitioner", return_value="456"), \
-             patch.object(cda_bundle_service, "get_or_create_organization", return_value={"id": "789"}):
+             patch.object(cda_bundle_service, "resolve_patient_id", return_value="123"), \
+             patch.object(cda_bundle_service, "resolve_practitioner_id", return_value="456"), \
+             patch.object(cda_bundle_service, "resolve_organization_id", return_value="789"):
             epic_bundle = cda_bundle_service.cda_to_fhir_bundle(self.epic_path.read_bytes())
 
         encounter_entries = [
@@ -139,9 +139,9 @@ class CdaVariantImportTests(unittest.TestCase):
 
     def test_bundle_includes_patient_resource_with_extended_demographics(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch.object(cda_bundle_service, "get_or_create_patient", return_value="123"), \
-             patch.object(cda_bundle_service, "get_or_create_practitioner", return_value="456"), \
-             patch.object(cda_bundle_service, "get_or_create_organization", return_value={"id": "789"}):
+             patch.object(cda_bundle_service, "resolve_patient_id", return_value="123"), \
+             patch.object(cda_bundle_service, "resolve_practitioner_id", return_value="456"), \
+             patch.object(cda_bundle_service, "resolve_organization_id", return_value="789"):
             epic_bundle = cda_bundle_service.cda_to_fhir_bundle(self.epic_path.read_bytes())
             at_bundle = cda_bundle_service.cda_to_fhir_bundle(self.at_path.read_bytes())
 
@@ -186,9 +186,9 @@ class CdaVariantImportTests(unittest.TestCase):
 
     def test_at_bundle_includes_document_references_and_binary_entries_for_clinical_notes(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch.object(cda_bundle_service, "get_or_create_patient", return_value="123"), \
-             patch.object(cda_bundle_service, "get_or_create_practitioner", return_value="456"), \
-             patch.object(cda_bundle_service, "get_or_create_organization", return_value={"id": "789"}):
+             patch.object(cda_bundle_service, "resolve_patient_id", return_value="123"), \
+             patch.object(cda_bundle_service, "resolve_practitioner_id", return_value="456"), \
+             patch.object(cda_bundle_service, "resolve_organization_id", return_value="789"):
             bundle = cda_bundle_service.cda_to_fhir_bundle(self.at_path.read_bytes())
 
         document_reference_entries = [
@@ -221,11 +221,11 @@ class CdaVariantImportTests(unittest.TestCase):
             attachment_urls.issubset(binary_full_urls)
         )
 
-    def test_bundle_does_not_include_precreated_practitioner_or_organization(self):
+    def test_bundle_includes_practitioner_and_organization_entries(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch.object(cda_bundle_service, "get_or_create_patient", return_value="123"), \
-             patch.object(cda_bundle_service, "get_or_create_practitioner", return_value="456"), \
-             patch.object(cda_bundle_service, "get_or_create_organization", return_value={"id": "789"}):
+             patch.object(cda_bundle_service, "resolve_patient_id", return_value="123"), \
+             patch.object(cda_bundle_service, "resolve_practitioner_id", return_value="456"), \
+             patch.object(cda_bundle_service, "resolve_organization_id", return_value="789"):
             bundle = cda_bundle_service.cda_to_fhir_bundle(self.epic_path.read_bytes())
 
         resource_types = [
@@ -233,14 +233,17 @@ class CdaVariantImportTests(unittest.TestCase):
             for entry in bundle.get("entry", [])
         ]
 
-        self.assertNotIn("Practitioner", resource_types)
-        self.assertNotIn("Organization", resource_types)
+        # Die Middleware schreibt beim Convert nicht mehr nach HAPI;
+        # Practitioner und Organization werden erst beim Import ueber
+        # das Bundle angelegt und muessen deshalb enthalten sein.
+        self.assertIn("Practitioner", resource_types)
+        self.assertIn("Organization", resource_types)
 
     def test_transaction_bundle_includes_ch_ips_composition_with_section_references(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch.object(cda_bundle_service, "get_or_create_patient", return_value="123"), \
-             patch.object(cda_bundle_service, "get_or_create_practitioner", return_value="456"), \
-             patch.object(cda_bundle_service, "get_or_create_organization", return_value={"id": "789"}):
+             patch.object(cda_bundle_service, "resolve_patient_id", return_value="123"), \
+             patch.object(cda_bundle_service, "resolve_practitioner_id", return_value="456"), \
+             patch.object(cda_bundle_service, "resolve_organization_id", return_value="789"):
             bundle = cda_bundle_service.cda_to_fhir_bundle(self.at_path.read_bytes())
 
         composition_entries = [
@@ -301,9 +304,9 @@ class CdaVariantImportTests(unittest.TestCase):
 
     def test_document_bundle_mode_returns_ch_core_document_bundle(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch.object(cda_bundle_service, "get_or_create_patient", return_value="123"), \
-             patch.object(cda_bundle_service, "get_or_create_practitioner", return_value="456"), \
-             patch.object(cda_bundle_service, "get_or_create_organization", return_value={"id": "789"}):
+             patch.object(cda_bundle_service, "resolve_patient_id", return_value="123"), \
+             patch.object(cda_bundle_service, "resolve_practitioner_id", return_value="456"), \
+             patch.object(cda_bundle_service, "resolve_organization_id", return_value="789"):
             bundle = cda_bundle_service.cda_to_fhir_bundle(
                 self.at_path.read_bytes(),
                 bundle_type="document",
@@ -327,9 +330,9 @@ class CdaVariantImportTests(unittest.TestCase):
 
     def test_bundle_includes_related_person_resources_with_ch_core_profile(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
-             patch.object(cda_bundle_service, "get_or_create_patient", return_value="123"), \
-             patch.object(cda_bundle_service, "get_or_create_practitioner", return_value="456"), \
-             patch.object(cda_bundle_service, "get_or_create_organization", return_value={"id": "789"}):
+             patch.object(cda_bundle_service, "resolve_patient_id", return_value="123"), \
+             patch.object(cda_bundle_service, "resolve_practitioner_id", return_value="456"), \
+             patch.object(cda_bundle_service, "resolve_organization_id", return_value="789"):
             bundle = cda_bundle_service.cda_to_fhir_bundle(self.epic_path.read_bytes())
 
         related_person_entries = [

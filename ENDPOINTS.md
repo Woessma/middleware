@@ -80,6 +80,10 @@ erfolgreich verarbeitet (`HTTP 200`, Transaction-Bundle mit 43 Einträgen).
 Seit der Trennung von Convert und Import gilt:
 
 - `POST /cda/convert` konvertiert und validiert nur; er schreibt nicht nach HAPI.
+  Die ID-Aufloesung fuer Patient/Practitioner/Organization erfolgt read-only
+  (GET auf HAPI); fehlende Ressourcen erhalten eine lokal vergebene ID und
+  werden als Bundle-Eintraege mitgeliefert, sodass sie erst beim Import
+  entstehen.
 - `POST /cda/import` ist ein Proxy: Er leitet CDA-Body und Keycloak-Bearer-Token
   an BridgeLink weiter, und BridgeLink schreibt das Bundle nach HAPI FHIR.
   Das Ziel ist per `BRIDGELINK_CDA_IMPORT_URL` konfigurierbar; seit 2026-10-30

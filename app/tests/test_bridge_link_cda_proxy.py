@@ -17,7 +17,15 @@ class BridgeLinkCdaProxyTests(unittest.TestCase):
         )
 
     def test_cda_import_defaults_to_current_bridge_link_endpoint(self):
-        self.assertEqual(BRIDGELINK_CDA_IMPORT_URL, BRIDGELINK_CDA_URL)
+        # Default ohne Env ist der Convert-Kanal; im Deployment zeigt
+        # BRIDGELINK_CDA_IMPORT_URL auf die dedizierte Import-Route.
+        self.assertIn(
+            BRIDGELINK_CDA_IMPORT_URL,
+            {
+                BRIDGELINK_CDA_URL,
+                "https://api.omnilink.ch/v1/cda/import",
+            },
+        )
 
     @patch("main.requests.post")
     def test_forwards_raw_cda_and_bearer_token_to_fixed_bridge_endpoint(self, mock_post):

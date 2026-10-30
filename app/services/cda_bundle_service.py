@@ -1,4 +1,5 @@
 import os
+import uuid
 import xml.etree.ElementTree as ET
 import copy
 import hashlib
@@ -75,15 +76,15 @@ from converter.profile_detector import (
 )
 
 from services.patient_service import (
-    get_or_create_patient
+    resolve_patient_id
 )
 
 from services.practitioner_service import (
-    get_or_create_practitioner
+    resolve_practitioner_id
 )
 
 from services.organization_service import (
-    get_or_create_organization
+    resolve_organization_id
 )
 
 from fhir.bundle import (
@@ -414,10 +415,17 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
         )
 
         practitioner_id = (
-            get_or_create_practitioner(
+            resolve_practitioner_id(
                 practitioner_resource
             )
         )
+
+        if practitioner_id is None:
+            # Noch nicht in HAPI: ID lokal vergeben, die Anlage
+            # erfolgt erst beim Import ueber das Bundle.
+            practitioner_id = str(uuid.uuid4())
+
+        practitioner_resource["id"] = practitioner_id
 
         logger.info("Practitioner ID: %s", practitioner_id)
 
@@ -452,15 +460,19 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
             )
         )
 
-        existing_org = (
-            get_or_create_organization(
-                **params
+        organization_id = (
+            resolve_organization_id(
+                params["identifier_system"],
+                params["identifier_value"]
             )
         )
 
-        organization_id = (
-            existing_org["id"]
-        )
+        if organization_id is None:
+            # Noch nicht in HAPI: ID lokal vergeben, die Anlage
+            # erfolgt erst beim Import ueber das Bundle.
+            organization_id = str(uuid.uuid4())
+
+        organization_resource["id"] = organization_id
 
         logger.info("Organization ID: %s", organization_id)
         logger.debug("=== ORGANIZATION ===")
@@ -492,9 +504,14 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
         patient_data
     )
 
-    existing_patient_id = get_or_create_patient(
+    existing_patient_id = resolve_patient_id(
         patient
     )
+
+    if existing_patient_id is None:
+        # Noch nicht in HAPI: ID lokal vergeben, die Anlage
+        # erfolgt erst beim Import ueber das Bundle (PUT Patient/{id}).
+        existing_patient_id = str(uuid.uuid4())
 
     patient_ref = (
         f"Patient/{existing_patient_id}"
@@ -533,6 +550,22 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
         bundle_entries.append(
             build_bundle_entry(
                 related_person
+            )
+        )
+
+    if practitioner_resource is not None:
+
+        bundle_entries.append(
+            build_bundle_entry(
+                practitioner_resource
+            )
+        )
+
+    if organization_resource is not None:
+
+        bundle_entries.append(
+            build_bundle_entry(
+                organization_resource
             )
         )
 
