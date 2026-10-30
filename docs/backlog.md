@@ -106,5 +106,15 @@ Status: In Umsetzung
 
 ## Spaeter
 
+- [ ] Social-History-Mapper: `DUPLICATE OBSERVATION IDENTIFIER` beheben — das
+      EPIC-CDA erzeugt drei Observations mit identischem Identifier-Hash
+      (`cda-import-social-history`); vermutlich fehlt ein unterscheidendes
+      Merkmal (Code/Zeilenindex) im Hash. Beobachtet am 2026-10-30 im Live-Log.
+- [ ] CDA-Convert Option C: Conditional Update per Identifier im Bundle
+      (`PUT Patient?identifier=...`) statt lokal vergebener UUIDs — eliminiert
+      den Edge Case, dass mehrfaches Konvertieren eines neuen Patienten vor dem
+      ersten Import unterschiedliche IDs erzeugt.
+- [ ] BridgeLink Destination 99: Writer-Logging aufraeumen (loggt
+      `responseStatusCode=null`, da es vor dem Response Transformer laeuft).
 - [ ] US-Core-Ausrichtung priorisieren, sobald fachlich benoetigt
 - [ ] HL7v2-Pfad produktiv vervollstaendigen oder klar abgrenzen

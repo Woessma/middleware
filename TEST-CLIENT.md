@@ -4,8 +4,8 @@
 Use-Cases. Sie verarbeitet FHIR JSON, CDA XML, HL7v2 und eMediplan-Payloads und
 stellt auch EPIC-CDA-, UMZH-, Terminologie- und Smoke-Test-Pfade bereit.
 Der freigegebene CDA-Import verwendet Keycloak Authorization Code mit PKCE
-und leitet authentifizierte Requests an
-`https://api.omnilink.ch/v1/cda/convert` weiter. Die Client-ID
+und leitet authentifizierte Requests ueber `POST /cda/import` an
+`https://api.omnilink.ch/v1/cda/import` weiter. Die Client-ID
 `app-omnilink-cardtest` ist wie beim EchoSOS-Client verborgen vorbelegt.
 Ausgewaehlte UTF-8-XML-Dateien werden ohne Multipart-Huelle als Raw-Body
 mit `Content-Type: application/xml; charset=UTF-8` gesendet. Fuer eingefuegten

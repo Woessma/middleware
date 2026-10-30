@@ -216,9 +216,12 @@ Die direkte Middleware-Domain `https://middleware.local.omnilink.ch` liefert
 Dashboard, Testclients und Middleware-Endpunkte. Terminologie und der VACD-
 Referenzserver liefern HTTP 200 über ihre jeweiligen `/metadata`-Pfade.
 
-Der externe BridgeLink-CDA-Aufruf `https://api.omnilink.ch/v1/cda/convert` importiert
-CDA nach HAPI. Ein direkter interner `POST /cda/import` an die Middleware konvertiert und
-validiert CDA, schreibt aber nicht direkt nach HAPI.
+Seit 2026-10-30 sind Convert und Import extern getrennt: Der externe Aufruf
+`https://api.omnilink.ch/v1/cda/convert` konvertiert nur noch und liefert das
+Transaction-Bundle zurueck (kein HAPI-Write); `https://api.omnilink.ch/v1/cda/import`
+konvertiert und schreibt via BridgeLink nach HAPI. Der interne `POST /cda/import`
+an die Middleware ist ein Proxy auf die externe Import-Route; `POST /cda/convert`
+arbeitet vollstaendig read-only gegenueber HAPI.
 
 Optional kann spaeter ein interner DNS-A-Record gesetzt werden:
 
@@ -367,10 +370,10 @@ Vermeidung doppelter Ressourcen und idempotente FHIR-Imports.
 ### CDA
 
 - `POST /cda/debug` — detaillierte CDA-Analyse im Debug-Modus
-- Intern: `POST /cda/convert` — konvertiert CDA zu einem FHIR-Transaction-Bundle
-- Intern: `POST /cda/import` — erzeugt und validiert ein Bundle fuer BridgeLink
-- Extern ueber BridgeLink: `POST https://api.omnilink.ch/v1/cda/convert` (CDA-Import)
-- Externer CDA-Endpunkt: `https://api.omnilink.ch/v1/cda/convert` (aktuell seit 2026-10-21)
+- Intern: `POST /cda/convert` — konvertiert CDA zu einem FHIR-Transaction-Bundle (read-only, kein HAPI-Write)
+- Intern: `POST /cda/import` — Proxy auf BridgeLink; BridgeLink schreibt nach HAPI
+- Extern ueber BridgeLink: `POST https://api.omnilink.ch/v1/cda/convert` (nur Konvertierung, seit 2026-10-30)
+- Extern ueber BridgeLink: `POST https://api.omnilink.ch/v1/cda/import` (CDA-Import nach HAPI, seit 2026-10-30)
 - `POST /emediplan/import-bundle` — stabilisiert und validiert ein FHIR-Resource-Objekt oder Bundle fuer BridgeLink
 - `POST /cda/umzh/convert` — konvertiert CDA in UMZH-Workflow-Bundle mit Stages `initial|updated|completed`
 - `POST /cda/umzh/send` — kombiniert UMZH-Convert mit Versand an ein Ziel-FHIR-System und liefert einen Versandreport

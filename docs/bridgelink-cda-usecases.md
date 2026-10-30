@@ -2,8 +2,14 @@
 
 ## Geltungsbereich
 
-Der aktuelle externe CDA-Endpunkt ist seit 2026-10-21
-`POST https://api.omnilink.ch/v1/cda/convert`.
+Seit 2026-10-30 gibt es zwei externe CDA-Endpunkte (Channel `api_route_dispatcher`
+mit `responseTarget`-Flag im Source Transformer):
+
+- `POST https://api.omnilink.ch/v1/cda/convert` — nur Konvertierung, Antwort
+  ist das Transaction-Bundle, kein HAPI-Write.
+- `POST https://api.omnilink.ch/v1/cda/import` — Konvertierung plus HAPI-Write,
+  Antwort ist die HAPI-`transaction-response`.
+
 Port `8081` ist ein interner BridgeLink-Port und keine externe CDA-URL. Die
 Middleware-Routen `/cda/...` sind interne Ziele, keine weiteren oeffentlichen
 BridgeLink-Endpunkte. Ein Eintrag in dieser Uebersicht bedeutet **nicht**, dass
@@ -68,8 +74,8 @@ bleibt der externe Einstieg auf den bisherigen Import beschraenkt.
 | CDA-Use-Case | Middleware-Ziel | Eingabe | Middleware-Antwort | BridgeLink-Folgeschritt |
 |---|---|---|---|---|
 | Diagnose (nur Debug-Modus) | `POST /cda/debug` | Multipart `file` | JSON mit CDA-Diagnose | Kein HAPI-Write; nicht produktiv exponieren (`DEBUG_MODE` erforderlich). |
-| Standard-Konvertierung mit HAPI-Write (beobachteter Workflow) | `POST /cda/convert` | Raw XML oder Multipart `file` | FHIR-Bundle JSON, standardmaessig `transaction`; optional `bundle_type=document` | Nur bei erfolgreicher Konvertierung das Transaction-Bundle als `application/fhir+json` an HAPI senden; dessen Status/-Antwort an den Client geben. Fuer Convert **ohne** Import den HAPI-Schritt im separaten Testchannel weglassen. |
-| Alternative Import-Route (nicht als aktive Channel-Destination belegt) | `POST /cda/import` | Raw XML oder Multipart `file` | Validiertes FHIR-Transaction-Bundle JSON | Nur bei erfolgreicher Konvertierung Bundle an HAPI senden; nicht ohne Channel-Pruefung als aktuellen Pfad ausgeben. |
+| Standard-Konvertierung ohne HAPI-Write (extern `/v1/cda/convert`) | `POST /cda/convert` | Raw XML oder Multipart `file` | FHIR-Bundle JSON, standardmaessig `transaction`; optional `bundle_type=document` | `responseTarget='none'`: Bundle direkt an den Client zurueckgeben, kein HAPI-Write. |
+| Standard-Import mit HAPI-Write (extern `/v1/cda/import`) | `POST /cda/convert` | Raw XML oder Multipart `file` | FHIR-Bundle JSON (`transaction`) | `responseTarget='hapi'`: Nur bei erfolgreicher Konvertierung das Transaction-Bundle als `application/fhir+json` an HAPI senden; dessen `transaction-response` an den Client geben. |
 | CH-VACD-Konvertierung | `POST /cda/vacd/convert` | Raw XML oder Multipart `file` | CH-VACD-Dokumentbundle JSON | Bundle direkt zurueckgeben; kein automatischer HAPI-Write. |
 | CH-VACD-Versand | `POST /cda/vacd/send` | Raw XML oder Multipart `file`; Zielkonfiguration erforderlich | JSON mit `convert` und `send` | **Keinen** zusaetzlichen HAPI-/VACD-Sender aktivieren: Die Middleware sendet selbst. Ziel per `VACD_SEND_BASE_URL` oder kontrolliertem `destination_base_url` festlegen. |
 | UMZH-Konvertierung | `POST /cda/umzh/convert` | Raw XML oder Multipart `file`; optional `workflow_stage`, `target` | UMZH-FHIR-Bundle JSON | Bundle direkt zurueckgeben; kein automatischer HAPI-Write. |
