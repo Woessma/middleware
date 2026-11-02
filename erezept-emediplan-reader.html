@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="cache-control" content="no-store">
   <meta name="referrer" content="no-referrer">
-  <title>eRezept Reader</title>
+  <title>eRezept &amp; eMediplan Reader</title>
   <style>
     :root {
       --bg: #e8efef;
@@ -49,6 +49,8 @@
     .input-notes .privacy { margin-top: 10px; }
     .result { margin-top: 18px; padding: 16px; background: #f5f7f7; border: 1px solid var(--line); border-radius: 6px; }
     .source { color: var(--muted); font-size: 14px; margin: 6px 0 12px; overflow-wrap: anywhere; }
+    .source-label { display: inline-block; padding: 5px 10px; border-radius: 4px; background: var(--teal-soft); color: var(--teal-dark); }
+    .source-label.metadata { background: #fff0d6; color: #774900; }
     textarea { display: block; width: 100%; min-height: 130px; resize: vertical; border: 1px solid var(--line); border-radius: 4px; padding: 10px; background: #fff; color: var(--ink); font: 13px/1.5 ui-monospace, monospace; overflow-wrap: anywhere; }
     .warning { margin-top: 12px; font: 14px/1.5 system-ui, sans-serif; color: #8a4100; }
     .medication { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
@@ -70,9 +72,9 @@
 </head>
 <body>
   <main>
-    <div class="eyebrow">OmniLink / eRezept</div>
-    <h1>eRezept Reader</h1>
-    <p class="subtitle">Dokument laden, QR-Code lesen und den enthaltenen Link gezielt &ouml;ffnen.</p>
+    <div class="eyebrow">OmniLink / eRezept &amp; eMediplan</div>
+    <h1>eRezept &amp; eMediplan Reader</h1>
+    <p class="subtitle">QR-Codes aus PDF und Bildern lesen, Medikationsdaten anzeigen und als JSON exportieren.</p>
     <div id="status" class="status" role="status" aria-live="polite" hidden></div>
     <div class="workspace">
       <section class="panel">
@@ -453,7 +455,11 @@
       const card = document.createElement('article');
       card.className = 'result';
       const heading = document.createElement('h3');
-      heading.textContent = kind + ' / Eintrag ' + ($('results').childElementCount + 1);
+      const metadata = kind === 'PDF-Metadaten-Link';
+      heading.className = 'source-label' + (metadata ? ' metadata' : '');
+      heading.textContent = metadata
+        ? 'Metadaten / Link aus unsichtbaren PDF-Metadaten'
+        : 'QR / Inhalt aus sichtbarem QR-Code';
       const origin = document.createElement('p');
       origin.className = 'source';
       origin.textContent = source;

@@ -1,6 +1,46 @@
 # BridgeLink - Project Memory
 
-Stand: 2026-10-29
+Stand: 2026-11-02
+
+## Tagesabschluss 2026-11-02: Reader, Neuaufbau und Refdata
+
+- Reader: `erezept-emediplan-reader.html` ist der kanonische Pfad mit Titel
+  "eRezept & eMediplan Reader". `/erezept-reader.html` und `/qr-reader.html`
+  bleiben Aliase. PDF-/Bildvorschauen, lokale CHMED16A1-Dekodierung und
+  Original-JSON-Download bleiben erhalten; FHIR-Konvertierung erfolgt nur
+  auf ausdruecklichen Klick ueber `/emediplan/convert`, ohne Import.
+- Sichtbarer QR und unsichtbarer `xmp:signedChmed`-Metadaten-Link werden
+  getrennt und farblich beschriftet. Beim untersuchten PDF waren die Links
+  unterschiedlich; keiner wird dadurch als gueltig bestaetigt.
+  Keine eingebettete externe Rezeptseite und kein automatischer Linkaufruf.
+- Lokale PDF-Unterlagen unter `app/tests/data` erstellt:
+  `bridgelink-oie-entscheidungsgrundlage.pdf`,
+  `omnilink-neubau-migrationskonzept.pdf` (9 Seiten) und
+  `omnilink-migration-offene-fragen.pdf` (5 Seiten, F01-F32).
+  Letztere verbindet das Konzept mit dem externen Infrastrukturvorschlag.
+  Unterlagen sind lokale Deliverables, nicht Bestandteil des Git-Commits.
+- Neuaufbau: Middleware behaelt Transformation und Anreicherung, Engine
+  Transport/Orchestrierung/Zustellung. OIE wegen geringer Channel-Altlast
+  direkt als Zielkandidat pruefen. Rocky/Podman/Quadlets, SELinux, Ansible,
+  bestehende Infrastruktur und eigene TLS-Terminierung sind Vorschlaege,
+  keine abgeschlossene Umsetzung. Umfang, Jahresangaben 2024, Kosten,
+  Support, RPO/RTO und Restore-Nachweise bleiben offen.
+- Offizielles Refdata-Partner-ZIP heruntergeladen und Integritaet geprueft;
+  NAT/JUR-XML noch nicht importiert. Keine Personendaten oder Downloadkeys
+  in die Dokumentation/Git uebernehmen. Offengelegte Keys rotieren.
+- Geplant: separate `omnilink_refdata`-Datenbank mit GLN-Index und
+  Importer-/Leserrollen auf `postgres.local.omnilink.ch:5433`.
+  HAPI-Datenbank `fhir` bleibt unveraendert.
+- Benutzer zeigte CloudBeaver unter `https://db-admin.local.omnilink.ch/`
+  und eine erfolgreiche rein lesende Rechteabfrage auf `fhir`:
+  `rolcreatedb=false`, `rolsuper=false`. Bereitstellung durch einen
+  DB-Administrator erforderlich, keine Rechteausweitung der HAPI-Verbindung.
+- Nicht umgesetzt: Datenbank-/Rollenerstellung, Refdata-Importer, lokaler
+  Lookup oder Ansible-Tasks. Naechster Schritt ist die administrative
+  Bereitstellung und danach Datenmodell, Import und Middleware-Anbindung.
+- Validierung zum Tagesabschluss: 38 Reader-/EchoSOS-JavaScript-Tests
+  erfolgreich, Python-Syntax von `app/main.py` und `git diff --check`
+  ohne Fehler.
 
 ## Tagesabschluss 2026-10-29: EchoSOS-Import und Darstellung
 

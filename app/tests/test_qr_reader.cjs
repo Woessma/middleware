@@ -5,7 +5,7 @@ const {test} = require('node:test');
 const vm = require('node:vm');
 const {gzipSync} = require('node:zlib');
 
-const html = readFileSync(resolve(__dirname, '../../erezept-reader.html'), 'utf8');
+const html = readFileSync(resolve(__dirname, '../../erezept-emediplan-reader.html'), 'utf8');
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 
 function client(overrides = {}) {
@@ -45,6 +45,17 @@ function client(overrides = {}) {
 
 test('reader script compiles without browser syntax errors', () => {
   assert.doesNotThrow(() => new vm.Script(script));
+});
+
+test('QR and metadata results have distinct explicit source labels', () => {
+  const {context, elements} = client();
+  context.addResult('https://example.org/qr', 'test.pdf / Seite 1');
+  context.addResult('https://example.org/metadata', 'test.pdf / XMP: signedChmed', 'PDF-Metadaten-Link');
+  const cards = elements.get('results').children;
+  assert.equal(cards[0].children[0].textContent, 'QR / Inhalt aus sichtbarem QR-Code');
+  assert.equal(cards[0].children[0].className, 'source-label');
+  assert.equal(cards[1].children[0].textContent, 'Metadaten / Link aus unsichtbaren PDF-Metadaten');
+  assert.equal(cards[1].children[0].className, 'source-label metadata');
 });
 
 test('PDF selection creates local preview; replacement and clear release URLs', () => {

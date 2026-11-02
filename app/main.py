@@ -433,9 +433,10 @@ def echosos_fhir_test():
 
 
 @app.get("/qr-reader.html", response_class=FileResponse, include_in_schema=False)
-@app.get("/erezept-reader.html", response_class=FileResponse)
-def erezept_reader():
-    return FileResponse(_app_file("erezept-reader.html"), media_type="text/html")
+@app.get("/erezept-reader.html", response_class=FileResponse, include_in_schema=False)
+@app.get("/erezept-emediplan-reader.html", response_class=FileResponse)
+def erezept_emediplan_reader():
+    return FileResponse(_app_file("erezept-emediplan-reader.html"), media_type="text/html")
 
 
 @app.get("/fhir-query-client.html", response_class=FileResponse)

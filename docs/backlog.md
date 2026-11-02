@@ -1,6 +1,6 @@
 # Backlog
 
-Stand: 2026-09-10
+Stand: 2026-11-02
 
 ## Aktueller Stand
 
@@ -10,6 +10,26 @@ mit optionaler refdata.ch-Anreicherung abgebildet. Der Matrix-Bot importiert
 eMediplan- und CDA-Dokumente nur nach erfolgreicher Absender-Patienten-Pruefung.
 Der Backlog konzentriert sich auf offene Clinical-Note-Erweiterungen,
 UMZH-Sendemodell, API-Struktur, Terminologiepflege und Testabdeckung.
+
+## Reader, Refdata und Neuaufbau
+
+- [x] eRezept & eMediplan Reader mit lokalen PDF-/Bildvorschauen,
+      getrennten QR-/Metadaten-Ergebnissen und Original-/FHIR-JSON-Download
+- [x] Reader umbenannt; `/erezept-reader.html` und `/qr-reader.html` bleiben Aliase
+- [x] Migrationskonzept und Katalog mit 32 priorisierten offenen Fragen als
+      lokale PDF-Unterlagen erstellt (nicht im Repository versioniert)
+- [ ] Neuaufbauumfang, direkte OIE-Pilotauswahl, MPI und Verantwortlichkeiten entscheiden
+- [ ] DB-Administrator stellt `omnilink_refdata` und getrennte Importer-/Leserrollen bereit;
+      aktuelle CloudBeaver-FHIR-Rolle hat keine Datenbank-Erstellungsrechte
+- [ ] Refdata-XML-Datenmodell und Streaming-Import mit GLN-Index, Datenstand,
+      validierter atomarer Aktualisierung und Rueckfall auf vorherigen Bestand umsetzen
+- [ ] Lokalen Refdata-Lookup in die Middleware integrieren; Registerstatus und
+      Berechtigung nicht mit einer gueltigen GLN-Pruefziffer gleichsetzen
+- [ ] Aktualisierung, kontrollierte externe Abfragen, Fehler-/Veraltungsregeln
+      sowie Backup/Restore festlegen und testen
+- [ ] Infrastruktur und Referenzdaten-Aktualisierung in der zustaendigen
+      Ansible-Quelle umsetzen; bisher keine Ansible-Aenderung erfolgt
+- [ ] Demo-Abnahme, Rollback, Kosten/Termine und Produktions-RPO/RTO vereinbaren
 
 ## CH VACD Immunization Administration
 

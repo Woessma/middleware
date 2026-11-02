@@ -61,16 +61,16 @@ POST /card/analyze
 
 ## EchoSOS + FHIR kombiniert
 
-### eRezept Reader fuer PDFs und Bilder
+### eRezept & eMediplan Reader fuer PDFs und Bilder
 
-`erezept-reader.html` bietet im gleichen Layout den separaten eRezept Reader:
+`erezept-emediplan-reader.html` bietet im gleichen Layout den separaten eRezept & eMediplan Reader:
 
 ```text
-https://middleware.local.omnilink.ch/erezept-reader.html
-http://localhost:8082/erezept-reader.html
+https://middleware.local.omnilink.ch/erezept-emediplan-reader.html
+http://localhost:8082/erezept-emediplan-reader.html
 ```
 
-Der bisherige Pfad `/qr-reader.html` bleibt als Alias verfuegbar.
+Die bisherigen Pfade `/qr-reader.html` und `/erezept-reader.html` bleiben als Aliase verfuegbar.
 
 Nach der Dateiauswahl erscheint fuer jede PDF unter "Input auswaehlen" eine
 lokale Vorschau mit dem PDF-Viewer des Browsers. Ohne PDF-Viewer bleibt der
@@ -91,13 +91,16 @@ Passwortgeschuetzte PDFs muessen vorher entsperrt werden.
 
 Zusaetzlich liest der Reader den eRezept-Link aus dem XMP-Feld
 `xmp:signedChmed` der PDF-Metadaten (Attribut oder Element). Er zeigt diesen
-separat als "PDF-Metadaten-Link" mit eigener Kopier- und Oeffnen-Funktion an,
+separat mit der Ueberschrift "Metadaten / Link aus unsichtbaren PDF-Metadaten"
+und eigener Kopier- und Oeffnen-Funktion an,
 auch wenn er mit einem QR-Link identisch ist. Abweichungen werden ausdruecklich
 markiert. Weder der Metadaten-Link noch der QR-Inhalt wird dadurch als gueltiges
 Rezept bestaetigt. Bilder haben keine solche PDF-Metadaten-Auswertung.
 
 Mehrere erkannte QR-Inhalte werden mit Dateiname und gegebenenfalls Seite
-angezeigt. HTTP(S)-Links koennen nach Pruefung der Zieladresse bewusst in einem
+unter "QR / Inhalt aus sichtbarem QR-Code" angezeigt. QR-Ergebnisse sind
+gruenlich, Metadaten-Ergebnisse orange hinterlegt.
+HTTP(S)-Links koennen nach Pruefung der Zieladresse bewusst in einem
 neuen Tab geoeffnet werden; andere Inhalte bleiben Text. Eine eingebettete
 Anzeige wird nicht angeboten, da HIN sie blockiert. Es erfolgt kein
 automatischer Aufruf. Erst beim Oeffnen eines Links werden enthaltene Daten
@@ -105,7 +108,7 @@ an dessen Zielseite uebergeben. Nicht lesbare Dateien und Dateien ohne
 erkennbaren QR-Code werden explizit im Status gemeldet. Die Kopierfunktion
 benoetigt einen sicheren Browserkontext (HTTPS oder localhost).
 
-#### Medikations-JSON im eRezept Reader
+#### Medikations-JSON im eRezept & eMediplan Reader
 
 Bei CHMED16A1-Inhalten (direkt im QR-Code oder im Fragment eines
 eRezept-Links) und JSON-QR-Inhalten bietet jeder Eintrag:

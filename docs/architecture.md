@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: 2026-10-21
+Stand: 2026-11-02
 
 ## Zielarchitektur
 
@@ -101,6 +101,60 @@ Partner-API ergaenzt Name und Adresse. Ist `PrscbBy` keine GLN, bleibt der Wert
 als `MedicationStatement.informationSource.display` erhalten. Das separate
 Top-Level-Feld `Auth` bezeichnet den Dokumentautor und wird nicht als
 Verordner-GLN interpretiert.
+
+### Geplanter lokaler Refdata-Suchbestand
+
+Stand 2026-11-02: Konzept, noch nicht implementiert. Die offiziellen
+Refdata-Partner-XML-Dateien sollen regelmaessig in einen GLN-indizierten
+Suchbestand importiert werden; keine Suche durch die grosse XML je Anfrage.
+Die Middleware bleibt fuer die fachliche Anreicherung verantwortlich.
+
+- Separate Datenbank `omnilink_refdata` auf der bestehenden PostgreSQL-Instanz
+  `postgres.local.omnilink.ch:5433` (`10.20.30.213`); HAPI-Datenbank `fhir`
+  und HAPI-Tabellen bleiben unveraendert.
+- Getrennte Importer-Schreibrolle und Middleware-Leserrolle; Zugangsdaten aus
+  Vault, keine Secrets im Repository oder in gemeinsam gespeicherten
+  CloudBeaver-Verbindungen.
+- Streaming-Import fuer natuerliche/juristische Partner, GLN-Index,
+  Herkunft und Datenstand; erst nach Validierung atomar auf den neuen
+  Bestand umschalten und den vorherigen brauchbaren Bestand behalten.
+- GLN-Pruefziffer, Registertreffer, Registerstatus und fachliche
+  Verordnungsberechtigung sind getrennte Aussagen.
+- Ausfall-/Veraltungsregeln, Aktualisierungsintervall, Datenmodell sowie
+  Backup und Restore sind vor Implementierung festzulegen.
+
+Die vom Benutzer gezeigte CloudBeaver-Oberflaeche
+`https://db-admin.local.omnilink.ch/` verbindet sich mit `fhir`.
+Die dort gepruefte Rolle hat weder `CREATEDB` noch Superuser-Rechte.
+Ein DB-Administrator muss die neue Datenbank und Rollen bereitstellen;
+die HAPI-Verbindung soll dafuer keine erweiterten Rechte erhalten.
+Es wurden weder eine Datenbank noch ein Importer oder Ansible-Tasks angelegt.
+Die Medikamenten-Mappingdateien unter `app/terminology/data` bleiben davon
+getrennt; sie sind kein Partnerregister.
+
+## Neuaufbau: Entscheidungsstand
+
+Der Neuaufbau ist ein Vorschlag, kein bereits ausgerollter Betriebsstand:
+Rocky Linux, Podman/systemd Quadlets, SELinux und Ansible als
+Konfigurationsquelle; bestehende gemeinsame Infrastruktur nach Pruefung nutzen.
+HAPI und Python bleiben vorgesehen. Wegen der wenigen bestehenden
+BridgeLink-Channels soll OIE direkt als Zielkandidat im Pilot geprueft werden,
+nicht zuerst ein vollstaendiger BridgeLink-Umzug.
+MPI und Produkt-/Plugin-Kompatibilitaet sind noch zu entscheiden.
+
+Fachliche Transformationen und Referenzdaten-Anreicherung bleiben in der
+Middleware; die Engine uebernimmt Transport, Routing, Orchestrierung und
+zuverlaessige Zustellung. Convert bleibt ohne Schreibzugriff, Import mit
+einem zustaendigen Writer und abgesicherter Idempotenz.
+Externe Terminologie-/Registeraufrufe brauchen kontrollierten Egress,
+Datenminimierung und explizite Fehler-/Veraltungszustaende.
+
+Vor Beauftragung sind Umfang, Kosten, Termine, Verantwortlichkeiten und
+Abnahme festzulegen; vor Produktion RPO/RTO, Isolation und Restore pruefen.
+Taegliche Dumps allein belegen kein Datenbank-RPO von einer Stunde:
+WAL/PITR oder entsprechend haeufige Sicherungen muessen getestet werden.
+Die im externen Vorschlag enthaltenen Jahresangaben 2024 sind zu klaeren.
+CloudBeaver gehoert zum aktuellen Testlab, nicht zum vorgesehenen Zielbetrieb.
 
 ## Matrix Import Bot
 
