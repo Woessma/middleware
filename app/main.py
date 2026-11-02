@@ -432,6 +432,12 @@ def echosos_fhir_test():
     return FileResponse(_app_file("echosos-fhir-test.html"), media_type="text/html")
 
 
+@app.get("/qr-reader.html", response_class=FileResponse, include_in_schema=False)
+@app.get("/erezept-reader.html", response_class=FileResponse)
+def erezept_reader():
+    return FileResponse(_app_file("erezept-reader.html"), media_type="text/html")
+
+
 @app.get("/fhir-query-client.html", response_class=FileResponse)
 def fhir_query_client():
     return FileResponse(_app_file("fhir-query-client.html"), media_type="text/html")

@@ -61,6 +61,73 @@ POST /card/analyze
 
 ## EchoSOS + FHIR kombiniert
 
+### eRezept Reader fuer PDFs und Bilder
+
+`erezept-reader.html` bietet im gleichen Layout den separaten eRezept Reader:
+
+```text
+https://middleware.local.omnilink.ch/erezept-reader.html
+http://localhost:8082/erezept-reader.html
+```
+
+Der bisherige Pfad `/qr-reader.html` bleibt als Alias verfuegbar.
+
+Nach der Dateiauswahl erscheint fuer jede PDF unter "Input auswaehlen" eine
+lokale Vorschau mit dem PDF-Viewer des Browsers. Ohne PDF-Viewer bleibt der
+Link "PDF separat oeffnen" verfuegbar. Die Vorschau benoetigt keinen Upload.
+PNG-, JPEG- und WebP-Dateien werden ebenfalls direkt unter Input als
+skalierte Bildvorschau mit einem Link zum separaten Oeffnen angezeigt.
+Dateiwechsel und "Leeren" entfernen die Vorschauen und geben die lokalen
+Objekt-URLs frei. Leere PDFs und Dateien ueber 30 MB werden nicht eingebettet.
+
+PDFs (alle Seiten), PNG, JPEG und WebP koennen per Dateiauswahl oder
+Drag-and-drop geladen werden. Die Erkennung erfolgt lokal im Browser, ohne
+Dokument-Upload, FHIR-Import, Anmeldung oder persistente Speicherung.
+Die versionierten Bibliotheken ZXing-WASM und PDF.js werden von jsDelivr geladen;
+Internet ist dafuer erforderlich. Die Seite ist damit nicht vollstaendig offline.
+Der Reader benoetigt einen aktuellen Browser mit JavaScript-Modul-Unterstuetzung.
+Grenzen: 30 MB pro Datei, 100 Seiten pro PDF und 24 Megapixel pro Bild.
+Passwortgeschuetzte PDFs muessen vorher entsperrt werden.
+
+Zusaetzlich liest der Reader den eRezept-Link aus dem XMP-Feld
+`xmp:signedChmed` der PDF-Metadaten (Attribut oder Element). Er zeigt diesen
+separat als "PDF-Metadaten-Link" mit eigener Kopier- und Oeffnen-Funktion an,
+auch wenn er mit einem QR-Link identisch ist. Abweichungen werden ausdruecklich
+markiert. Weder der Metadaten-Link noch der QR-Inhalt wird dadurch als gueltiges
+Rezept bestaetigt. Bilder haben keine solche PDF-Metadaten-Auswertung.
+
+Mehrere erkannte QR-Inhalte werden mit Dateiname und gegebenenfalls Seite
+angezeigt. HTTP(S)-Links koennen nach Pruefung der Zieladresse bewusst in einem
+neuen Tab geoeffnet werden; andere Inhalte bleiben Text. Eine eingebettete
+Anzeige wird nicht angeboten, da HIN sie blockiert. Es erfolgt kein
+automatischer Aufruf. Erst beim Oeffnen eines Links werden enthaltene Daten
+an dessen Zielseite uebergeben. Nicht lesbare Dateien und Dateien ohne
+erkennbaren QR-Code werden explizit im Status gemeldet. Die Kopierfunktion
+benoetigt einen sicheren Browserkontext (HTTPS oder localhost).
+
+#### Medikations-JSON im eRezept Reader
+
+Bei CHMED16A1-Inhalten (direkt im QR-Code oder im Fragment eines
+eRezept-Links) und JSON-QR-Inhalten bietet jeder Eintrag:
+
+- **Original-JSON anzeigen**: Base64/GZIP wird mit der Browser-API
+  `DecompressionStream` lokal dekodiert. Das Objekt muss `Patient` und
+  `Medicaments` enthalten; maximal 5 MB entpacktes JSON sind erlaubt.
+- **FHIR-JSON konvertieren**: Sendet erst nach Klick das dekodierte
+  Original-JSON an den bestehenden Same-Origin-Endpunkt
+  `POST /emediplan/convert`. PDF/Bild und Link-Signatur werden nicht hochgeladen.
+  Der bestehende Workflow kann Terminologie- und Refdata-Dienste abfragen.
+  Es wird kein Import-Endpunkt aufgerufen und nichts nach HAPI geschrieben.
+- Beide Ausgaben werden als aufklappbares JSON angezeigt und koennen
+  jeweils als JSON-Datei heruntergeladen werden.
+
+Die Dekodierung prueft weder die eRezept-Signatur noch den aktuellen
+Abgabe-/Einloesestatus. Die Linkfunktionen und die Trennung von QR- und
+PDF-Metadaten-Link bleiben bestehen. Konvertierungsfehler werden beim
+betroffenen Eintrag angezeigt; das originale JSON bleibt verfuegbar.
+
+### EchoSOS-Import
+
 `echosos-fhir-test.html` verbindet den EchoSOS-Import mit der Patientensuche.
 Die Anmeldung erfolgt ausschliesslich ueber Keycloak (Authorization Code mit
 PKCE), mit vorbelegter Client-ID `app-omnilink-cardtest`. Die Redirect-URI

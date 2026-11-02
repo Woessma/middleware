@@ -124,6 +124,17 @@ https://middleware.local.omnilink.ch/epic-spital-emediplan-cda.html
 https://middleware.local.omnilink.ch/card-analysis-test.html
 ```
 
+Der separate eRezept Reader unter
+`https://middleware.local.omnilink.ch/erezept-reader.html` liest QR-Codes aus PDFs
+und Bildern lokal im Browser. Er benoetigt keine Anmeldung und laedt keine
+Dokumente hoch. Originales CHMED16A1-JSON kann lokal angezeigt und
+heruntergeladen werden. Nur nach Klick auf "FHIR-JSON konvertieren" sendet er
+das dekodierte JSON an `POST /emediplan/convert`; dessen bestehender Workflow
+kann Terminologie-/Refdata-Dienste nutzen. Das FHIR-Bundle wird angezeigt und
+zum Download angeboten, ohne Import oder HAPI-Schreibzugriff.
+Decoder-Bibliotheken werden von jsDelivr geladen.
+Der bisherige Pfad `/qr-reader.html` bleibt als Alias verfuegbar.
+
 Die Clients unterstützen Keycloak Authorization Code mit PKCE `S256`.
 Issuer: `https://idp.omnilink.ch/realms/omnilink`. Der API-Werkbank- und
 EchoSOS-Client verwenden die verborgen vorbelegte öffentliche Client-ID

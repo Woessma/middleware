@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="cache-control" content="no-store">
+  <meta name="referrer" content="no-referrer">
+  <title>eRezept Reader</title>
+  <style>
+    :root {
+      --bg: #e8efef;
+      --ink: #1a2323;
+      --muted: #576b6f;
+      --line: #d3dfe0;
+      --teal: #0d7d73;
+      --teal-dark: #0a645f;
+      --teal-soft: #dfeeea;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 Georgia, "Times New Roman", serif; }
+    main { max-width: 1180px; margin: 0 auto; padding: 28px 22px 32px; }
+    .eyebrow { font: 700 12px/1.5 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { margin-top: 8px; font-size: clamp(3rem, 4.8vw, 6rem); line-height: .98; letter-spacing: -.06em; font-weight: 500; }
+    h2 { margin-bottom: 8px; font-size: clamp(1.9rem, 2.1vw, 3rem); line-height: 1.2; letter-spacing: -.04em; font-weight: 500; }
+    h3 { font-size: 19px; }
+    .subtitle { margin-top: 18px; font-size: 17px; color: var(--muted); }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 26px; margin-top: 18px; align-items: start; }
+    .panel { min-width: 0; padding: 18px; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(22, 43, 48, .05); }
+    .hint, .empty { color: var(--muted); font-size: 15px; }
+    .hint + .hint { margin-top: 12px; }
+    .drop-zone { margin-top: 20px; padding: 22px 14px; border: 2px dashed var(--line); border-radius: 6px; background: #f5f7f7; }
+    .drop-zone.dragging { border-color: var(--teal); background: var(--teal-soft); }
+    label { display: block; font-weight: 700; margin-bottom: 12px; }
+    input { max-width: 100%; font: 14px/1.5 system-ui, sans-serif; }
+    input::file-selector-button { cursor: pointer; border: 1px solid var(--line); border-radius: 4px; background: #eef3f3; padding: 9px; color: var(--ink); }
+    .file-name { margin-top: 12px; overflow-wrap: anywhere; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    button, .open-link { display: inline-block; border: 1px solid var(--teal); background: var(--teal); color: #fff; border-radius: 6px; padding: 12px 16px; min-height: 46px; font: 700 16px/1.3 Georgia, "Times New Roman", serif; cursor: pointer; text-decoration: none; }
+    button:hover, .open-link:hover { background: var(--teal-dark); }
+    button:disabled { opacity: .55; cursor: wait; }
+    button.secondary { background: #eef3f3; border-color: var(--line); color: var(--ink); }
+    :focus-visible { outline: 3px solid #0d7d73; outline-offset: 3px; }
+    .status { margin-top: 18px; padding: 14px 18px; color: var(--teal-dark); background: var(--teal-soft); border-left: 4px solid var(--teal); font: 600 14px/1.5 system-ui, sans-serif; }
+    .status.error { color: #b42318; background: #fff0ee; border-color: #d94d4d; }
+    .privacy { margin-top: 20px; }
+    .input-notes { margin-top: 18px; }
+    .input-notes summary { cursor: pointer; color: var(--muted); font-size: 15px; }
+    .input-notes .privacy { margin-top: 10px; }
+    .result { margin-top: 18px; padding: 16px; background: #f5f7f7; border: 1px solid var(--line); border-radius: 6px; }
+    .source { color: var(--muted); font-size: 14px; margin: 6px 0 12px; overflow-wrap: anywhere; }
+    textarea { display: block; width: 100%; min-height: 130px; resize: vertical; border: 1px solid var(--line); border-radius: 4px; padding: 10px; background: #fff; color: var(--ink); font: 13px/1.5 ui-monospace, monospace; overflow-wrap: anywhere; }
+    .warning { margin-top: 12px; font: 14px/1.5 system-ui, sans-serif; color: #8a4100; }
+    .medication { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
+    .medication .hint { margin-top: 10px; }
+    .json-output { margin-top: 16px; }
+    .json-output summary { cursor: pointer; font-weight: 700; margin-bottom: 10px; }
+    .json-output textarea { min-height: 260px; }
+    .pdf-preview { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 16px; }
+    .pdf-preview h3 { overflow-wrap: anywhere; margin-bottom: 10px; }
+    .pdf-preview object { display: block; width: 100%; height: 520px; border: 1px solid var(--line); border-radius: 6px; background: #f5f7f7; }
+    .pdf-preview img { display: block; max-width: 100%; height: auto; max-height: 520px; object-fit: contain; border: 1px solid var(--line); border-radius: 6px; }
+    .pdf-preview a { color: var(--teal-dark); overflow-wrap: anywhere; }
+    [hidden] { display: none !important; }
+    @media (max-width: 860px) {
+      .workspace { grid-template-columns: 1fr; }
+      main { padding: 22px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">OmniLink / eRezept</div>
+    <h1>eRezept Reader</h1>
+    <p class="subtitle">Dokument laden, QR-Code lesen und den enthaltenen Link gezielt &ouml;ffnen.</p>
+    <div id="status" class="status" role="status" aria-live="polite" hidden></div>
+    <div class="workspace">
+      <section class="panel">
+        <h2>Input ausw&auml;hlen</h2>
+        <p class="hint">PDF, PNG, JPEG oder WebP. Auch mehrere Dateien und mehrseitige PDFs sind m&ouml;glich.</p>
+        <div id="dropZone" class="drop-zone">
+          <label for="qrFiles">Dateien ausw&auml;hlen oder hier ablegen</label>
+          <input id="qrFiles" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" multiple>
+          <p id="fileName" class="hint file-name">Noch keine Datei ausgew&auml;hlt.</p>
+        </div>
+        <div class="actions">
+          <button id="scan" type="button" disabled>QR lesen</button>
+          <button id="clear" class="secondary" type="button">Leeren</button>
+        </div>
+        <details class="input-notes">
+          <summary>Hinweise zu Datenschutz, Internet und Dateigrenzen</summary>
+          <p class="hint privacy">QR-Erkennung und originales eMediplan-JSON bleiben im Browser. Nur nach Klick auf &bdquo;FHIR-JSON konvertieren&ldquo; wird das dekodierte JSON an die Middleware gesendet. Kein FHIR-Import und keine automatische Speicherung.</p>
+          <p class="hint">Decoder-Bibliotheken werden beim ersten Scan von jsDelivr geladen. Daf&uuml;r ist Internetzugriff n&ouml;tig.</p>
+          <p class="hint">Maximal 30 MB pro Datei, 100 Seiten pro PDF und 24 Megapixel pro Bild. Gesch&uuml;tzte PDFs bitte zuvor entsperren.</p>
+        </details>
+        <div id="pdfPreviews" aria-label="Dateivorschau" hidden></div>
+      </section>
+      <section class="panel" aria-labelledby="resultsTitle">
+        <h2 id="resultsTitle">QR-Codes &amp; PDF-Metadaten</h2>
+        <p id="empty" class="empty">Noch keine Daten geladen.</p>
+        <div id="results"></div>
+      </section>
+    </div>
+  </main>
+  <script>
+    const $ = id => document.getElementById(id);
+    const MAX_FILE_BYTES = 30 * 1024 * 1024;
+    const MAX_PAGES = 100;
+    const MAX_IMAGE_PIXELS = 24000000;
+    const MAX_JSON_BYTES = 5 * 1024 * 1024;
+    const PDF_BASE = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/';
+    const ZXING_BASE = 'https://cdn.jsdelivr.net/npm/zxing-wasm@2.2.1/dist/';
+    let selectedFiles = [];
+    let busy = false;
+    let decoderPromise;
+    let pdfPromise;
+    let previewUrls = [];
+
+    function clearPdfPreviews() {
+      $('pdfPreviews').replaceChildren();
+      $('pdfPreviews').hidden = true;
+      for (const url of previewUrls) URL.revokeObjectURL(url);
+      previewUrls = [];
+    }
+
+    function showPdfPreviews(files) {
+      clearPdfPreviews();
+      for (const file of files) {
+        const pdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+        const image = ['image/png', 'image/jpeg', 'image/webp'].includes(file.type) ||
+          /\.(png|jpe?g|webp)$/i.test(file.name);
+        if (!pdf && !image) continue;
+        const section = document.createElement('section');
+        section.className = 'pdf-preview';
+        const heading = document.createElement('h3');
+        heading.textContent = (pdf ? 'PDF-Vorschau / ' : 'Bild-Vorschau / ') + file.name;
+        section.append(heading);
+        if (!file.size || file.size > MAX_FILE_BYTES) {
+          const error = document.createElement('p');
+          error.className = 'warning';
+          error.textContent = 'Keine Vorschau: Datei ist leer oder groesser als 30 MB.';
+          section.append(error);
+        } else {
+          const url = URL.createObjectURL(file);
+          previewUrls.push(url);
+          const link = document.createElement('a');
+          link.href = url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = pdf ? 'PDF separat oeffnen' : 'Bild separat oeffnen';
+          const hint = document.createElement('p');
+          hint.className = 'hint';
+          hint.textContent = pdf
+            ? 'Lokale Vorschau. Falls der Browser keine PDF-Vorschau unterstuetzt, PDF separat oeffnen.'
+            : 'Lokale Bildvorschau ohne Upload.';
+          const preview = document.createElement(pdf ? 'object' : 'img');
+          if (pdf) {
+            preview.type = 'application/pdf';
+            preview.data = url;
+            preview.setAttribute('aria-label', 'PDF-Vorschau von ' + file.name);
+            preview.textContent = 'PDF-Vorschau nicht verfuegbar. Bitte den Link unterhalb verwenden.';
+          } else {
+            preview.alt = 'Bild-Vorschau von ' + file.name;
+            preview.src = url;
+          }
+          preview.addEventListener('error', () => {
+            hint.textContent = 'Vorschau konnte nicht geladen werden. Bitte Datei separat oeffnen.';
+            hint.className = 'warning';
+          });
+          section.append(preview, hint, link);
+        }
+        $('pdfPreviews').append(section);
+        $('pdfPreviews').hidden = false;
+      }
+    }
+
+    function show(message, error = false) {
+      $('status').textContent = message;
+      $('status').className = 'status' + (error ? ' error' : '');
+      $('status').hidden = false;
+    }
+
+    function setBusy(value) {
+      busy = value;
+      $('scan').disabled = value || selectedFiles.length === 0;
+      $('clear').disabled = value;
+      $('qrFiles').disabled = value;
+      $('results').setAttribute('aria-busy', String(value));
+    }
+
+    function selectFiles(files) {
+      if (busy) return;
+      selectedFiles = Array.from(files);
+      $('fileName').textContent = selectedFiles.length
+        ? selectedFiles.map(file => file.name).join(', ')
+        : 'Noch keine Datei ausgewaehlt.';
+      $('results').replaceChildren();
+      $('empty').hidden = false;
+      $('empty').textContent = 'Bereit zum Lesen.';
+      $('status').hidden = true;
+      $('scan').disabled = selectedFiles.length === 0;
+      showPdfPreviews(selectedFiles);
+    }
+
+    function fileKind(file) {
+      if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) return 'pdf';
+      if (['image/png', 'image/jpeg', 'image/webp'].includes(file.type) ||
+          /\.(png|jpe?g|webp)$/i.test(file.name)) return 'image';
+      throw new Error('Nicht unterstuetztes Format. Bitte PDF, PNG, JPEG oder WebP waehlen.');
+    }
+
+    function httpUrl(value) {
+      try {
+        const url = new URL(value);
+        return ['http:', 'https:'].includes(url.protocol) ? url : null;
+      } catch (error) {
+        if (error instanceof TypeError) return null;
+        throw error;
+      }
+    }
+
+    function loadDecoder() {
+      if (!decoderPromise) {
+        decoderPromise = import(ZXING_BASE + 'es/reader/index.js').then(async decoder => {
+          await decoder.prepareZXingModule({
+            overrides: {locateFile: path => ZXING_BASE + 'reader/' + path},
+            fireImmediately: true
+          });
+          return decoder.readBarcodes;
+        }).catch(error => {
+          decoderPromise = undefined;
+          throw new Error('QR-Decoder konnte nicht geladen werden. Internetzugriff und Browser pruefen. ' + error.message);
+        });
+      }
+      return decoderPromise;
+    }
+
+    function loadPdf() {
+      if (!pdfPromise) {
+        pdfPromise = import(PDF_BASE + 'pdf.min.mjs').then(pdfjs => {
+          pdfjs.GlobalWorkerOptions.workerSrc = PDF_BASE + 'pdf.worker.min.mjs';
+          return pdfjs;
+        }).catch(error => {
+          pdfPromise = undefined;
+          throw new Error('PDF-Decoder konnte nicht geladen werden. Internetzugriff und Browser pruefen. ' + error.message);
+        });
+      }
+      return pdfPromise;
+    }
+
+    function canvasOf(width, height) {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      return canvas;
+    }
+
+    async function decodeCanvas(canvas, decode) {
+      const context = canvas.getContext('2d', {willReadFrequently: true});
+      const image = context.getImageData(0, 0, canvas.width, canvas.height);
+      const results = await decode(image, {formats: ['QRCode'], tryHarder: true, tryInvert: true, maxNumberOfSymbols: 255});
+      if (results.some(result => !result.text)) {
+        throw new Error('QR-Code erkannt, aber kein lesbarer Text enthalten.');
+      }
+      return [...new Set(results.map(result => result.text))];
+    }
+
+    function metadataLinks(raw) {
+      if (!raw) return [];
+      const xml = new DOMParser().parseFromString(raw, 'application/xml');
+      if (xml.getElementsByTagName('parsererror').length) {
+        throw new Error('PDF-Metadaten konnten nicht als XML gelesen werden.');
+      }
+      const values = new Set();
+      for (const element of xml.getElementsByTagName('*')) {
+        if (element.namespaceURI === 'http://ns.adobe.com/xap/1.0/' && element.localName === 'signedChmed') {
+          values.add(element.textContent.trim());
+        }
+        for (const attribute of element.attributes) {
+          if (attribute.namespaceURI === 'http://ns.adobe.com/xap/1.0/' && attribute.localName === 'signedChmed') {
+            values.add(attribute.value.trim());
+          }
+        }
+      }
+      for (const value of values) {
+        if (!httpUrl(value)) throw new Error('PDF-Metadaten enthalten einen ungueltigen signedChmed-Link.');
+      }
+      return [...values];
+    }
+
+    function medicationPayload(value) {
+      const text = value.trim();
+      if (text.startsWith('CHMED16A') || text.startsWith('{')) return text;
+      const url = httpUrl(text);
+      if (!url) return null;
+      const payload = decodeURIComponent(url.hash.slice(1).split('&')[0]);
+      return payload.startsWith('CHMED16A') ? payload : null;
+    }
+
+    function validateMedicationObject(value) {
+      if (!value || typeof value !== 'object' || Array.isArray(value) ||
+          !value.Patient || typeof value.Patient !== 'object' || Array.isArray(value.Patient) ||
+          !Array.isArray(value.Medicaments)) {
+        throw new Error('Kein eMediplan-Objekt: Patient und Medicaments werden erwartet.');
+      }
+      return value;
+    }
+
+    async function decodeMedication(value) {
+      const payload = medicationPayload(value);
+      if (!payload) throw new Error('Kein CHMED16A/eMediplan-Inhalt erkannt.');
+      if (payload.length > MAX_JSON_BYTES) throw new Error('eMediplan-Inhalt ist zu gross (maximal 5 MB).');
+      if (payload.startsWith('{')) return validateMedicationObject(JSON.parse(payload));
+      const compact = payload.replace(/\s+/g, '');
+      if (!compact.startsWith('CHMED16A1')) throw new Error('Nicht unterstuetztes eMediplan-Format. Erwartet wird CHMED16A1.');
+      if (typeof DecompressionStream !== 'function') throw new Error('Dieser Browser unterstuetzt keine lokale GZIP-Dekodierung.');
+      const bytes = Uint8Array.from(atob(compact.slice(9)), character => character.charCodeAt(0));
+      const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+      const chunks = [];
+      let size = 0;
+      try {
+        while (true) {
+          const part = await reader.read();
+          if (part.done) break;
+          size += part.value.byteLength;
+          if (size > MAX_JSON_BYTES) {
+            await reader.cancel();
+            throw new Error('Entpacktes eMediplan-JSON ist zu gross (maximal 5 MB).');
+          }
+          chunks.push(part.value);
+        }
+      } finally {
+        reader.releaseLock();
+      }
+      const raw = await new Blob(chunks).arrayBuffer();
+      return validateMedicationObject(JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(raw)));
+    }
+
+    async function convertMedication(data) {
+      const response = await fetch('/emediplan/convert', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', Accept: 'application/fhir+json, application/json'},
+        body: JSON.stringify(data),
+        credentials: 'same-origin',
+        signal: AbortSignal.timeout(120000)
+      });
+      const raw = await response.text();
+      let bundle;
+      try {
+        bundle = JSON.parse(raw);
+      } catch {
+        throw new Error('Konverter liefert kein JSON (HTTP ' + response.status + ').');
+      }
+      if (!response.ok) {
+        const detail = bundle.detail || bundle.issue || bundle;
+        throw new Error('FHIR-Konvertierung fehlgeschlagen (HTTP ' + response.status + '): ' +
+          (typeof detail === 'string' ? detail : JSON.stringify(detail)));
+      }
+      if (bundle.resourceType !== 'Bundle' || !Array.isArray(bundle.entry)) {
+        throw new Error('Konverter liefert kein gueltiges FHIR-Bundle.');
+      }
+      const failure = bundle.entry.find(entry =>
+        entry.resource?.resourceType === 'OperationOutcome' &&
+        entry.resource.issue?.some(issue => ['error', 'fatal'].includes(issue.severity)));
+      if (failure) throw new Error('FHIR-Konvertierung meldet Fehler: ' + JSON.stringify(failure.resource.issue));
+      return bundle;
+    }
+
+    function jsonOutput(title, data, filename) {
+      const section = document.createElement('details');
+      section.className = 'json-output';
+      section.open = true;
+      const summary = document.createElement('summary');
+      summary.textContent = title;
+      const text = document.createElement('textarea');
+      text.readOnly = true;
+      text.value = JSON.stringify(data, null, 2);
+      text.setAttribute('aria-label', title);
+      const download = document.createElement('button');
+      download.type = 'button';
+      download.className = 'secondary';
+      download.textContent = 'JSON herunterladen';
+      download.onclick = () => {
+        const url = URL.createObjectURL(new Blob([text.value], {type: 'application/json;charset=utf-8'}));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      };
+      section.append(summary, text, download);
+      return section;
+    }
+
+    function medicationView(value) {
+      const section = document.createElement('section');
+      section.className = 'medication';
+      const heading = document.createElement('h3');
+      heading.textContent = 'eMediplan / Medikations-JSON';
+      const hint = document.createElement('p');
+      hint.className = 'hint';
+      hint.textContent = 'Original-JSON wird lokal dekodiert. FHIR-Konvertierung sendet dieses JSON an /emediplan/convert (bestehender Workflow inklusive Terminologie-/Refdata-Abfragen), ohne FHIR-Import. Die Rezeptsignatur und Einloesbarkeit werden nicht geprueft.';
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      const original = document.createElement('button');
+      original.type = 'button';
+      original.className = 'secondary';
+      original.textContent = 'Original-JSON anzeigen';
+      const convert = document.createElement('button');
+      convert.type = 'button';
+      convert.textContent = 'FHIR-JSON konvertieren';
+      const status = document.createElement('p');
+      status.className = 'hint';
+      status.setAttribute('role', 'status');
+      const outputs = document.createElement('div');
+      let decoded;
+      let originalShown = false;
+      let fhirShown = false;
+      function showOriginal(data) {
+        if (originalShown) return;
+        outputs.append(jsonOutput('Originales eMediplan-JSON', data, 'emediplan-original.json'));
+        originalShown = true;
+      }
+      async function run(fhir) {
+        original.disabled = convert.disabled = true;
+        status.textContent = fhir ? 'FHIR-Konvertierung laeuft ...' : 'eMediplan wird lokal dekodiert ...';
+        status.className = 'hint';
+        try {
+          decoded = decoded || await decodeMedication(value);
+          showOriginal(decoded);
+          if (fhir && !fhirShown) {
+            const bundle = await convertMedication(decoded);
+            outputs.append(jsonOutput('FHIR-Medikations-Bundle', bundle, 'emediplan-fhir.json'));
+            fhirShown = true;
+          }
+          status.textContent = fhir ? 'FHIR-JSON erstellt. Kein Import ausgefuehrt.' : 'Original-JSON lokal dekodiert. Keine Daten gesendet.';
+        } catch (error) {
+          status.textContent = 'Medikations-JSON fehlgeschlagen: ' + error.message;
+          status.className = 'warning';
+        } finally {
+          original.disabled = originalShown;
+          convert.disabled = fhirShown;
+        }
+      }
+      original.onclick = () => run(false);
+      convert.onclick = () => run(true);
+      actions.append(original, convert);
+      section.append(heading, hint, actions, status, outputs);
+      return section;
+    }
+
+    function addResult(value, source, kind = 'QR-Code', comparison = '') {
+      const card = document.createElement('article');
+      card.className = 'result';
+      const heading = document.createElement('h3');
+      heading.textContent = kind + ' / Eintrag ' + ($('results').childElementCount + 1);
+      const origin = document.createElement('p');
+      origin.className = 'source';
+      origin.textContent = source;
+      const text = document.createElement('textarea');
+      text.readOnly = true;
+      text.value = value;
+      text.setAttribute('aria-label', 'Originalinhalt von ' + heading.textContent);
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.className = 'secondary';
+      copy.textContent = 'Inhalt kopieren';
+      copy.onclick = async () => {
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('Zwischenablage nicht verfuegbar. Inhalt im Textfeld manuell kopieren.');
+          await navigator.clipboard.writeText(value);
+          show('Inhalt kopiert.');
+        } catch (error) {
+          show('Kopieren fehlgeschlagen: ' + error.message, true);
+        }
+      };
+      actions.append(copy);
+      const url = httpUrl(value);
+      if (url) {
+        const open = document.createElement('a');
+        open.className = 'open-link';
+        open.textContent = 'In neuem Tab oeffnen (' + url.host + ')';
+        open.href = url.href;
+        open.target = '_blank';
+        open.rel = 'noopener noreferrer';
+        open.referrerPolicy = 'no-referrer';
+        actions.append(open);
+      }
+      const note = document.createElement('p');
+      note.className = 'warning';
+      note.textContent = (comparison ? comparison + ' ' : '') + (url
+        ? 'Zieladresse vor dem Oeffnen pruefen. Der Link kann vertrauliche Daten enthalten; beim Oeffnen erhaelt die Zielseite diese Daten.'
+        : 'Kein HTTP(S)-Link. Der Inhalt wird nur als Text angezeigt.');
+      card.append(heading, origin, text, actions, note);
+      if (value.trim().startsWith('CHMED16A') || value.trim().startsWith('{') ||
+          (url && url.hash.startsWith('#CHMED16A'))) {
+        card.append(medicationView(value));
+      }
+      $('results').append(card);
+      $('empty').hidden = true;
+    }
+
+    async function scanImage(file, decode) {
+      const image = await createImageBitmap(file);
+      let canvas;
+      try {
+        if (image.width * image.height > MAX_IMAGE_PIXELS) {
+          throw new Error('Bild ist zu gross: maximal 24 Megapixel. Bitte verkleinern.');
+        }
+        canvas = canvasOf(image.width, image.height);
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#fff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0);
+        const values = await decodeCanvas(canvas, decode);
+        for (const value of values) addResult(value, file.name);
+        return values.length;
+      } finally {
+        image.close();
+        if (canvas) canvas.width = canvas.height = 0;
+      }
+    }
+
+    async function scanPdf(file, decode, progress) {
+      const pdfjs = await loadPdf();
+      const loading = pdfjs.getDocument({
+        data: new Uint8Array(await file.arrayBuffer()),
+        isEvalSupported: false,
+        stopAtErrors: true
+      });
+      let count = 0;
+      const qrValues = new Set();
+      try {
+        const pdf = await loading.promise;
+        if (pdf.numPages > MAX_PAGES) throw new Error('PDF hat zu viele Seiten: maximal 100. Bitte aufteilen.');
+        for (let number = 1; number <= pdf.numPages; number++) {
+          progress('Seite ' + number + ' / ' + pdf.numPages);
+          await new Promise(resolve => setTimeout(resolve, 0));
+          const page = await pdf.getPage(number);
+          const values = new Set();
+          try {
+            // A second resolution recovers small, dense QR codes missed in the first render.
+            for (const scale of [1.5, 3]) {
+              const natural = page.getViewport({scale});
+              const viewport = page.getViewport({scale: scale * Math.min(1, 4096 / Math.max(natural.width, natural.height))});
+              const canvas = canvasOf(Math.ceil(viewport.width), Math.ceil(viewport.height));
+              try {
+                await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+                for (const value of await decodeCanvas(canvas, decode)) values.add(value);
+              } finally {
+                canvas.width = canvas.height = 0;
+              }
+            }
+            for (const value of values) {
+              qrValues.add(value);
+              addResult(value, file.name + ' / Seite ' + number);
+            }
+            count += values.size;
+          } finally {
+            page.cleanup();
+          }
+          const {metadata} = await pdf.getMetadata();
+          for (const value of metadataLinks(metadata?.getRaw())) {
+            const comparison = !qrValues.size
+              ? 'Kein QR-Link zum Vergleich erkannt.'
+              : qrValues.has(value)
+                ? 'Dieser Metadaten-Link stimmt mit einem gelesenen QR-Code ueberein.'
+                : 'Achtung: Dieser Metadaten-Link unterscheidet sich von den gelesenen QR-Codes. Die Gueltigkeit wurde nicht geprueft.';
+            addResult(value, file.name + ' / XMP: signedChmed', 'PDF-Metadaten-Link', comparison);
+          }
+        }
+      } finally {
+        await loading.destroy();
+      }
+      return count;
+    }
+
+    async function scanFiles() {
+      if (busy || !selectedFiles.length) return;
+      setBusy(true);
+      $('results').replaceChildren();
+      $('empty').hidden = false;
+      $('empty').textContent = 'Dateien werden gelesen ...';
+      const issues = [];
+      try {
+        show('QR-Decoder wird geladen ...');
+        const decode = await loadDecoder();
+        for (let index = 0; index < selectedFiles.length; index++) {
+          const file = selectedFiles[index];
+          const progress = detail => show('Datei ' + (index + 1) + ' / ' + selectedFiles.length + ': ' + file.name + ' - ' + detail);
+          try {
+            if (file.size > MAX_FILE_BYTES) throw new Error('Datei ist groesser als 30 MB.');
+            if (!file.size) throw new Error('Datei ist leer.');
+            const kind = fileKind(file);
+            progress('QR-Erkennung laeuft ...');
+            await new Promise(resolve => setTimeout(resolve, 0));
+            const found = kind === 'pdf'
+              ? await scanPdf(file, decode, progress)
+              : await scanImage(file, decode);
+            if (!found) issues.push(file.name + ': Kein QR-Code erkannt.');
+          } catch (error) {
+            const message = error.name === 'PasswordException'
+              ? 'Passwortgeschuetztes PDF. Bitte zuerst entsperren.'
+              : error.message;
+            issues.push(file.name + ': ' + message);
+          }
+        }
+        show($('results').childElementCount + ' Eintrag/Eintraege erkannt (QR-Codes und PDF-Metadaten).' + (issues.length ? ' ' + issues.join(' | ') : ''), issues.length > 0);
+      } catch (error) {
+        show(error.message, true);
+      } finally {
+        $('empty').hidden = $('results').childElementCount > 0;
+        $('empty').textContent = 'Keine QR-Codes erkannt. Siehe Statusmeldung.';
+        setBusy(false);
+      }
+    }
+
+    $('qrFiles').addEventListener('change', event => selectFiles(event.target.files));
+    $('scan').addEventListener('click', scanFiles);
+    $('clear').addEventListener('click', () => {
+      if (busy) return;
+      $('qrFiles').value = '';
+      selectFiles([]);
+      $('empty').textContent = 'Noch keine Daten geladen.';
+    });
+    for (const name of ['dragenter', 'dragover']) {
+      $('dropZone').addEventListener(name, event => {
+        event.preventDefault();
+        if (!busy) $('dropZone').classList.add('dragging');
+      });
+    }
+    $('dropZone').addEventListener('dragleave', () => $('dropZone').classList.remove('dragging'));
+    $('dropZone').addEventListener('drop', event => {
+      event.preventDefault();
+      $('dropZone').classList.remove('dragging');
+      if (!busy) {
+        $('qrFiles').value = '';
+        selectFiles(event.dataTransfer.files);
+      }
+    });
+    window.addEventListener('dragover', event => event.preventDefault());
+    window.addEventListener('drop', event => event.preventDefault());
+    window.addEventListener('pagehide', clearPdfPreviews);
+  </script>
+</body>
+</html>
