@@ -3,6 +3,7 @@ import requests
 import uuid
 
 from config import FHIR_BASE
+from services.refdata_service import enrich_practitioner_resource
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +101,7 @@ def find_practitioner(
 def create_practitioner(
     practitioner: dict
 ):
+    practitioner = enrich_practitioner_resource(practitioner)
     identifiers = practitioner.get("identifier", [])
 
     if not identifiers:
@@ -136,6 +138,7 @@ def update_practitioner(
     practitioner_id: str,
     practitioner: dict,
 ):
+    practitioner = enrich_practitioner_resource(practitioner)
     payload = dict(practitioner)
     payload["id"] = practitioner_id
 

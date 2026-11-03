@@ -13,6 +13,7 @@ from uuid import uuid4
 import requests
 
 from config import FHIR_BASE
+from services.patient_service import warn_if_external_patient_duplicate
 from services.terminology_service import validate_coding
 from terminology.echosos import (
     ECHOSOS_ALLERGENS,
@@ -249,14 +250,20 @@ def parse_echosos_data(url, page_html=""):
 
 
 def _patient_search(data):
+    search_params = {
+        "family": data["family"],
+        "given": data["given"],
+        "birthdate": data["birth_date"],
+    }
     response = requests.get(
         f"{FHIR_BASE}/Patient",
-        params={"family": data["family"], "given": data["given"], "birthdate": data["birth_date"]},
+        params=search_params,
         headers={"Accept": "application/fhir+json"},
         timeout=15,
     )
     response.raise_for_status()
     result = response.json()
+    warn_if_external_patient_duplicate(search_params, "family-given-birthdate")
     entries = result.get("entry", [])
     if result.get("total", len(entries)) > 1 or len(entries) > 1:
         raise ValueError("EchoSOS-Patientensuche mit Name und Geburtsdatum ist nicht eindeutig")

@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <title>Patientenabfrage auf zwei HAPI-Servern – FHIR</title>
+    <style>
+      :root {
+        --ink: #172033;
+        --muted: #5b6474;
+        --line: #d7dde7;
+        --canvas: #f4f7fb;
+        --paper: #fff;
+        --accent: #006d77;
+        --accent-soft: #e2f2f1;
+        --error: #b42318;
+        --error-soft: #fef1f0;
+        --warning: #8a4b08;
+        --warning-soft: #fff4e5;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--canvas); color: var(--ink); font: 15px/1.45 Arial, sans-serif; }
+      main { max-width: 1200px; margin: 0 auto; padding: 28px 20px 48px; }
+      h1 { margin: 0 0 6px; font-size: 28px; }
+      h2 { margin: 0 0 12px; font-size: 20px; }
+      h3 { margin: 0 0 8px; font-size: 16px; }
+      p { margin: 0 0 12px; }
+      .muted { color: var(--muted); }
+      .notice { margin: 18px 0; padding: 12px 14px; border-left: 4px solid var(--accent); background: var(--accent-soft); }
+      .warning { border-color: var(--warning); background: var(--warning-soft); }
+      .panel { margin-top: 16px; border: 1px solid var(--line); background: var(--paper); padding: 18px; }
+      .server-grid, .results-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+      .server, .result-card { min-width: 0; border: 1px solid var(--line); padding: 14px; background: #fff; }
+      .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .field-wide { grid-column: 1 / -1; }
+      label { display: block; margin-bottom: 5px; font-weight: bold; }
+      input, select {
+        width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 4px;
+        padding: 8px 10px; color: var(--ink); background: #fff; font: 14px Arial, sans-serif;
+      }
+      input[type="password"] { font-family: monospace; }
+      .auth-fields[hidden], [hidden] { display: none !important; }
+      .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+      button { min-height: 40px; border: 1px solid var(--accent); border-radius: 4px; padding: 8px 15px; background: var(--accent); color: #fff; cursor: pointer; font-weight: bold; }
+      button.secondary { background: #fff; color: var(--accent); }
+      button:disabled { cursor: wait; opacity: .65; }
+      .status { margin-top: 12px; padding: 10px 12px; border-left: 4px solid var(--accent); background: var(--accent-soft); }
+      .status.error { border-color: var(--error); background: var(--error-soft); color: var(--error); }
+      .status.warning { border-color: var(--warning); background: var(--warning-soft); color: var(--warning); }
+      .patient { margin-top: 10px; border: 1px solid var(--line); padding: 10px; }
+      .patient dl { display: grid; grid-template-columns: minmax(100px, 150px) 1fr; gap: 4px 10px; margin: 0; }
+      .patient dt { color: var(--muted); font-weight: bold; }
+      .patient dd { margin: 0; overflow-wrap: anywhere; }
+      .resource-group { margin-top: 10px; border: 1px solid var(--line); padding: 10px; }
+      .resource-group > summary { font-size: 16px; }
+      .resource { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+      .resource h4 { margin: 0 0 6px; font-size: 14px; }
+      .resource p { margin-bottom: 6px; }
+      .everything-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .overview-tile, .resource-field {
+        min-width: 0;
+        padding: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+      }
+      .overview-tile strong, .overview-tile span, .resource-field small {
+        display: block;
+      }
+      .overview-tile strong { overflow-wrap: anywhere; font-size: 18px; }
+      .overview-tile span, .resource-field small { color: var(--muted); font-size: 12px; }
+      .resource-fields {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 8px;
+        margin: 10px 0;
+      }
+      .resource-field div { overflow-wrap: anywhere; white-space: pre-wrap; }
+      .resource-source { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+      .resource-source > summary { color: var(--accent); }
+      .clinical-view { margin-top: 14px; }
+      .clinical-summary { margin-top: 16px; border-top: 1px solid var(--line); }
+      .clinical-summary > summary { padding: 10px 0; font-size: 18px; }
+      .clinical-summary > .result-body { padding: 4px 0 10px; }
+      .clinical-table-section { margin-top: 14px; }
+      .clinical-table-section h3 { margin-bottom: 8px; }
+      .clinical-table-section .result-table { width: fit-content; max-width: 100%; }
+      .clinical-table-section .result-table-wrap { max-width: 100%; overflow-x: auto; }
+      .clinical-table-section .result-table th,
+      .clinical-table-section .result-table td { max-width: 12rem; overflow-wrap: anywhere; }
+      .clinical-table-section .result-table th { background: var(--accent-soft); }
+      details { margin-top: 8px; }
+      summary { cursor: pointer; font-weight: bold; }
+      pre { max-height: 300px; overflow: auto; margin: 8px 0 0; padding: 10px; background: #16202d; color: #eaf1f8; font: 12px/1.45 monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+      .empty { color: var(--muted); font-style: italic; }
+      code { overflow-wrap: anywhere; }
+      @media (max-width: 760px) {
+        main { padding: 20px 12px 36px; }
+        .server-grid, .results-grid, .form-grid { grid-template-columns: 1fr; }
+        .field-wide { grid-column: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Patientenabfrage auf zwei HAPI-Servern</h1>
+      <p class="muted">Read-only-Suche auf dem lokalen und externen FHIR-Server mit getrennten Zugangsdaten.</p>
+      <p class="notice warning">Die Suche ist nur lesend; Zugangsdaten werden nicht gespeichert. Vollständige Patientendaten werden nur nach separatem Klick geladen. Nur mit berechtigten Testdaten verwenden.</p>
+
+      <section class="panel" aria-labelledby="serversHeading">
+        <h2 id="serversHeading">Server und Authentifizierung</h2>
+        <div class="server-grid">
+          <section class="server" aria-labelledby="localHeading">
+            <h3 id="localHeading">Lokaler HAPI</h3>
+            <div class="form-grid">
+              <div class="field-wide">
+                <label>Authentifizierung</label>
+                <input id="keycloakClientId" type="hidden" value="app-omnilink-cardtest" />
+                <div class="actions">
+                  <button id="keycloakLoginBtn" type="button">Mit Keycloak anmelden</button>
+                  <button id="keycloakLogoutBtn" class="secondary" type="button">Token löschen</button>
+                </div>
+                <p id="keycloakStatus" class="muted" role="status">Kein Keycloak-Token aktiv.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="server" aria-labelledby="externalHeading">
+            <h3 id="externalHeading">Externer HAPI</h3>
+            <div class="form-grid">
+              <div class="field-wide">
+                <label for="externalAuthType">Authentifizierung</label>
+                <select id="externalAuthType">
+                  <option value="none">Keine</option>
+                  <option value="basic" selected>Basic Auth</option>
+                  <option value="bearer">Bearer Token</option>
+                </select>
+              </div>
+              <div class="field-wide auth-fields" id="externalCredentials">
+                <label for="externalUsername">Username</label>
+                <input id="externalUsername" type="text" autocomplete="off" />
+              </div>
+              <div class="field-wide auth-fields" id="externalSecretField">
+                <label id="externalSecretLabel" for="externalSecret">Passwort</label>
+                <input id="externalSecret" type="password" autocomplete="new-password" />
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="searchHeading">
+        <h2 id="searchHeading">Patientensuche</h2>
+        <div class="form-grid">
+          <div>
+            <label for="searchType">Suchkriterium</label>
+            <select id="searchType">
+              <option value="identifier" selected>Identifier (System + Wert)</option>
+              <option value="demographics">Nachname, Vorname und Geburtsdatum</option>
+            </select>
+          </div>
+          <div id="identifierSystemField">
+            <label for="identifierSystem">Identifier-System (URI)</label>
+            <select id="identifierSystem">
+              <option value="">Bitte auswählen</option>
+              <option value="urn:oid:2.16.756.5.32">AHVN13 / NAVS13</option>
+              <option value="urn:oid:2.16.756.5.30.1.127.3.10.3">EPR-SPID</option>
+              <option value="urn:oid:2.16.756.5.30.1.123.100.1.1.1">Versicherungskartennummer</option>
+              <option value="custom">Eigene URI eingeben</option>
+            </select>
+          </div>
+          <div id="customIdentifierSystemField" hidden>
+            <label for="identifierSystemCustom">Eigene Identifier-System-URI</label>
+            <input id="identifierSystemCustom" type="text" placeholder="z. B. urn:oid:2.16.756.5.32" />
+          </div>
+          <div>
+            <label for="identifierValue">Identifier-Wert</label>
+            <input id="identifierValue" type="text" autocomplete="off" />
+          </div>
+          <div>
+            <label for="family">Nachname</label>
+            <input id="family" type="text" autocomplete="off" />
+          </div>
+          <div>
+            <label for="given">Vorname</label>
+            <input id="given" type="text" autocomplete="off" />
+          </div>
+          <div>
+            <label for="birthdate">Geburtsdatum</label>
+            <input id="birthdate" type="date" />
+          </div>
+        </div>
+        <div class="actions">
+          <button id="searchBoth" type="button">Beide Server durchsuchen</button>
+          <button id="searchLocal" class="secondary" type="button">Nur lokalen HAPI</button>
+          <button id="searchExternal" class="secondary" type="button">Nur externen HAPI</button>
+        </div>
+        <div id="matchSummary" class="status" hidden role="status"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="resultsHeading">
+        <h2 id="resultsHeading">Suchergebnisse</h2>
+        <div class="results-grid">
+          <section class="result-card" aria-labelledby="localResultsHeading">
+            <h3 id="localResultsHeading">Lokaler HAPI</h3>
+            <div id="localResult" class="empty">Noch keine Abfrage ausgeführt.</div>
+          </section>
+          <section class="result-card" aria-labelledby="externalResultsHeading">
+            <h3 id="externalResultsHeading">Externer HAPI</h3>
+            <div id="externalResult" class="empty">Noch keine Abfrage ausgeführt.</div>
+          </section>
+        </div>
+      </section>
+
+      <section id="everythingPanel" class="panel" aria-labelledby="everythingHeading" hidden>
+        <h2 id="everythingHeading">Gemeinsame Patientendaten</h2>
+        <p class="muted">Lädt nach Klick alle Seiten von `/Patient/{id}/$everything?_count=500` und erstellt lokal ein gemeinsames FHIR-Bundle. Identische Ressourcen werden zusammengefasst; Beobachtungen ohne Identifier werden bei gleichem Code, Datum, Patientenbezug und Messwert gemeinsam dargestellt. Abweichende Quelldaten bleiben im Bundle erhalten.</p>
+        <div class="actions">
+          <button id="loadEverything" type="button" disabled>Gemeinsame Daten laden</button>
+        </div>
+        <div id="everythingStatus" class="status" hidden role="status"></div>
+        <div id="everythingResults"></div>
+      </section>
+    </main>
+
+    <script src="keycloak-auth.js"></script>
+    <script>
+      const SEARCH_TIMEOUT_MS = 15000;
+      const SEARCH_PATHS = {
+        local: '/fhir/patient-duplicate-test/local-search',
+        external: '/fhir/patient-duplicate-test/external-search',
+      };
+      const EVERYTHING_PATHS = {
+        local: '/fhir/patient-duplicate-test/local-everything',
+        external: '/fhir/patient-duplicate-test/external-everything',
+      };
+      const servers = {
+        local: {
+          label: 'Lokaler HAPI',
+          keycloak: true,
+          result: 'localResult',
+        },
+        external: {
+          label: 'Externer HAPI',
+          authType: 'externalAuthType',
+          username: 'externalUsername',
+          secret: 'externalSecret',
+          credentials: 'externalCredentials',
+          secretField: 'externalSecretField',
+          secretLabel: 'externalSecretLabel',
+          result: 'externalResult',
+        },
+      };
+
+      function element(id) {
+        return document.getElementById(id);
+      }
+
+      function showStatus(target, message, kind) {
+        target.textContent = message;
+        target.className = 'status' + (kind ? ' ' + kind : '');
+        target.hidden = false;
+      }
+
+      function updateAuthFields(server) {
+        if (server.keycloak) return;
+        const type = element(server.authType).value;
+        const needsUsername = type === 'basic';
+        const needsSecret = type !== 'none';
+        element(server.credentials).hidden = !needsUsername;
+        element(server.secretField).hidden = !needsSecret;
+        element(server.secretLabel).textContent = type === 'bearer' ? 'Bearer Token' : 'Passwort';
+      }
+
+      function utf8Base64(value) {
+        const bytes = new TextEncoder().encode(value);
+        let binary = '';
+        bytes.forEach(function(byte) { binary += String.fromCharCode(byte); });
+        return btoa(binary);
+      }
+
+      function authorizationHeaders(server) {
+        if (server.keycloak) {
+          const headers = window.keycloakAuthHeaders();
+          if (!headers.Authorization) {
+            throw new Error('Lokaler HAPI: Bitte zuerst mit Keycloak anmelden.');
+          }
+          return headers;
+        }
+        const keycloakHeaders = window.keycloakAuthHeaders();
+        if (!keycloakHeaders.Authorization) {
+          throw new Error('Bitte zuerst mit Keycloak anmelden.');
+        }
+        const type = element(server.authType).value;
+        const secret = element(server.secret).value;
+        if (type === 'none') return keycloakHeaders;
+        if (type === 'basic') {
+          const username = element(server.username).value;
+          if (!username || !secret) throw new Error(server.label + ': Username und Passwort eingeben.');
+          return Object.assign({}, keycloakHeaders, {
+            'X-FHIR-External-Authorization': 'Basic ' + utf8Base64(username + ':' + secret),
+          });
+        }
+        if (!secret) throw new Error(server.label + ': Bearer Token eingeben.');
+        return Object.assign({}, keycloakHeaders, {
+          'X-FHIR-External-Authorization': 'Bearer ' + secret,
+        });
+      }
+
+      function searchParameters() {
+        const params = { _count: '20' };
+        if (element('searchType').value === 'identifier') {
+          const selectedSystem = element('identifierSystem').value;
+          const system = selectedSystem === 'custom'
+            ? element('identifierSystemCustom').value.trim()
+            : selectedSystem;
+          const value = element('identifierValue').value.trim();
+          if (!system || !value) throw new Error('Bitte Identifier-System und Identifier-Wert eingeben.');
+          params.identifier = system + '|' + value;
+        } else {
+          const family = element('family').value.trim();
+          const given = element('given').value.trim();
+          const birthdate = element('birthdate').value;
+          if (!family || !given || !birthdate) {
+            throw new Error('Für diese Suche Nachname, Vorname und Geburtsdatum eingeben.');
+          }
+          params.family = family;
+          params.given = given;
+          params.birthdate = birthdate;
+        }
+        return params;
+      }
+
+      function patientName(patient) {
+        const names = patient.name || [];
+        return names.map(function(name) {
+          const given = Array.isArray(name.given) ? name.given.join(' ') : '';
+          return [given, name.family].filter(Boolean).join(' ') || name.text || '';
+        }).filter(Boolean).join('; ') || 'Name nicht angegeben';
+      }
+
+      function patientIdentifiers(patient) {
+        return (patient.identifier || []).map(function(identifier) {
+          return [identifier.system, identifier.value].filter(Boolean).join('|');
+        }).filter(Boolean);
+      }
+
+      function renderPatients(server, patients, total) {
+        const target = element(server.result);
+        target.replaceChildren();
+        const countLabel = total === patients.length ? String(total) : total + ' Treffer (erste ' + patients.length + ' angezeigt)';
+        const count = document.createElement('p');
+        count.className = 'muted';
+        count.textContent = countLabel;
+        target.append(count);
+
+        if (!patients.length) {
+          const empty = document.createElement('p');
+          empty.className = 'empty';
+          empty.textContent = 'Keine Treffer.';
+          target.append(empty);
+          return;
+        }
+
+        patients.forEach(function(patient) {
+          const card = document.createElement('article');
+          card.className = 'patient';
+          const heading = document.createElement('h3');
+          heading.textContent = patientName(patient);
+          card.append(heading);
+
+          const details = document.createElement('dl');
+          [
+            ['FHIR-ID', patient.id || 'nicht angegeben'],
+            ['Geburtsdatum', patient.birthDate || 'nicht angegeben'],
+            ['Geschlecht', patient.gender || 'nicht angegeben'],
+            ['Identifier', patientIdentifiers(patient).join('; ') || 'keine'],
+          ].forEach(function(pair) {
+            const term = document.createElement('dt');
+            term.textContent = pair[0];
+            const value = document.createElement('dd');
+            value.textContent = pair[1];
+            details.append(term, value);
+          });
+          card.append(details);
+
+          const raw = document.createElement('details');
+          const summary = document.createElement('summary');
+          summary.textContent = 'FHIR-JSON anzeigen';
+          const pre = document.createElement('pre');
+          pre.textContent = JSON.stringify(patient, null, 2);
+          raw.append(summary, pre);
+          card.append(raw);
+          target.append(card);
+        });
+      }
+
+      function renderFailure(server, message) {
+        const target = element(server.result);
+        target.replaceChildren();
+        const status = document.createElement('p');
+        status.className = 'status error';
+        status.textContent = message;
+        target.append(status);
+      }
+
+      async function queryServer(server, params) {
+        const route = SEARCH_PATHS[server === servers.local ? 'local' : 'external'];
+        const controller = new AbortController();
+        const timeout = setTimeout(function() { controller.abort(); }, SEARCH_TIMEOUT_MS);
+        try {
+          const response = await fetch(route, {
+            method: 'POST',
+            headers: Object.assign(
+              {
+                Accept: 'application/fhir+json, application/json',
+                'Content-Type': 'application/json',
+              },
+              authorizationHeaders(server),
+            ),
+            mode: 'same-origin',
+            credentials: 'same-origin',
+            body: JSON.stringify(params),
+            signal: controller.signal,
+          });
+          const body = await response.text();
+          let payload;
+          try {
+            payload = body ? JSON.parse(body) : {};
+          } catch {
+            payload = null;
+          }
+          if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+              throw new Error('HTTP ' + response.status + ': Authentifizierung oder Berechtigung prüfen.');
+            }
+            throw new Error('HTTP ' + response.status + (payload && payload.resourceType === 'OperationOutcome'
+              ? ': ' + (payload.issue || []).map(function(issue) { return issue.diagnostics || issue.code; }).filter(Boolean).join('; ')
+              : ''));
+          }
+          if (!payload || payload.resourceType !== 'Bundle') {
+            throw new Error('Antwort ist kein FHIR-Bundle.');
+          }
+          const patients = (payload.entry || [])
+            .map(function(entry) { return entry.resource; })
+            .filter(function(resource) { return resource && resource.resourceType === 'Patient'; });
+          const total = Number.isInteger(payload.total) ? payload.total : patients.length;
+          renderPatients(server, patients, total);
+          return { server: server, patients: patients, ok: true };
+        } catch (error) {
+          const message = error.name === 'AbortError'
+            ? 'Zeitüberschreitung bei der FHIR-Abfrage.'
+            : error instanceof TypeError
+              ? 'Netzwerkfehler bei der Middleware-Verbindung. Verbindung prüfen.'
+              : error.message;
+          renderFailure(server, message);
+          return { server: server, patients: [], ok: false, error: message };
+        } finally {
+          clearTimeout(timeout);
+        }
+      }
+
+      function patientMatchKeys(patient) {
+        const keys = (patient.identifier || [])
+          .filter(function(identifier) { return identifier.system && identifier.value; })
+          .map(function(identifier) {
+            return 'identifier:' + identifier.system + '|' + identifier.value;
+          });
+        if (patient.birthDate) {
+          (patient.name || []).forEach(function(name) {
+            const given = Array.isArray(name.given) ? name.given.join(' ') : '';
+            const normalizedName = [given, name.family].filter(Boolean).join(' ')
+              .normalize('NFKC')
+              .trim()
+              .toLocaleLowerCase();
+            if (normalizedName) {
+              keys.push('name-birthdate:' + normalizedName + '|' + patient.birthDate);
+            }
+          });
+        }
+        return keys;
+      }
+
+      function summarizeMatches(results) {
+        const summary = element('matchSummary');
+        const successful = results.filter(function(result) { return result.ok; });
+        if (successful.length < 2) {
+          summary.hidden = true;
+          return [];
+        }
+        const local = results.find(function(result) { return result.server === servers.local; });
+        const external = results.find(function(result) { return result.server === servers.external; });
+        const pairs = [];
+        local.patients.forEach(function(localPatient) {
+          external.patients.forEach(function(externalPatient) {
+            const externalIdentities = new Set(patientMatchKeys(externalPatient));
+            if (patientMatchKeys(localPatient).some(function(key) {
+              return externalIdentities.has(key);
+            })) {
+              pairs.push({ local: localPatient, external: externalPatient });
+            }
+          });
+        });
+        if (pairs.length) {
+          showStatus(summary, pairs.length + ' mögliche Übereinstimmung(en) zwischen den Servern anhand gemeinsamer Identifier oder Name und Geburtsdatum. Bitte fachlich prüfen; es wurden keine Daten geändert.', 'warning');
+        } else {
+          showStatus(summary, 'Kein Treffer mit gleichem Identifier beziehungsweise Name und Geburtsdatum in beiden Ergebnissen erkannt. Das ist keine Garantie, dass keine Dublette existiert.', '');
+        }
+        return pairs;
+      }
+
+      function clearEverythingResults() {
+        currentPatientPair = null;
+        element('everythingPanel').hidden = true;
+        element('loadEverything').disabled = true;
+        element('everythingStatus').hidden = true;
+        element('everythingResults').replaceChildren();
+      }
+
+      function resourceIdentifierKeys(resource) {
+        return (Array.isArray(resource.identifier) ? resource.identifier : [])
+          .filter(function(identifier) {
+            return identifier && typeof identifier.system === 'string' && identifier.system
+              && typeof identifier.value === 'string' && identifier.value;
+          })
+          .map(function(identifier) {
+            return resource.resourceType + '|' + identifier.system + '|' + identifier.value;
+          });
+      }
+
+      function mergedResources(results) {
+        const records = [];
+        results.forEach(function(result) {
+          result.resources.forEach(function(resource) {
+            records.push({ server: result.server.label, resource: resource });
+          });
+        });
+
+        const parents = records.map(function(_, index) { return index; });
+        function find(index) {
+          if (parents[index] !== index) parents[index] = find(parents[index]);
+          return parents[index];
+        }
+        function union(left, right) {
+          const leftRoot = find(left);
+          const rightRoot = find(right);
+          if (leftRoot !== rightRoot) parents[rightRoot] = leftRoot;
+        }
+
+        const identifierOwners = new Map();
+        const clinicalOwners = new Map();
+        const exactOwners = new Map();
+        records.forEach(function(record, index) {
+          resourceIdentifierKeys(record.resource).forEach(function(key) {
+            const previous = identifierOwners.get(key);
+            if (previous && previous.server !== record.server) union(index, previous.index);
+            else if (!previous) identifierOwners.set(key, { index: index, server: record.server });
+          });
+          const clinicalKey = clinicalObservationKey(record);
+          if (clinicalKey) {
+            const previous = clinicalOwners.get(clinicalKey);
+            if (previous && previous.server !== record.server) union(index, previous.index);
+            else if (!previous) clinicalOwners.set(clinicalKey, { index: index, server: record.server });
+          }
+          const patientId = record.server === servers.local.label
+            ? currentPatientPair.local.id
+            : currentPatientPair.external.id;
+          const exactKey = canonicalResource(record.resource, patientId);
+          const exactPrevious = exactOwners.get(exactKey);
+          if (exactPrevious && exactPrevious.server !== record.server) union(index, exactPrevious.index);
+          else if (!exactPrevious) exactOwners.set(exactKey, { index: index, server: record.server });
+        });
+
+        const groups = new Map();
+        records.forEach(function(record, index) {
+          const root = find(index);
+          if (!groups.has(root)) groups.set(root, []);
+          groups.get(root).push(record);
+        });
+        return Array.from(groups.values());
+      }
+
+      function clinicalObservationKey(record) {
+        const resource = record.resource;
+        if (resource.resourceType !== 'Observation') return '';
+        const patientId = record.server === servers.local.label
+          ? currentPatientPair && currentPatientPair.local.id
+          : currentPatientPair && currentPatientPair.external.id;
+        const subject = resource.subject && resource.subject.reference || '';
+        if (!patientId || !isPatientReference(subject, patientId)) {
+          return '';
+        }
+
+        const code = (resource.code && resource.code.coding || [])
+          .filter(function(item) { return item.system && item.code; })
+          .map(function(item) { return item.system + '|' + item.code; })
+          .sort()
+          .join(',');
+        const date = resource.effectiveDateTime || resource.issued
+          || resource.effectivePeriod && resource.effectivePeriod.start
+          || resource.effectiveInstant || '';
+        const values = Object.keys(resource).filter(function(key) {
+          return /^value[A-Z]/.test(key);
+        }).sort().map(function(key) { return [key, resource[key]]; });
+        if (!values.length && Array.isArray(resource.component)) {
+          values.push(['component', resource.component.map(function(component) {
+            return [component.code, Object.keys(component).filter(function(key) {
+              return /^value[A-Z]/.test(key);
+            }).sort().map(function(key) { return [key, component[key]]; })];
+          })]);
+        }
+        if (!code || !date || !values.length) return '';
+        return JSON.stringify([resource.resourceType, code, date, values]);
+      }
+
+      function isPatientReference(reference, patientId) {
+        const normalized = String(reference || '').split('/_history/')[0];
+        return normalized === 'Patient/' + patientId
+          || normalized.endsWith('/Patient/' + patientId);
+      }
+
+      function canonicalResource(resource, patientId) {
+        function normalize(value, key, isRoot) {
+          if (Array.isArray(value)) {
+            return value.map(function(item) { return normalize(item, '', false); });
+          }
+          if (!value || typeof value !== 'object') {
+            if (key === 'reference' && typeof value === 'string'
+                && isPatientReference(value, patientId)) {
+              return 'Patient/shared';
+            }
+            return value;
+          }
+          const result = {};
+          Object.keys(value).sort().forEach(function(property) {
+            if (isRoot && (property === 'id' || property === 'meta')) return;
+            result[property] = normalize(value[property], property, false);
+          });
+          return result;
+        }
+        return JSON.stringify(normalize(resource, '', true));
+      }
+
+      function createMergedBundle(groups) {
+        const resourceEntries = [];
+        const sourceByEntry = new Map();
+        const recorded = new Date().toISOString();
+        groups.forEach(function(group) {
+          const emitted = new Map();
+          group.forEach(function(record) {
+            const patientId = record.server === servers.local.label
+              ? currentPatientPair.local.id
+              : currentPatientPair.external.id;
+            const canonical = canonicalResource(record.resource, patientId);
+            const prior = emitted.get(canonical);
+            if (prior && prior.server !== record.server) {
+              if (!prior.sources.includes(record.server)) prior.sources.push(record.server);
+              sourceByEntry.set(prior.entry, prior.sources.slice());
+              return;
+            }
+            const entry = {
+              fullUrl: 'urn:uuid:' + crypto.randomUUID(),
+              resource: record.resource,
+            };
+            resourceEntries.push(entry);
+            const item = { server: record.server, sources: [record.server], entry: entry };
+            emitted.set(canonical, item);
+            sourceByEntry.set(entry, item.sources.slice());
+          });
+        });
+
+        const provenanceEntries = resourceEntries.map(function(entry) {
+          const provenance = {
+            resourceType: 'Provenance',
+            target: [{ reference: entry.fullUrl }],
+            recorded: recorded,
+            agent: (sourceByEntry.get(entry) || []).map(function(source) {
+              return { who: { display: source } };
+            }),
+          };
+          return {
+            fullUrl: 'urn:uuid:' + crypto.randomUUID(),
+            resource: provenance,
+          };
+        });
+        return {
+          resourceType: 'Bundle',
+          type: 'collection',
+          timestamp: recorded,
+          entry: resourceEntries.concat(provenanceEntries),
+        };
+      }
+
+      function codingDisplay(value) {
+        if (!value || typeof value !== 'object') return '';
+        const coding = Array.isArray(value.coding) ? value.coding : [];
+        return value.text || coding.map(function(item) {
+          return item.display || item.code || '';
+        }).filter(Boolean).join(', ');
+      }
+
+      function resourceDisplay(resource) {
+        const name = Array.isArray(resource.name) ? resource.name[0] : null;
+        const patientName = name && (name.text
+          || [Array.isArray(name.given) ? name.given.join(' ') : '', name.family]
+            .filter(Boolean).join(' '));
+        switch (resource.resourceType) {
+          case 'Patient':
+          case 'Practitioner':
+          case 'RelatedPerson':
+            return patientName || resource.id || '';
+          case 'Observation':
+            return [codingDisplay(resource.code), observationValue(resource)]
+              .filter(Boolean).join(': ');
+          case 'Condition':
+          case 'AllergyIntolerance':
+            return codingDisplay(resource.code) || resource.id || '';
+          case 'Immunization':
+            return codingDisplay(resource.vaccineCode) || resource.id || '';
+          case 'MedicationStatement':
+            return codingDisplay(resource.medicationCodeableConcept)
+              || resource.medicationReference && resource.medicationReference.reference
+              || resource.id || '';
+          case 'Encounter':
+            return codingDisplay(resource.type && resource.type[0])
+              || resource.status || resource.id || '';
+          case 'Organization':
+            return resource.name || resource.id || '';
+          default:
+            return resource.title || resource.name || codingDisplay(resource.code)
+              || codingDisplay(resource.type) || resource.status || resource.id || '';
+        }
+      }
+
+      function observationValue(resource) {
+        const value = Object.keys(resource).find(function(key) { return /^value[A-Z]/.test(key); });
+        if (value) {
+          const item = resource[value];
+          if (item && typeof item === 'object') {
+            if (item.value !== undefined) {
+              return [item.value, item.unit || item.code].filter(Boolean).join(' ');
+            }
+            return codingDisplay(item) || item.reference || '';
+          }
+          return item === undefined || item === null ? '' : String(item);
+        }
+        if (Array.isArray(resource.component)) {
+          return resource.component.map(function(component) {
+            return [codingDisplay(component.code), observationValue(component)]
+              .filter(Boolean).join(': ');
+          }).filter(Boolean).join('; ');
+        }
+        return codingDisplay(resource.dataAbsentReason);
+      }
+
+      function resourceFields(resource) {
+        const fields = [];
+        function add(label, value) {
+          if (value !== undefined && value !== null && value !== '') {
+            fields.push([label, Array.isArray(value) ? value.join('; ') : String(value)]);
+          }
+        }
+        add('FHIR-ID', resource.id);
+        const identifiers = resourceIdentifierKeys(resource)
+          .map(function(key) { return key.slice(resource.resourceType.length + 1); });
+        add('Identifier', identifiers);
+        switch (resource.resourceType) {
+          case 'Patient':
+          case 'Practitioner':
+          case 'RelatedPerson': {
+            const name = Array.isArray(resource.name) ? resource.name[0] : null;
+            add('Name', resourceDisplay(resource));
+            add('Geburtsdatum', resource.birthDate);
+            add('Geschlecht', resource.gender);
+            add('Beziehung', (resource.relationship || []).map(codingDisplay).filter(Boolean));
+            add('Kontakt', (resource.telecom || []).map(function(item) {
+              return [item.system, item.value].filter(Boolean).join(': ');
+            }).filter(Boolean));
+            if (name && name.text) add('Anzeigename', name.text);
+            break;
+          }
+          case 'Observation':
+            add('Datum', resource.effectiveDateTime || resource.issued
+              || resource.effectivePeriod && resource.effectivePeriod.start);
+            add('Befund', codingDisplay(resource.code));
+            add('Wert', observationValue(resource));
+            add('Status', resource.status);
+            add('Patient', resource.subject && (resource.subject.display || resource.subject.reference));
+            break;
+          case 'Condition':
+          case 'AllergyIntolerance':
+            add('Code', codingDisplay(resource.code));
+            add('Klinischer Status', codingDisplay(resource.clinicalStatus));
+            add('Verifizierung', codingDisplay(resource.verificationStatus));
+            add('Kritikalität', resource.criticality);
+            add('Beginn', resource.onsetDateTime || resource.recordedDate);
+            break;
+          case 'Immunization':
+            add('Impfstoff', codingDisplay(resource.vaccineCode));
+            add('Datum', resource.occurrenceDateTime || resource.recorded);
+            add('Status', resource.status);
+            break;
+          case 'Encounter':
+            add('Typ', (resource.type || []).map(codingDisplay).filter(Boolean));
+            add('Beginn', resource.period && resource.period.start);
+            add('Ende', resource.period && resource.period.end);
+            add('Status', resource.status);
+            break;
+          case 'MedicationStatement':
+            add('Medikation', codingDisplay(resource.medicationCodeableConcept)
+              || resource.medicationReference && resource.medicationReference.reference);
+            add('Dosierung', (resource.dosage || []).map(function(item) {
+              return item.text || '';
+            }).filter(Boolean));
+            add('Status', resource.status);
+            break;
+          case 'Organization':
+            add('Name', resource.name);
+            add('Typ', (resource.type || []).map(codingDisplay).filter(Boolean));
+            add('Kontakt', (resource.telecom || []).map(function(item) {
+              return [item.system, item.value].filter(Boolean).join(': ');
+            }).filter(Boolean));
+            break;
+          default:
+            add('Name', resource.name);
+            add('Titel', resource.title);
+            add('Code', codingDisplay(resource.code) || codingDisplay(resource.type));
+            add('Datum', resource.date || resource.recordedDate || resource.issued);
+            add('Status', resource.status);
+        }
+        return fields;
+      }
+
+      function appendResourceFields(target, resource) {
+        const fields = resourceFields(resource);
+        if (!fields.length) return;
+        const grid = document.createElement('div');
+        grid.className = 'resource-fields';
+        fields.forEach(function(field) {
+          const item = document.createElement('div');
+          item.className = 'resource-field';
+          const label = document.createElement('small');
+          label.textContent = field[0];
+          const value = document.createElement('div');
+          value.textContent = field[1];
+          item.append(label, value);
+          grid.append(item);
+        });
+        target.append(grid);
+      }
+
+      function appendSourceDetails(target, group) {
+        group.forEach(function(record) {
+          const details = document.createElement('details');
+          details.className = 'resource-source';
+          const summary = document.createElement('summary');
+          summary.textContent = record.server
+            + (record.resource.id ? ' · FHIR-ID ' + record.resource.id : '');
+          details.append(summary);
+          details.addEventListener('toggle', function() {
+            if (!details.open || details.querySelector('.resource-fields')) return;
+            appendResourceFields(details, record.resource);
+          });
+          const json = document.createElement('details');
+          const jsonSummary = document.createElement('summary');
+          jsonSummary.textContent = 'FHIR-JSON anzeigen';
+          json.append(jsonSummary);
+          json.addEventListener('toggle', function() {
+            if (!json.open || json.querySelector('pre')) return;
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(record.resource, null, 2);
+            json.append(pre);
+          });
+          details.append(json);
+          target.append(details);
+        });
+      }
+
+      function uniqueGroupValues(group, selector) {
+        const values = [];
+        group.forEach(function(record) {
+          const value = selector(record.resource);
+          if (value !== undefined && value !== null && value !== '') {
+            const text = Array.isArray(value) ? value.filter(Boolean).join('; ') : String(value);
+            if (text && !values.some(function(item) { return item.value === text; })) {
+              values.push({ server: record.server, value: text });
+            }
+          }
+        });
+        if (values.length < 2) return values.map(function(item) { return item.value; }).join('');
+        return values.map(function(item) { return item.server + ': ' + item.value; }).join(' | ');
+      }
+
+      function groupSources(group) {
+        return Array.from(new Set(group.map(function(record) { return record.server; })))
+          .join(' + ');
+      }
+
+      function groupValueForServer(group, server, selector) {
+        const values = group.filter(function(record) {
+          return record.server === server;
+        }).map(function(record) {
+          const value = selector(record.resource);
+          return Array.isArray(value) ? value.filter(Boolean).join('; ') : value;
+        }).filter(function(value) {
+          return value !== undefined && value !== null && value !== '';
+        }).map(String);
+        return Array.from(new Set(values)).join('; ');
+      }
+
+      function resourceAuthor(resource) {
+        const actors = resource.performer || resource.author || resource.recorder
+          || resource.asserter || resource.informationSource || [];
+        const list = Array.isArray(actors) ? actors : [actors];
+        return list.map(function(actor) {
+          const reference = actor.actor || actor.individual || actor.member || actor;
+          return reference.display || reference.reference || '';
+        }).filter(Boolean).join('; ');
+      }
+
+      function resourceCategory(resource) {
+        const categories = (resource.category || []).flatMap(function(category) {
+          return (category.coding || []).map(function(coding) { return coding.code; });
+        });
+        if (categories.includes('vital-signs')) return 'Vitalzeichen';
+        if (categories.includes('laboratory')) return 'Labor';
+        if (categories.includes('social-history')) return 'Sozialanamnese';
+        return 'Weitere Beobachtungen';
+      }
+
+      function renderSummaryTable(target, title, headers, rows) {
+        if (!rows.length) return;
+        const section = document.createElement('section');
+        section.className = 'clinical-table-section';
+        const heading = document.createElement('h3');
+        heading.textContent = title;
+        section.append(heading);
+        const wrap = document.createElement('div');
+        wrap.className = 'result-table-wrap';
+        const table = document.createElement('table');
+        table.className = 'result-table';
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        headers.forEach(function(header) {
+          const cell = document.createElement('th');
+          cell.textContent = header;
+          headerRow.append(cell);
+        });
+        thead.append(headerRow);
+        table.append(thead);
+        const tbody = document.createElement('tbody');
+        rows.forEach(function(row) {
+          const tr = document.createElement('tr');
+          row.forEach(function(value) {
+            const cell = document.createElement('td');
+            cell.textContent = value === undefined || value === null ? '' : String(value);
+            tr.append(cell);
+          });
+          tbody.append(tr);
+        });
+        table.append(tbody);
+        wrap.append(table);
+        section.append(wrap);
+        target.append(section);
+      }
+
+      function renderClinicalSummary(target, groups, results, total, typeCount) {
+        const patients = groups.filter(function(group) {
+          return group[0].resource.resourceType === 'Patient';
+        });
+        const patient = patients[0] && patients[0][0].resource;
+        const overview = document.createElement('div');
+        overview.className = 'everything-overview';
+        [
+          [patient ? uniqueGroupValues(patients[0], resourceDisplay) : 'Patient', 'Patient'],
+          [currentPatientPair && currentPatientPair.local.id || '-', 'Lokale FHIR-ID'],
+          [currentPatientPair && currentPatientPair.external.id || '-', 'Externe FHIR-ID'],
+          [groups.length, 'Gruppierte Einträge'],
+          [total, 'Ressourcen geladen'],
+          [typeCount, 'Ressourcentypen'],
+          [results[0].resources.length, results[0].server.label + ' Ressourcen'],
+          [results[1].resources.length, results[1].server.label + ' Ressourcen'],
+        ].forEach(function(tileData) {
+          const tile = document.createElement('div');
+          tile.className = 'overview-tile';
+          const value = document.createElement('strong');
+          value.textContent = tileData[0];
+          const label = document.createElement('span');
+          label.textContent = tileData[1];
+          tile.append(value, label);
+          overview.append(tile);
+        });
+        target.append(overview);
+
+        const clinical = document.createElement('details');
+        clinical.className = 'clinical-summary';
+        clinical.open = true;
+        const clinicalHeading = document.createElement('summary');
+        clinicalHeading.textContent = 'Fachliche Zusammenfassung';
+        const clinicalBody = document.createElement('div');
+        clinicalBody.className = 'result-body clinical-view';
+        clinical.append(clinicalHeading, clinicalBody);
+        const patientGroups = groups.filter(function(group) {
+          return group[0].resource.resourceType === 'Patient';
+        });
+        renderSummaryTable(clinicalBody, 'Patient', ['Name', 'Lokale FHIR-ID', 'Externe FHIR-ID', 'Geburtsdatum', 'Geschlecht', 'Identifier', 'Server'], patientGroups.map(function(group) {
+          return [
+            uniqueGroupValues(group, resourceDisplay),
+            groupValueForServer(group, results[0].server.label, function(resource) { return resource.id; }),
+            groupValueForServer(group, results[1].server.label, function(resource) { return resource.id; }),
+            uniqueGroupValues(group, function(resource) { return resource.birthDate; }),
+            uniqueGroupValues(group, function(resource) { return resource.gender; }),
+            uniqueGroupValues(group, function(resource) {
+              return resourceIdentifierKeys(resource).map(function(key) {
+                return key.slice(resource.resourceType.length + 1);
+              });
+            }),
+            groupSources(group),
+          ];
+        }));
+
+        const relatedGroups = groups.filter(function(group) {
+          return group[0].resource.resourceType === 'RelatedPerson';
+        });
+        const embeddedContacts = patientGroups.flatMap(function(group) {
+          return group.flatMap(function(record) {
+            return (record.resource.contact || []).map(function(contact) {
+              return {
+                name: contact.name && contact.name.text,
+                relationship: (contact.relationship || []).map(codingDisplay).filter(Boolean).join('; '),
+                telecom: (contact.telecom || []).map(function(item) { return item.value; }).filter(Boolean).join('; '),
+                source: record.server,
+              };
+            });
+          });
+        });
+        const contactRows = relatedGroups.map(function(group) {
+          return [
+            uniqueGroupValues(group, function(resource) {
+              const name = Array.isArray(resource.name) ? resource.name[0] : null;
+              return name && (name.text || [name.given && name.given.join(' '), name.family].filter(Boolean).join(' '));
+            }),
+            uniqueGroupValues(group, function(resource) {
+              return (resource.relationship || []).map(codingDisplay).filter(Boolean);
+            }),
+            uniqueGroupValues(group, function(resource) {
+              return (resource.telecom || []).map(function(item) { return item.value; }).filter(Boolean);
+            }),
+            groupSources(group),
+          ];
+        }).concat(Array.from(embeddedContacts.reduce(function(unique, contact) {
+          const key = JSON.stringify([contact.name, contact.relationship, contact.telecom]);
+          if (!unique.has(key)) unique.set(key, Object.assign({}, contact, { sources: [] }));
+          const item = unique.get(key);
+          if (!item.sources.includes(contact.source)) item.sources.push(contact.source);
+          return unique;
+        }, new Map()).values()).map(function(contact) {
+          return [
+            contact.name,
+            contact.relationship,
+            contact.telecom,
+            contact.sources.join(' + '),
+          ];
+        }));
+        renderSummaryTable(clinicalBody, 'Kontakte', ['Name', 'Beziehung', 'Kontakt', 'Server'], contactRows);
+
+        const observationGroups = groups.filter(function(group) {
+          return group[0].resource.resourceType === 'Observation';
+        });
+        ['Vitalzeichen', 'Labor', 'Sozialanamnese', 'Weitere Beobachtungen'].forEach(function(category) {
+          const selected = observationGroups.filter(function(group) {
+            return resourceCategory(group[0].resource) === category;
+          });
+          renderSummaryTable(clinicalBody, category, ['Datum', 'Befund', 'Wert', 'Autor', 'Status', 'Server'], selected.map(function(group) {
+            return [
+              uniqueGroupValues(group, function(resource) {
+                return resource.effectiveDateTime || resource.issued
+                  || resource.effectivePeriod && resource.effectivePeriod.start;
+              }),
+              uniqueGroupValues(group, function(resource) { return codingDisplay(resource.code); }),
+              uniqueGroupValues(group, observationValue),
+              uniqueGroupValues(group, resourceAuthor),
+              uniqueGroupValues(group, function(resource) { return resource.status; }),
+              groupSources(group),
+            ];
+          }));
+        });
+
+        const medicationGroups = groups.filter(function(group) {
+          return group[0].resource.resourceType === 'MedicationStatement';
+        });
+        renderSummaryTable(clinicalBody, 'Medikationen', ['Medikation', 'Dosierung', 'Autor', 'Status', 'Server'], medicationGroups.map(function(group) {
+          return [
+            uniqueGroupValues(group, function(resource) {
+              return codingDisplay(resource.medicationCodeableConcept)
+                || resource.medicationReference && resource.medicationReference.reference;
+            }),
+            uniqueGroupValues(group, function(resource) {
+              return (resource.dosage || []).map(function(item) { return item.text; }).filter(Boolean);
+            }),
+            uniqueGroupValues(group, resourceAuthor),
+            uniqueGroupValues(group, function(resource) { return resource.status; }),
+            groupSources(group),
+          ];
+        }));
+
+        const conditionGroups = groups.filter(function(group) {
+          return group[0].resource.resourceType === 'Condition';
+        });
+        renderSummaryTable(clinicalBody, 'Probleme', ['Problem', 'Autor', 'Status', 'Server'], conditionGroups.map(function(group) {
+          return [
+            uniqueGroupValues(group, function(resource) { return codingDisplay(resource.code); }),
+            uniqueGroupValues(group, resourceAuthor),
+            uniqueGroupValues(group, function(resource) { return codingDisplay(resource.clinicalStatus); }),
+            groupSources(group),
+          ];
+        }));
+
+        const allergyGroups = groups.filter(function(group) {
+          return group[0].resource.resourceType === 'AllergyIntolerance';
+        });
+        renderSummaryTable(clinicalBody, 'Allergien und Unverträglichkeiten', ['Allergie', 'Reaktion', 'Kritikalität', 'Status', 'Verifizierung', 'Server'], allergyGroups.map(function(group) {
+          return [
+            uniqueGroupValues(group, function(resource) { return codingDisplay(resource.code); }),
+            uniqueGroupValues(group, function(resource) {
+              return (resource.reaction || []).map(function(reaction) {
+                const manifestations = (reaction.manifestation || []).map(codingDisplay).filter(Boolean).join(', ');
+                return [manifestations, reaction.description, reaction.severity].filter(Boolean).join(' · ');
+              }).filter(Boolean);
+            }),
+            uniqueGroupValues(group, function(resource) { return resource.criticality; }),
+            uniqueGroupValues(group, function(resource) { return codingDisplay(resource.clinicalStatus); }),
+            uniqueGroupValues(group, function(resource) { return codingDisplay(resource.verificationStatus); }),
+            groupSources(group),
+          ];
+        }));
+
+        const immunizationGroups = groups.filter(function(group) {
+          return group[0].resource.resourceType === 'Immunization';
+        });
+        renderSummaryTable(clinicalBody, 'Impfungen', ['Datum', 'Impfstoff', 'Charge', 'Autor', 'Status', 'Server'], immunizationGroups.map(function(group) {
+          return [
+            uniqueGroupValues(group, function(resource) { return resource.occurrenceDateTime || resource.recorded; }),
+            uniqueGroupValues(group, function(resource) { return codingDisplay(resource.vaccineCode); }),
+            uniqueGroupValues(group, function(resource) { return resource.lotNumber; }),
+            uniqueGroupValues(group, resourceAuthor),
+            uniqueGroupValues(group, function(resource) { return resource.status; }),
+            groupSources(group),
+          ];
+        }));
+
+        const encounterGroups = groups.filter(function(group) {
+          return group[0].resource.resourceType === 'Encounter';
+        });
+        renderSummaryTable(clinicalBody, 'Begegnungen', ['Beginn', 'Typ', 'Autor', 'Status', 'Server'], encounterGroups.map(function(group) {
+          return [
+            uniqueGroupValues(group, function(resource) { return resource.period && resource.period.start; }),
+            uniqueGroupValues(group, function(resource) {
+              return (resource.type || []).map(codingDisplay).filter(Boolean).join('; ')
+                || codingDisplay(resource.class);
+            }),
+            uniqueGroupValues(group, resourceAuthor),
+            uniqueGroupValues(group, function(resource) { return resource.status; }),
+            groupSources(group),
+          ];
+        }));
+
+        const summarizedTypes = new Set([
+          'Patient', 'RelatedPerson', 'Observation', 'MedicationStatement',
+          'Condition', 'AllergyIntolerance', 'Immunization', 'Encounter',
+        ]);
+        const otherTypes = Array.from(new Set(groups.map(function(group) {
+          return group[0].resource.resourceType;
+        }))).filter(function(type) { return !summarizedTypes.has(type); }).sort();
+        otherTypes.forEach(function(type) {
+          const typeGroups = groups.filter(function(group) {
+            return group[0].resource.resourceType === type;
+          });
+          renderSummaryTable(clinicalBody, type, ['Eintrag', 'Autor / Beteiligte', 'Status', 'Server'], typeGroups.map(function(group) {
+            return [
+              uniqueGroupValues(group, resourceDisplay),
+              uniqueGroupValues(group, resourceAuthor),
+              uniqueGroupValues(group, function(resource) { return resource.status; }),
+              groupSources(group),
+            ];
+          }));
+        });
+        if (clinicalBody.childElementCount) {
+          target.append(clinical);
+        }
+      }
+
+      function renderMergedResources(results, bundle) {
+        const target = element('everythingResults');
+        target.replaceChildren();
+        const groups = mergedResources(results);
+        const byType = new Map();
+        groups.forEach(function(group) {
+          const type = group[0].resource.resourceType || 'Unbekannt';
+          if (!byType.has(type)) byType.set(type, []);
+          byType.get(type).push(group);
+        });
+
+        const total = results.reduce(function(count, result) {
+          return count + result.resources.length;
+        }, 0);
+        renderClinicalSummary(target, groups, results, total, byType.size);
+        const bundlePanel = document.createElement('section');
+        bundlePanel.className = 'merged-bundle';
+        const bundleActions = document.createElement('div');
+        bundleActions.className = 'actions';
+        const downloadButton = document.createElement('button');
+        downloadButton.type = 'button';
+        downloadButton.textContent = 'FHIR-JSON herunterladen';
+        downloadButton.addEventListener('click', function() {
+          const blob = new Blob([JSON.stringify(bundle, null, 2)], {
+            type: 'application/fhir+json;charset=utf-8',
+          });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'fhir-patient-merged-bundle.json';
+          link.click();
+          URL.revokeObjectURL(url);
+        });
+        bundleActions.append(downloadButton);
+        const jsonDetails = document.createElement('details');
+        const jsonSummary = document.createElement('summary');
+        const resourceCount = bundle.entry.filter(function(entry) {
+          return entry.resource.resourceType !== 'Provenance';
+        }).length;
+        jsonSummary.textContent = 'Gemeinsames FHIR-JSON anzeigen ('
+          + resourceCount + ' Ressourcen, inklusive Provenance)';
+        const json = document.createElement('pre');
+        json.hidden = true;
+        jsonDetails.append(jsonSummary, json);
+        jsonDetails.addEventListener('toggle', function() {
+          if (jsonDetails.open && !json.textContent) {
+            json.textContent = JSON.stringify(bundle, null, 2);
+            json.hidden = false;
+          }
+        });
+        bundleActions.append(jsonDetails);
+        bundlePanel.append(bundleActions);
+        target.append(bundlePanel);
+        const detailsHeading = document.createElement('h3');
+        detailsHeading.textContent = 'Alle Ressourcen im Detail';
+        target.append(detailsHeading);
+
+        Array.from(byType.entries()).sort(function(left, right) {
+          return left[0].localeCompare(right[0]);
+        }).forEach(function(entry) {
+          const section = document.createElement('details');
+          section.className = 'resource-group result-section';
+          const heading = document.createElement('summary');
+          heading.textContent = entry[0] + ' (' + entry[1].length + ')';
+          section.append(heading);
+
+          const list = document.createElement('div');
+          list.className = 'resource-list';
+          entry[1].forEach(function(group, index) {
+            const resource = group[0].resource;
+            const item = document.createElement('details');
+            item.className = 'resource';
+            const summary = document.createElement('summary');
+            summary.textContent = (index + 1) + '. '
+              + (resourceDisplay(resource) || resource.resourceType || 'Ressource')
+              + ' · ' + groupSources(group);
+            item.append(summary);
+            appendSourceDetails(item, group);
+            list.append(item);
+          });
+          section.append(list);
+          target.append(section);
+        });
+      }
+
+      let currentPatientPair = null;
+
+      async function loadEverything() {
+        if (!currentPatientPair) return;
+        const button = element('loadEverything');
+        button.disabled = true;
+        const searchButtons = ['searchBoth', 'searchLocal', 'searchExternal']
+          .map(function(id) { return element(id); });
+        searchButtons.forEach(function(searchButton) { searchButton.disabled = true; });
+        element('everythingResults').replaceChildren();
+        showStatus(element('everythingStatus'), 'Lade alle Seiten von beiden FHIR-Servern …', '');
+
+        try {
+          const pair = currentPatientPair;
+          const results = await Promise.all([
+            { server: servers.local, patient: pair.local },
+            { server: servers.external, patient: pair.external },
+          ].map(async function(item) {
+            const controller = new AbortController();
+            const timeout = setTimeout(function() { controller.abort(); }, 120000);
+            try {
+              const response = await fetch(EVERYTHING_PATHS[
+                item.server === servers.local ? 'local' : 'external'
+              ], {
+                method: 'POST',
+                headers: Object.assign(
+                  { Accept: 'application/fhir+json, application/json', 'Content-Type': 'application/json' },
+                  authorizationHeaders(item.server),
+                ),
+                mode: 'same-origin',
+                credentials: 'same-origin',
+                body: JSON.stringify({ patientId: item.patient.id }),
+                signal: controller.signal,
+              });
+              const payload = await response.json();
+              if (!response.ok) {
+                throw new Error('HTTP ' + response.status + ': '
+                  + (payload.detail || payload.issue && payload.issue[0] && payload.issue[0].diagnostics
+                    || 'FHIR-Abfrage fehlgeschlagen.'));
+              }
+              if (!payload || payload.resourceType !== 'Bundle' || !Array.isArray(payload.entry)) {
+                throw new Error('Antwort von ' + item.server.label + ' ist kein gültiges Bundle.');
+              }
+              return {
+                server: item.server,
+                resources: payload.entry.map(function(entry) { return entry && entry.resource; })
+                  .filter(function(resource) {
+                    return resource && typeof resource.resourceType === 'string';
+                  }),
+              };
+            } catch (error) {
+              if (error.name === 'AbortError') {
+                throw new Error('Zeitüberschreitung beim Laden von ' + item.server.label + '.');
+              }
+              if (error instanceof TypeError) {
+                throw new Error('Netzwerkfehler beim Laden von ' + item.server.label + '.');
+              }
+              throw error;
+            } finally {
+              clearTimeout(timeout);
+            }
+          }));
+          const groups = mergedResources(results);
+          const bundle = createMergedBundle(groups);
+          renderMergedResources(results, bundle);
+          const resourceCount = results.reduce(function(count, result) {
+            return count + result.resources.length;
+          }, 0);
+          const mergedResourceCount = bundle.entry.filter(function(entry) {
+            return entry.resource.resourceType !== 'Provenance';
+          }).length;
+          showStatus(
+            element('everythingStatus'),
+            'Beide vollständigen Patientendaten wurden geladen und zu einem FHIR-Bundle mit '
+              + mergedResourceCount + ' Ressourcen und Provenance-Angaben aus ' + resourceCount
+              + ' Quelldatensätzen zusammengestellt. Die Serverdaten wurden nicht verändert.',
+            '',
+          );
+        } catch (error) {
+          showStatus(element('everythingStatus'), error.message, 'error');
+        } finally {
+          button.disabled = !currentPatientPair;
+          searchButtons.forEach(function(searchButton) { searchButton.disabled = false; });
+        }
+      }
+
+      async function runSearch(targetNames) {
+        const buttons = ['searchBoth', 'searchLocal', 'searchExternal'].map(function(id) { return element(id); });
+        buttons.forEach(function(button) { button.disabled = true; });
+        element('matchSummary').hidden = true;
+        clearEverythingResults();
+        try {
+          const params = searchParameters();
+          const targets = targetNames.map(function(name) { return servers[name]; });
+          const results = await Promise.all(targets.map(function(server) {
+            return queryServer(server, params);
+          }));
+          const pairs = summarizeMatches(results);
+          if (targetNames.length === 2) {
+            element('everythingPanel').hidden = false;
+            if (pairs.length === 1 && pairs[0].local.id && pairs[0].external.id) {
+              currentPatientPair = pairs[0];
+              element('loadEverything').disabled = false;
+              showStatus(
+                element('everythingStatus'),
+                'Genau ein mögliches Patientenpaar gefunden. Der vollständige Abruf startet erst nach Klick.',
+                'warning',
+              );
+            } else {
+              showStatus(
+                element('everythingStatus'),
+                pairs.length > 1
+                  ? 'Mehrere mögliche Patientenpaare gefunden. Bitte die Suche verfeinern, bis genau ein Paar übrig bleibt.'
+                  : 'Für den gemeinsamen Abruf muss auf beiden Servern genau ein passendes Patientenpaar gefunden werden.',
+                'warning',
+              );
+            }
+          }
+        } catch (error) {
+          showStatus(element('matchSummary'), error.message, 'error');
+        } finally {
+          buttons.forEach(function(button) { button.disabled = false; });
+        }
+      }
+
+      Object.values(servers).forEach(function(server) {
+        if (!server.keycloak) {
+          element(server.authType).addEventListener('change', function() { updateAuthFields(server); });
+          updateAuthFields(server);
+        }
+      });
+      element('searchBoth').addEventListener('click', function() { runSearch(['local', 'external']); });
+      element('searchLocal').addEventListener('click', function() { runSearch(['local']); });
+      element('searchExternal').addEventListener('click', function() { runSearch(['external']); });
+      element('loadEverything').addEventListener('click', loadEverything);
+      element('searchType').addEventListener('change', function() {
+        const identifierMode = this.value === 'identifier';
+        element('identifierSystem').closest('div').hidden = !identifierMode;
+        element('customIdentifierSystemField').hidden = !identifierMode
+          || element('identifierSystem').value !== 'custom';
+        element('identifierValue').closest('div').hidden = !identifierMode;
+        element('family').closest('div').hidden = identifierMode;
+        element('given').closest('div').hidden = identifierMode;
+        element('birthdate').closest('div').hidden = identifierMode;
+      });
+      element('identifierSystem').addEventListener('change', function() {
+        element('customIdentifierSystemField').hidden = this.value !== 'custom'
+          || element('searchType').value !== 'identifier';
+      });
+      element('searchType').dispatchEvent(new Event('change'));
+    </script>
+  </body>
+</html>

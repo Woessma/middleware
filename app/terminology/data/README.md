@@ -36,3 +36,17 @@ Optional columns that are picked up when present:
 - Enriched product fields are written to `Medication` (not `MedicationStatement`).
 - `Abgabekategorie` is written to `Medication.extension` using the
 	`https://emediplan.ch/fhir/StructureDefinition/dispensing-category` URL.
+
+## Refdata.ch Partner GLN files
+
+The Refdata.ch partner exports in this directory are used for best-effort enrichment when
+creating FHIR resources with a GLN identifier (`urn:oid:2.51.1.3`):
+
+- `Refdata.Partners.Nat.xml` contains natural persons and enriches `Practitioner` name/address.
+- `Refdata.Partners.Jur.xml` contains legal persons and enriches `Organization` name/address.
+
+Ensure both exports are present in this directory in every runtime deployment.
+Values already supplied by the source document are preserved; the export fills missing fields.
+The middleware builds a temporary SQLite index outside the application directory on first
+lookup, and rebuilds it when the XML file changes. If a local match is unavailable, the
+configured Refdata.ch API remains available as a best-effort fallback.

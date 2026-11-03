@@ -22,9 +22,10 @@ from parser.cda.encounter_parser import (
     parse_encounters,
 )
 
-from domain.patient import HumanName, Address
-
-from services.refdata_service import lookup_gln
+from services.refdata_service import (
+    enrich_organization_resource,
+    enrich_practitioner_resource,
+)
 
 from builders.ch_core_patient_builder import (
     build_ch_core_patient,
@@ -380,37 +381,9 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
 
     if practitioner_data:
 
-        if practitioner_data.gln and not practitioner_data.names:
-            # PROC-EXP-11: CDA sources sometimes reference a prescriber/author only by GLN
-            # (no embedded name), same gap as eMediplan - enrich via refdata.ch best-effort.
-            refdata_entry = lookup_gln(practitioner_data.gln)
-            if refdata_entry:
-                if refdata_entry.get("given_name") or refdata_entry.get("family_name"):
-                    practitioner_data.names.append(
-                        HumanName(
-                            given=[refdata_entry["given_name"]] if refdata_entry.get("given_name") else [],
-                            family=refdata_entry.get("family_name"),
-                        )
-                    )
-                elif refdata_entry.get("name"):
-                    # No given/family split available (e.g. SOAP API or organisation name) -
-                    # the builder only renders family/given, so use the whole name as family.
-                    practitioner_data.names.append(HumanName(family=refdata_entry["name"]))
-                if not practitioner_data.addresses and refdata_entry.get("address"):
-                    address = refdata_entry["address"]
-                    practitioner_data.addresses.append(
-                        Address(
-                            lines=address.get("line") or [],
-                            postal_code=address.get("postalCode"),
-                            city=address.get("city"),
-                            state=address.get("state"),
-                            country=address.get("country"),
-                        )
-                    )
-
         practitioner_resource = (
-            build_ch_core_practitioner(
-                practitioner_data
+            enrich_practitioner_resource(
+                build_ch_core_practitioner(practitioner_data)
             )
         )
 
@@ -449,8 +422,8 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
         )
 
         organization_resource = (
-            build_ch_core_organization(
-                org
+            enrich_organization_resource(
+                build_ch_core_organization(org)
             )
         )
 

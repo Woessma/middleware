@@ -155,6 +155,8 @@ from config import (
     EPIC_JWKS_KID,
     EPIC_PUBLIC_KEY_PATH,
     FHIR_BASE,
+    FHIR_EXTERNAL_BASE_URL,
+    FHIR_EXTERNAL_TIMEOUT,
     TERMINOLOGY_BASE_URL,
     TERMINOLOGY_VALIDATION_MODE,
     VACD_SEND_BASE_URL,
@@ -444,6 +446,11 @@ def fhir_query_client():
     return FileResponse(_app_file("fhir-query-client.html"), media_type="text/html")
 
 
+@app.get("/fhir-patient-duplicate-test.html", response_class=FileResponse)
+def fhir_patient_duplicate_test():
+    return FileResponse(_app_file("fhir-patient-duplicate-test.html"), media_type="text/html")
+
+
 @app.get("/epic-spital-emediplan-cda.html", response_class=FileResponse)
 def epic_spital_emediplan_cda():
     return FileResponse(_app_file("epic-spital-emediplan-cda.html"), media_type="text/html")
@@ -556,6 +563,266 @@ async def _bridge_link_cda_post(request: Request, target_url: str) -> Response:
         status_code=upstream.status_code,
         headers=response_headers,
     )
+
+
+async def _patient_duplicate_search_params(request: Request):
+    try:
+        params = await request.json()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Ungültiger Such-Request") from exc
+    if not isinstance(params, dict):
+        raise HTTPException(status_code=400, detail="Suchparameter müssen ein JSON-Objekt sein")
+
+    allowed_params = {"identifier", "family", "given", "birthdate", "_count"}
+    if any(name not in allowed_params for name in params):
+        raise HTTPException(status_code=400, detail="Nicht unterstützter Patientensuchparameter")
+    if any(not isinstance(value, (str, int)) for value in params.values()):
+        raise HTTPException(status_code=400, detail="Patientensuchparameter müssen Textwerte sein")
+
+    params = {name: str(value) for name, value in params.items()}
+    has_identifier = bool(params.get("identifier"))
+    has_demographics = all(params.get(name) for name in ("family", "given", "birthdate"))
+    if has_identifier == has_demographics:
+        raise HTTPException(
+            status_code=400,
+            detail="Genau eine Suche per Identifier oder Name/Geburtsdatum angeben",
+        )
+
+    count_text = params.get("_count", "20")
+    try:
+        count = int(count_text)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="_count muss eine Zahl sein") from exc
+    if count < 1 or count > 100:
+        raise HTTPException(status_code=400, detail="_count muss zwischen 1 und 100 liegen")
+    params["_count"] = str(count)
+    return params
+
+
+async def _patient_duplicate_search(
+    request: Request,
+    base_url: str,
+    headers: dict,
+    timeout: float = FHIR_EXTERNAL_TIMEOUT,
+):
+    params = await _patient_duplicate_search_params(request)
+    try:
+        upstream = await run_in_threadpool(
+            requests.get,
+            f"{base_url.rstrip('/')}/Patient",
+            params=params,
+            headers=headers,
+            timeout=timeout,
+        )
+    except requests.RequestException as exc:
+        logger.warning("FHIR-Patientensuche im Dubletten-Test fehlgeschlagen: %s", exc)
+        raise HTTPException(status_code=502, detail="FHIR-Server nicht erreichbar") from exc
+
+    response_headers = {
+        name: upstream.headers[name]
+        for name in ("Content-Type", "Retry-After")
+        if name in upstream.headers
+    }
+    return Response(
+        content=upstream.content,
+        status_code=upstream.status_code,
+        headers=response_headers,
+    )
+
+
+async def _patient_duplicate_everything(request: Request, base_url: str, headers: dict):
+    try:
+        body = await request.json()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Ungültiger Request") from exc
+    patient_id = body.get("patientId") if isinstance(body, dict) else None
+    if not isinstance(patient_id, str) or not 1 <= len(patient_id) <= 64 or not all(
+        character in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-"
+        for character in patient_id
+    ):
+        raise HTTPException(status_code=400, detail="Ungültige Patient-ID")
+
+    base_url = base_url.rstrip("/")
+    patient_path = f"Patient/{patient_id}/$everything"
+    try:
+        upstream = await run_in_threadpool(
+            requests.get,
+            f"{base_url}/{patient_path}",
+            params={"_count": "500"},
+            headers=headers,
+            timeout=30,
+            allow_redirects=False,
+        )
+    except requests.RequestException as exc:
+        logger.warning("FHIR-$everything-Abfrage fehlgeschlagen: %s", exc)
+        raise HTTPException(status_code=502, detail="FHIR-Abfrage nicht verfügbar") from exc
+
+    if upstream.status_code != 200:
+        return Response(
+            content=upstream.content,
+            status_code=upstream.status_code,
+            media_type=upstream.headers.get("Content-Type"),
+        )
+
+    try:
+        def read_page(content):
+            result = json.loads(content)
+            if not isinstance(result, dict) or result.get("resourceType") != "Bundle":
+                raise ValueError("$everything did not return a Bundle")
+            for field in ("entry", "link"):
+                items = result.get(field, [])
+                if not isinstance(items, list) or not all(isinstance(item, dict) for item in items):
+                    raise ValueError(f"Invalid $everything {field}")
+            return result
+
+        bundle = read_page(upstream.content)
+        entries = list(bundle.get("entry", []))
+        page = bundle
+        base_parts = urlsplit(base_url)
+        visited = set()
+        while True:
+            next_links = [
+                link["url"] for link in page.get("link", [])
+                if link.get("relation") == "next"
+            ]
+            if not next_links:
+                break
+            if len(next_links) != 1:
+                raise ValueError("Ambiguous $everything next page")
+            next_url = urljoin(base_url + "/", next_links[0])
+            parts = urlsplit(next_url)
+            allowed_paths = {
+                base_parts.path, base_parts.path + "/",
+                base_parts.path + "/" + patient_path,
+            }
+            if (
+                (parts.scheme, parts.netloc) != (base_parts.scheme, base_parts.netloc)
+                or parts.path not in allowed_paths
+                or parts.fragment
+                or next_url in visited
+            ):
+                raise ValueError("Invalid or repeated $everything next page")
+            visited.add(next_url)
+            next_response = await run_in_threadpool(
+                requests.get,
+                next_url,
+                headers=headers,
+                timeout=30,
+                allow_redirects=False,
+            )
+            if next_response.status_code != 200:
+                raise ValueError(
+                    f"$everything next page returned HTTP {next_response.status_code}"
+                )
+            page = read_page(next_response.content)
+            entries.extend(page.get("entry", []))
+
+        if visited:
+            bundle["entry"] = entries
+            bundle["link"] = [
+                link for link in bundle.get("link", [])
+                if link.get("relation") == "self"
+            ]
+            return Response(
+                content=json.dumps(bundle),
+                media_type="application/fhir+json",
+            )
+    except (ValueError, KeyError, TypeError) as exc:
+        logger.warning("FHIR-$everything-Antwort oder Pagination ungültig: %s", exc)
+        raise HTTPException(
+            status_code=502,
+            detail="FHIR-Gesamtabfrage unvollständig oder ungültig.",
+        ) from exc
+
+    return Response(
+        content=upstream.content,
+        status_code=upstream.status_code,
+        media_type=upstream.headers.get("Content-Type"),
+    )
+
+
+@app.post("/fhir/patient-duplicate-test/local-search")
+async def local_patient_duplicate_search(request: Request):
+    authorization = request.headers.get("authorization", "")
+    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
+        raise HTTPException(
+            status_code=401,
+            detail="Bitte zuerst mit Keycloak anmelden.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return await _patient_duplicate_search(
+        request,
+        FHIR_BASE,
+        {"Accept": "application/fhir+json, application/json", "Authorization": authorization},
+        timeout=30,
+    )
+
+
+@app.post("/fhir/patient-duplicate-test/external-search")
+async def external_patient_duplicate_search(request: Request):
+    authorization = request.headers.get("authorization", "")
+    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
+        raise HTTPException(
+            status_code=401,
+            detail="Bitte zuerst mit Keycloak anmelden.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not FHIR_EXTERNAL_BASE_URL:
+        raise HTTPException(status_code=503, detail="Externer FHIR-Server nicht konfiguriert")
+
+    external_authorization = request.headers.get("x-fhir-external-authorization", "")
+    headers = {"Accept": "application/fhir+json, application/json"}
+    if external_authorization:
+        if not (
+            external_authorization.lower().startswith("basic ")
+            or external_authorization.lower().startswith("bearer ")
+        ):
+            raise HTTPException(status_code=400, detail="Ungültiger externer Authentifizierungstyp")
+        headers["Authorization"] = external_authorization
+
+    return await _patient_duplicate_search(request, FHIR_EXTERNAL_BASE_URL, headers)
+
+
+@app.post("/fhir/patient-duplicate-test/local-everything")
+async def local_patient_duplicate_everything(request: Request):
+    authorization = request.headers.get("authorization", "")
+    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
+        raise HTTPException(
+            status_code=401,
+            detail="Bitte zuerst mit Keycloak anmelden.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return await _patient_duplicate_everything(
+        request,
+        FHIR_BASE,
+        {"Accept": "application/fhir+json, application/json", "Authorization": authorization},
+    )
+
+
+@app.post("/fhir/patient-duplicate-test/external-everything")
+async def external_patient_duplicate_everything(request: Request):
+    authorization = request.headers.get("authorization", "")
+    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
+        raise HTTPException(
+            status_code=401,
+            detail="Bitte zuerst mit Keycloak anmelden.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not FHIR_EXTERNAL_BASE_URL:
+        raise HTTPException(status_code=503, detail="Externer FHIR-Server nicht konfiguriert")
+
+    headers = {"Accept": "application/fhir+json, application/json"}
+    external_authorization = request.headers.get("x-fhir-external-authorization", "")
+    if external_authorization:
+        if not (
+            external_authorization.lower().startswith("basic ")
+            or external_authorization.lower().startswith("bearer ")
+        ):
+            raise HTTPException(status_code=400, detail="Ungültiger externer Authentifizierungstyp")
+        headers["Authorization"] = external_authorization
+    return await _patient_duplicate_everything(request, FHIR_EXTERNAL_BASE_URL, headers)
 
 
 @app.post("/_proxy/bridge/cda")

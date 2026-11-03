@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: 2026-11-02
+Stand: 2026-11-03
 
 ## Zielarchitektur
 
@@ -30,7 +30,8 @@ EPIC CDA
 - BridgeLink: Orchestrierung, Routing, Monitoring, Auftragssteuerung
 - Python Middleware: Parsing, Transformation, Mapping, Bundle-Erzeugung
 - HAPI FHIR: FHIR Repository, Source of Truth, Ressourcenverwaltung
-- refdata.ch Partner-API: optionale Validierung und Anreicherung von GLN-Daten
+- Refdata.ch Partner-XML-Dateien und optionale Partner-API: Anreicherung von GLN-Daten
+- Lokale HAPI-Patientensuche mit zusätzlicher read-only Dublettenprüfung auf `fhir.woess.ch`
 - Matrix Import Bot: geschuetzter Dateiimport fuer eMediplan und CDA
 
 ## Software-Architektur
@@ -83,6 +84,13 @@ EPIC CDA
 ## Aktueller Betriebsstand
 
 - HAPI FHIR: intern erreichbar; `/fhir/metadata` liefert HTTP 200.
+- Patientensuchen prüfen zusätzlich den externen FHIR-Server read-only auf
+  Identifier- beziehungsweise Name/Geburtsdatum-Treffer. Externe Treffer werden
+  protokolliert, aber nicht als lokale Patient-ID verwendet und nicht verändert.
+  Basic-Auth-Zugangsdaten eines read-only Benutzers werden über
+  `FHIR_EXTERNAL_USERNAME` und `FHIR_EXTERNAL_PASSWORD` bereitgestellt; sie
+  gehören nicht ins Repository. Ohne vollständige Zugangsdaten wird die externe
+  Prüfung übersprungen.
 - Terminologie: `https://tx.fhir.ch/r4` liefert HTTP 200 nach Redirect.
 - VACD Send: `https://vaccination-demo.raly.ch/api/fhir/metadata` liefert HTTP 200.
 - Direkte Middleware: `https://middleware.local.omnilink.ch` ist erreichbar.
@@ -96,18 +104,23 @@ EPIC CDA
 `Medicaments[].PrscbBy` enthaelt nach CHMED16A entweder die GLN oder die
 Bezeichnung der verordnenden Person. Eine gueltige GLN wird mit dem
 GS1-Modulo-10-Verfahren geprueft und als CH-Core-`Practitioner` mit dem
-Identifier-System `urn:oid:2.51.1.3` abgebildet. Die optionale refdata.ch
-Partner-API ergaenzt Name und Adresse. Ist `PrscbBy` keine GLN, bleibt der Wert
+Identifier-System `urn:oid:2.51.1.3` abgebildet. Die natuerlichen Partner aus
+`Refdata.Partners.Nat.xml` ergaenzen Name und Adresse; die juristischen Partner
+aus `Refdata.Partners.Jur.xml` ergaenzen Organization-Ressourcen. Die Dateien
+werden zuerst durchsucht; die optionale Partner-API bleibt ein Best-Effort-Fallback.
+Ist `PrscbBy` keine GLN, bleibt der Wert
 als `MedicationStatement.informationSource.display` erhalten. Das separate
 Top-Level-Feld `Auth` bezeichnet den Dokumentautor und wird nicht als
 Verordner-GLN interpretiert.
 
-### Geplanter lokaler Refdata-Suchbestand
+### Geplanter dauerhafter Refdata-Suchbestand
 
-Stand 2026-11-02: Konzept, noch nicht implementiert. Die offiziellen
-Refdata-Partner-XML-Dateien sollen regelmaessig in einen GLN-indizierten
-Suchbestand importiert werden; keine Suche durch die grosse XML je Anfrage.
-Die Middleware bleibt fuer die fachliche Anreicherung verantwortlich.
+Stand 2026-11-03: Die temporaere XML-Suche ist implementiert. Die Middleware
+liest die natuerlichen beziehungsweise juristischen Partnerdateien per Streaming
+und erstellt beim ersten Lookup einen SQLite-Index im System-Temp-Verzeichnis.
+Der Index wird bei geaenderter Dateigroesse oder Aenderungszeit neu aufgebaut.
+Damit wird die grosse XML-Datei nicht je Anfrage erneut durchsucht. Als
+dauerhafte Loesung ist weiterhin eine separate Refdata-Datenbank vorgesehen.
 
 - Separate Datenbank `omnilink_refdata` auf der bestehenden PostgreSQL-Instanz
   `postgres.local.omnilink.ch:5433` (`10.20.30.213`); HAPI-Datenbank `fhir`

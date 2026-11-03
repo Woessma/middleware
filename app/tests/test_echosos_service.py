@@ -11,6 +11,7 @@ from services.echosos_service import (
     _echosos_allergy_resources,
     _echosos_condition_resources,
     _echosos_organ_donation_consents,
+    _patient_search,
     _patient_resource,
     _transaction_entry,
     extract_echosos_url,
@@ -40,6 +41,34 @@ COMPACT_QR_URL = (
 
 
 class EchoSosServiceTests(unittest.TestCase):
+    @patch("services.echosos_service.warn_if_external_patient_duplicate")
+    @patch("services.echosos_service.requests.get")
+    def test_patient_search_checks_external_server_with_same_name_and_birthdate(
+        self, mock_get, mock_external_check
+    ):
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "total": 0,
+            "entry": [],
+        }
+        mock_get.return_value = response
+        data = {
+            "family": "Beispiel",
+            "given": "Eva",
+            "birth_date": "1990-01-15",
+        }
+
+        self.assertIsNone(_patient_search(data))
+        mock_external_check.assert_called_once_with(
+            {
+                "family": "Beispiel",
+                "given": "Eva",
+                "birthdate": "1990-01-15",
+            },
+            "family-given-birthdate",
+        )
+
     @patch("services.echosos_service.validate_coding", return_value={"status": "validated"})
     def test_all_generated_resource_identifiers_ignore_unrelated_qr_changes(self, _validate):
         data = parse_echosos_data(COMPACT_QR_URL)

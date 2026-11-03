@@ -35,6 +35,53 @@ Alternativ ist der lokale Port `8082` verfügbar:
 http://localhost:8082/test-client.html
 ```
 
+## Patientendubletten auf zwei FHIR-Servern testen
+
+`fhir-patient-duplicate-test.html` sucht read-only auf lokalem HAPI und
+`https://fhir.woess.ch/fhir/`. Der lokale HAPI wird wie die übrigen lokalen
+FHIR-Clients über Keycloak (Authorization Code mit PKCE) angesprochen. Für den
+externen HAPI lässt sich die Authentifizierung separat konfigurieren
+(keine, Basic Auth oder Bearer Token). Zugangsdaten werden nicht gespeichert.
+
+Die Suche kann per Identifier-System und -Wert oder per Nachname, Vorname und
+Geburtsdatum erfolgen. Für Identifier stehen AHVN13/NAVS13, EPR-SPID und
+Versicherungskartennummer als Auswahl bereit; weitere Systeme lassen sich über
+„Eigene URI eingeben“ angeben. Bei einer gemeinsamen Abfrage zeigt die Seite moegliche
+Uebereinstimmungen anhand gemeinsamer Identifier oder Name/Geburtsdatum an.
+Diese sind manuell zu pruefen; die Seite erstellt, aktualisiert oder loescht
+keine Ressourcen. Beide Suchanfragen laufen ueber die Middleware, damit der
+Browser keine direkte Verbindung zu den FHIR-Servern und keine CORS-Freigabe
+benoetigt. Die Suchdaten werden im Request-Body an die Middleware gesendet,
+damit Patientendaten nicht in URL-Query-Strings der Middleware-Zugriffslogs
+erscheinen. Der externe Server ist serverseitig ueber `FHIR_EXTERNAL_BASE_URL`
+konfiguriert.
+
+Nach genau einem gefundenen, serverübergreifend passenden Patientenpaar kann
+die vollständige Patientensicht optional per Klick geladen werden. Die
+Middleware ruft auf beiden Servern `Patient/{id}/$everything?_count=500` ab
+und folgt allen Seiten. In der gemeinsamen Ansicht werden Ressourcen gleichen
+Typs mit gleichem Identifier gruppiert. Die Darstellung orientiert sich an der
+EchoSOS-Ansicht: Übersichtszahlen, Ressourcentypen mit Anzahl und fachlich
+lesbare klinische Tabellen für Patient, Kontakte, Vitalzeichen, Labor,
+Medikationen, Probleme, Allergien, Impfungen und Begegnungen. Abweichende
+Feldwerte werden mit ihrer Serverquelle gekennzeichnet. Die fachliche
+Zusammenfassung ist wie bei EchoSOS aufklappbar und zeigt Tabellen mit
+Spaltenüberschriften. Darunter bleiben alle Ressourcen typweise gruppiert mit
+aufklappbaren Details und FHIR-JSON abrufbar.
+Zusätzlich wird im Browser ein gemeinsames FHIR-`Bundle` vom Typ `collection`
+gebildet, angezeigt und als JSON herunterladbar gemacht. Identische Ressourcen
+(ohne serverlokale ID und Meta) werden dort einmal aufgeführt; FHIR-
+`Provenance`-Einträge dokumentieren ihre Quellserver. Beobachtungen ohne Identifier werden für die Visualisierung anhand
+von Code, Datum, Patientenbezug und Messwert zusammen gruppiert; wenn weitere
+Quelldaten abweichen, bleiben beide Originalressourcen im Bundle erhalten.
+Der Abruf kann viele sensible Gesundheitsdaten laden und erfolgt deshalb nicht
+automatisch.
+
+```text
+https://middleware.local.omnilink.ch/fhir-patient-duplicate-test.html
+http://localhost:8082/fhir-patient-duplicate-test.html
+```
+
 ## Card Analysis Service testen
 
 `card-analysis-test.html` testet den generischen Card-Analyse-Endpunkt direkt.

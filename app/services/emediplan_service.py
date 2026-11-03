@@ -882,7 +882,7 @@ def _build_medication_resources(medicament, patient_reference):
 
             # Best-effort enrichment via refdata.ch's official GLN registry (Partner API).
             # Silently skipped when the API isn't configured/reachable or the GLN isn't found.
-            refdata_entry = lookup_gln(prescribed_by)
+            refdata_entry = lookup_gln(prescribed_by, partner_type="NAT")
             if refdata_entry:
                 if refdata_entry.get("name"):
                     practitioner["name"] = [{"text": refdata_entry["name"]}]
@@ -1152,7 +1152,7 @@ def _prescriber_details(statement, practitioners_by_ref):
         if not name and gln and _is_valid_gln(gln):
             # The bundle's Practitioner may lack a name (e.g. fetched straight from the
             # FHIR server without refdata enrichment) - resolve it via GLN on export too.
-            refdata_entry = lookup_gln(gln)
+            refdata_entry = lookup_gln(gln, partner_type="NAT")
             if refdata_entry and refdata_entry.get("name"):
                 name = refdata_entry["name"]
 

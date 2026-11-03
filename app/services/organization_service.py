@@ -3,6 +3,7 @@ import requests
 import uuid
 
 from config import FHIR_BASE
+from services.refdata_service import enrich_organization_resource
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +131,8 @@ def create_organization(
     if address:
         organization["address"] = [address]
 
+    organization = enrich_organization_resource(organization)
+
     organization_id = _stable_organization_id(
         identifier_system,
         identifier_value,
@@ -194,6 +197,8 @@ def update_organization(
 
     if address:
         organization["address"] = [address]
+
+    organization = enrich_organization_resource(organization)
 
     response = requests.put(
         f"{FHIR_BASE}/Organization/{organization_id}",
