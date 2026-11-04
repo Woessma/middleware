@@ -13,8 +13,8 @@
 | eMediplan PDF/QR Import | Same-Origin `/emediplan/qr/import` -> BridgeLink | Ja |
 | EchoSOS-URL Import | BridgeLink `/v1/echosos/resolve` | Ja |
 | Patient `$everything` | FHIR `Patient/{id}/$everything` | Nein |
-| VACD Convert | BridgeLink `/v1/cda/vacd/convert` (Channel-Routing erforderlich) | Nein |
-| VACD HAPI-Import | BridgeLink `/v1/cda/vacd/import` (Channel-Routing erforderlich) | Ja |
+| VACD Convert | BridgeLink `/v1/cda/vacd/convert` (Routing eingerichtet, Live-Abnahme offen) | Nein |
+| VACD HAPI-Import | BridgeLink `/v1/cda/vacd/import` (Routing eingerichtet, Live-Abnahme offen) | Ja |
 | VACD openEHR-Send | Same-Origin `/cda/vacd/send` | Externer Demo-FHIR-Server |
 
 Die VACD-Pfade sind fuer die naechste Abnahme vorbereitet, noch nicht live
@@ -44,6 +44,24 @@ Lange Angaben werden umgebrochen statt abgeschnitten. Auch die Antwort-Metadaten
 Verarbeitungsweg, z. B. `Middleware -> BridgeLink -> HAPI` beim PDF-/QR-Import.
 Angezeigte externe Request-URLs entsprechen den vom Browser aufgerufenen Adressen;
 der Verarbeitungsweg ist keine Laufzeit-Tracing-Bestaetigung aller Stationen.
+Der originale FHIR-Antwortbody bleibt unveraendert, einschliesslich interner
+Adressen unter `link.self`; diese werden bewusst nicht umgeschrieben.
+
+## Aktueller Betriebsstand (2026-11-04)
+
+- Werkbank-Anpassungen sind gebaut und deployt. Die Routenanzeige wurde im
+  Browser bei 1440, 808 und 390 Pixeln Breite ohne Abschneiden geprueft.
+- Dispatcher-Revision 108 verwendet OL_CORE und OL_ROUTING; die JWT-Library
+  und Destinations bleiben unveraendert.
+- Nach der Auslagerung: CDA Convert (200/transaction), eMediplan Convert
+  (200/collection) und unbekannter Endpunkt (404/OperationOutcome) bestaetigt.
+- PDF-/QR-Import liefert weiterhin 200/transaction-response; die gezeigte
+  Observation blieb auf Version 1. Keine neue Vollpruefung aller Ressourcen.
+- 13 Werkbanktests sowie 18 Core-/Routingtests bestanden.
+- VACD-Live-Abnahme, 400-/401- und Ausfalltests nach dem Refactoring sind offen.
+
+Channel-Snapshot, Library-Importe, Rollback und Sync beider Git-Remotes:
+[BridgeLink-Dokumentation](bridgelink/README.md).
 
 ## eMediplan-Abnahme (2026-11-04)
 

@@ -38,6 +38,23 @@ eMediplan-Wiederimporte sowie Pharmacode-/GTIN- und lokale Refdata-Anreicherung
 wurden anhand gespeicherter Ressourcen geprueft. Der Freigabestand ist eine
 Testlab-Abnahme, keine pauschale Bestaetigung aller Profile und Fehlerfaelle.
 
+### Dispatcher und Werkbank: aktueller Stand
+
+Der gespeicherte Channel-Export hat Revision 108. OL_CORE und OL_ROUTING sind
+importiert, zugewiesen und deployt; die bestehende JWT-Library bleibt erhalten.
+Nach dem Refactoring wurden CDA Convert (200/transaction), eMediplan Convert
+(200/collection), unbekannter Endpunkt (404/OperationOutcome) und PDF-/QR-Import
+(200/transaction-response) geprueft. 31 fokussierte Node-Tests bestanden.
+
+VACD Convert und Import sind in der Routing-Tabelle eingerichtet, aber noch
+nicht live abgenommen. Der externe VACD-Versand ist ebenfalls nicht bestaetigt.
+Die Werkbank verbirgt interne Middleware-Pfade in der Anzeige; Browser-
+Netzwerkdetails und originale FHIR-Antworten bleiben davon unberuehrt.
+
+Versionierter Export, Templates und Git-Sync fuer beide Remotes:
+[BridgeLink](bridgelink/README.md). Anzeige und Abnahmegrenzen:
+[Werkbank](TEST-CLIENT.md).
+
 ### Epic JWKS
 
 Die Middleware stellt `GET /.well-known/jwks.json` bereit. BridgeLink bildet

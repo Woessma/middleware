@@ -1,5 +1,20 @@
 # BridgeLink Code Templates
 
+## Current status (2026-11-04)
+
+- Dispatcher revision 108 is saved in this repository; OL_CORE and OL_ROUTING
+  are imported, assigned and deployed alongside the unchanged JWT library.
+- CDA convert, eMediplan convert and unknown-endpoint handling passed the
+  post-refactoring live baseline. PDF/QR import returned a transaction-response.
+- 31 focused Node tests passed (5 core, 13 routing, 13 workbench).
+- The deployed workbench separates the configured processing path from the
+  browser request. Internal middleware paths are hidden in its route field
+  and response metadata, but remain visible in browser network tools.
+  Raw FHIR responses, including `link.self`, are intentionally unchanged.
+- VACD routes are configured, but their live acceptance remains outstanding.
+  No external demo-server write has been verified. Import-wide duplicate
+  verification and 400/401/downstream outage tests after refactoring remain open.
+
 ## OL_CORE (version 1)
 
 Prepared for BridgeLink 26.3.1 using the structure of the local
@@ -209,3 +224,42 @@ or client secrets were found. Authorization is a dynamic channelMap reference;
 JWT settings use `$cfg`. No message payload export is included.
 The original pre-refactoring export in the local test-data directory is not
 part of this snapshot.
+
+## Git synchronization
+
+The local `main` branch is published to both configured remotes:
+
+| Remote | Repository |
+|---|---|
+| `origin` | `Woessma/middleware` |
+| `post` | `markus-woess_postch/omnilink-fhir-middleware` |
+
+`post` uses the local SSH host alias `github-post`; its key and SSH configuration
+are managed outside this repository. Do not commit credentials or private keys.
+
+For synchronization, fetch both remotes and check for incoming changes first.
+Commit only intended files, then push and verify both targets independently:
+
+```sh
+git fetch origin
+git fetch post
+git rev-list --left-right --count main...origin/main
+git rev-list --left-right --count main...post/main
+# Resolve any incoming/divergent history before pushing.
+git push origin main
+git push post main
+git ls-remote --heads origin refs/heads/main
+git ls-remote --heads post refs/heads/main
+```
+
+Both remote main hashes must match local `git rev-parse main`. A successful
+push to one remote does not establish synchronization of the other.
+
+On 2026-11-04 the user explicitly authorized replacing the unrelated Enterprise
+main history with local main. Its previous tip `50ca9a7` is preserved on `post`
+as `backup/main-before-replace-20261104-1224`. Replacement used an atomic push
+with an exact force-with-lease. This was a one-time migration, not the normal
+sync procedure; do not routinely force-push.
+
+Uncommitted mapping spreadsheets and local test artifacts are not included
+in a sync unless explicitly selected and committed.
