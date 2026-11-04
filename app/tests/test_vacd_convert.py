@@ -108,18 +108,10 @@ class VacdConvertEndpointTests(unittest.TestCase):
         for entry in bundle["entry"]:
             self.assertNotIn("request", entry)
 
-    def test_vacd_prepare_returns_transaction_without_document_envelope_profiles(self):
-        source = {
-            "resourceType": "Bundle",
-            "type": "document",
-            "entry": [
-                {"resource": {"resourceType": "Composition", "id": "test-composition"}},
-                {"resource": {"resourceType": "Patient", "id": "test-patient"}},
-            ],
-        }
+    def test_vacd_prepare_is_disabled_without_conversion_or_write(self):
         with (
-            patch("main.cda_to_fhir_bundle", return_value=source),
-            patch("main._validate_bundle", side_effect=lambda bundle: bundle),
+            patch("main.cda_to_fhir_bundle") as convert,
+            patch("main._stabilize_bundle") as stabilize,
             patch("main.requests.post") as post,
         ):
             response = TestClient(app).post(
@@ -127,21 +119,16 @@ class VacdConvertEndpointTests(unittest.TestCase):
                 content=b"<ClinicalDocument />",
                 headers={"Authorization": "Bearer synthetic-test-token"},
             )
-        self.assertEqual(response.status_code, 200, response.text)
-        bundle = response.json()
-        self.assertEqual(bundle["type"], "transaction")
-        self.assertNotIn("profile", bundle["meta"])
-        self.assertTrue(all(entry.get("request") for entry in bundle["entry"]))
-        self.assertIn(
-            "http://fhir.ch/ig/ch-vacd/StructureDefinition/ch-vacd-composition-immunization-administration",
-            bundle["entry"][0]["resource"]["meta"]["profile"],
-        )
+        self.assertEqual(response.status_code, 410, response.text)
+        self.assertEqual(response.json()["resourceType"], "OperationOutcome")
+        convert.assert_not_called()
+        stabilize.assert_not_called()
         post.assert_not_called()
 
-    def test_vacd_prepare_requires_bearer(self):
+    def test_vacd_prepare_is_disabled_even_without_bearer(self):
         with patch("main.cda_to_fhir_bundle") as convert:
             response = TestClient(app).post("/cda/vacd/prepare", content=b"<ClinicalDocument />")
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 410)
         convert.assert_not_called()
 
     def test_vacd_send_keeps_document_format_and_returns_send_report(self):

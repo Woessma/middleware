@@ -1,5 +1,51 @@
 # BridgeLink: CDA-Use-Cases und Channel-Einstellungen
 
+## Aktuelle FHIR-R4-Korrekturen und Profilpruefung (2026-11-04)
+
+Die lokale CDA-EPIC-Testdatei wurde gegen den internen HAPI-Validator geprueft,
+ohne klinische Ressourcen zu speichern oder an externe Systeme zu senden.
+Die deklarierten CH-Core-Profile 6.0.0 werden aufgeloest.
+
+| Ausgabe | Vorher | Nach Korrektur |
+|---|---|---|
+| Transaction | 29 Fehler, 188 Warnungen | 0 Fehler, 186 Warnungen |
+| Document | 194 Fehler, 188 Warnungen | 0 Fehler, 84 Warnungen |
+
+Die Zahlen gelten fuer diese Stichprobe, nicht fuer alle CDA-Varianten.
+Warnungen, insbesondere Terminologiehinweise, sind weiterhin auszuwerten.
+Die separat ergaenzte offizielle HAPI-Extension
+`iso21090-codedString|5.3.0-ballot-tc1` bleibt Voraussetzung fuer die
+Adressprofilpruefung; siehe [VACD-Abhaengigkeit](ch-vacd-immunization-administration.md).
+
+Korrekturen:
+
+- Numerische Vital- und Dosierungswerte werden als endliche JSON-Zahlen
+  ausgegeben. CDA-PQ-Dosierungen erhalten UCUM-System und Einheitencode.
+- Fehlende Procedure-Coding-Displays werden weggelassen, nicht als JSON-null
+  ausgegeben.
+- Goal-Autoren stehen in `expressedBy`; CareTeam-Autoren bleiben als Notiz
+  erhalten, ohne Teammitgliedschaft zu behaupten.
+- Fehlende Kontaktadressfelder werden als unbekannt gekennzeichnet.
+  Diese Hilfsfunktion wird auch fuer VACD verwendet.
+- Sections ohne strukturierte Eintraege erhalten escaped Quellnarrative
+  oder einen Hinweis auf die fehlende strukturierte Extraktion. Das ist
+  keine Aussage, dass klinisch keine Befunde vorliegen.
+- Im Document werden lokale Ressourcenreferenzen auf die vorhandenen
+  Bundle-fullUrls umgeschrieben. Transaction-Requests und Identifier bleiben
+  unveraendert.
+
+**Bewusste Profilkorrektur:** Der generische CDA-Konverter deklariert seine
+Composition jetzt als CH Core statt pauschal als CH IPS und behaelt den
+CDA-Dokumenttyp. Ein beliebiger Arztbrief ist kein IPS-Patientensummary.
+Ein expliziter CH-IPS-Dokumentworkflow samt dessen zusaetzlichen
+Ressourcenprofilen und Pflichtsections ist damit nicht implementiert.
+CH-EMED-/VACD-Dokumentprofile werden nicht auf generische CDA-Ausgaben
+angewendet; VACD bleibt ein eigener Konvertierungsweg.
+
+83 gezielte Python-Regressionstests bestanden, einschliesslich
+Document-Referenzen, Herkunftsangaben, endlichen Dezimalwerten und der
+bestehenden eMediplan-/VACD-Importvorbereitung.
+
 ## Geltungsbereich
 
 Seit 2026-10-30 gibt es zwei externe CDA-Endpunkte (Channel `api_route_dispatcher`

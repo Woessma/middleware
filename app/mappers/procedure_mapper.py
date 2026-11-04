@@ -168,6 +168,10 @@ def map_procedure_section(
                 "text": procedure_text
             }
 
+        for coding in procedure.get("code", {}).get("coding", []):
+            if coding.get("display") is None:
+                coding.pop("display", None)
+
         if effective_time:
 
             performed_datetime = (

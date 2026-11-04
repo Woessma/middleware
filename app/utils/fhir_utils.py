@@ -1,3 +1,13 @@
+import math
+
+
+def fhir_decimal(value):
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("FHIR decimal must be finite")
+    return number
+
+
 def cda_ts_to_fhir_date(value):
 
     if not value:

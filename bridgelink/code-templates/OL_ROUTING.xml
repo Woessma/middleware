@@ -34,8 +34,29 @@
             id: 'vacd.import', method: 'POST',
             path: '/v1/cda/vacd/import',
             middlewarePath: '/cda/vacd/prepare',
-            responseTarget: 'hapi', forwardQuery: true,
-            logMessage: 'VACD (' + path + '), responseTarget=hapi'
+            responseTarget: 'none', forwardQuery: true,
+            logMessage: 'VACD import disabled, responseTarget=none'
+        },
+        {
+            id: 'vacd.validate', method: 'POST',
+            path: '/v1/cda/vacd/validate',
+            middlewarePath: '/cda/vacd/validate',
+            responseTarget: 'none', forwardQuery: true,
+            logMessage: 'VACD validation, responseTarget=none'
+        },
+        {
+            id: 'cda.validate', method: 'POST',
+            path: '/v1/cda/validate',
+            middlewarePath: '/cda/validate',
+            responseTarget: 'none', forwardQuery: true,
+            logMessage: 'CDA validation, responseTarget=none'
+        },
+        {
+            id: 'fhir.validate', method: 'POST',
+            path: '/v1/fhir/validate',
+            middlewarePath: '/fhir/validate',
+            responseTarget: 'none', forwardQuery: false,
+            logMessage: 'FHIR validation, responseTarget=none'
         },
         {
             id: 'cda.convert', method: 'POST',
@@ -112,6 +133,33 @@
 
     log.info('PATH=' + request.path);
     log.info('METHOD=' + request.method);
+
+    if (request.method === 'OPTIONS') {
+        var preflightRoute = olRouteResolve(request.preflightMethod, request.path);
+        var allowedHeaders = /^(authorization|content-type|accept)$/;
+        var requestedHeaders = String(request.preflightHeaders || '').toLowerCase().split(',');
+        var validHeaders = true;
+        for (var i = 0; i < requestedHeaders.length; i++) {
+            var header = requestedHeaders[i].trim();
+            if (header !== '' && !allowedHeaders.test(header)) {
+                validHeaders = false;
+            }
+        }
+        if (
+            request.origin !== 'https://middleware.local.omnilink.ch' ||
+            !validHeaders
+        ) {
+            olCoreSetGatewayError(target, 403, 'forbidden', 'CORS preflight not allowed');
+            log.warn('CORS preflight rejected');
+        } else if (preflightRoute == null) {
+            olCoreSetGatewayError(target, 404, 'not-found', 'Unknown preflight endpoint');
+            log.warn('Unknown CORS preflight endpoint');
+        } else {
+            target.put('corsPreflight', 'true');
+            log.info('CORS preflight accepted - no destination call');
+        }
+        return;
+    }
 
     var route = olRouteResolve(request.method, request.path);
 

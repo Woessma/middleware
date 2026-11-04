@@ -201,6 +201,24 @@ def build_codeable_concept(concept):
     return result or None
 
 
+def ensure_contact_address(contact):
+    if any(
+        coding.get("code") in {"MTH", "FTH"}
+        for relation in contact.get("relationship") or []
+        for coding in relation.get("coding") or []
+    ):
+        return
+    address = contact.setdefault("address", {})
+    for field in ("city", "postalCode", "country"):
+        if not address.get(field) and not address.get(f"_{field}"):
+            address[f"_{field}"] = {
+                "extension": [{
+                    "url": "http://hl7.org/fhir/StructureDefinition/data-absent-reason",
+                    "valueCode": "unknown",
+                }]
+            }
+
+
 def build_address(address):
 
     result = {}
@@ -455,6 +473,7 @@ def build_ch_core_patient(patient: PatientData) -> dict:
                     for identifier in contact.identifiers
                 ]
 
+            ensure_contact_address(contact_entry)
             resource["contact"].append(contact_entry)
 
     if patient.active is not None:

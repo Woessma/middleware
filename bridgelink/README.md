@@ -2,16 +2,55 @@
 
 ## Current status (2026-11-04)
 
-- Dispatcher revision 108 is saved in this repository; OL_CORE and OL_ROUTING
+- Deployed CORS correction, verified live on 2026-11-04:
+  the HTTP Listener authentication script permits tokenless OPTIONS only
+  for Origin `https://middleware.local.omnilink.ch` and requested method
+  GET/POST. All actual requests still call the original JWT authenticator.
+  The source transformer reads preflight headers; OL_ROUTING accepts only
+  known route/method pairs and Authorization, Content-Type, Accept headers.
+  Approved preflights are answered locally as empty HTTP 204 by Destination
+  99, with no middleware/HAPI destination selected.
+  Static HTTP Listener response headers allow only that exact browser origin.
+  The versioned channel XML contains all three channel-side changes; the
+  updated library alone is insufficient. For another installation, import into the existing channel
+  (or apply these changes in its editor), check library assignments, save
+  and redeploy. The user supplied a fresh live export under `aktuell/`,
+  revision 114. Its listener settings, source transformer, routing functions
+  and local 204 response match the versioned snapshot functionally;
+  formatting and library revision metadata can differ. The local raw export
+  is not duplicated in Git; `api_route_dispatcher.xml` is the maintained snapshot.
+  Public OPTIONS returned 204 with the exact CORS headers. The user's
+  browser CDA convert returned 200/transaction; gateway logs confirmed
+  successful JWT authentication and no HAPI write.
+  After future deploys, also check unauthenticated POST remains 401.
+  Some listener versions may omit configured response headers on early
+  authentication errors; verify this live rather than assuming it.
+
+- Deployed routing update: VACD import now
+  uses `responseTarget=none` and continues to receive middleware HTTP 410.
+  New POST routes `/v1/cda/validate`, `/v1/cda/vacd/validate` and
+  `/v1/fhir/validate` all use `responseTarget=none`. CDA validation routes
+  forward their query; FHIR JSON validation does not forward query parameters.
+  Both OL_ROUTING and the embedded channel template contain this update.
+  Gateway validation routes are present in the supplied export; separate
+  authenticated end-to-end acceptance of each remains outstanding.
+- Dispatcher revision 114 is saved in this repository; OL_CORE and OL_ROUTING
   are imported, assigned and deployed alongside the unchanged JWT library.
 - CDA convert, eMediplan convert and unknown-endpoint handling passed the
   post-refactoring live baseline. PDF/QR import returned a transaction-response.
-- 31 focused Node tests passed (5 core, 13 routing, 13 workbench).
+- 41 focused Node tests passed, including CORS auth/preflight and route regressions.
 - The deployed workbench separates the configured processing path from the
   browser request. Internal middleware paths are hidden in its route field
   and response metadata, but remain visible in browser network tools.
   Raw FHIR responses, including `link.self`, are intentionally unchanged.
-- VACD routes are configured, but their live acceptance remains outstanding.
+- VACD HAPI import is disabled by the middleware: `/cda/vacd/prepare`
+  returns HTTP 410 with an OperationOutcome. The existing gateway route
+  remains configured, but Destination 01's non-2xx handling prevents a HAPI
+  write. The workbench now uses same-origin `/cda/vacd/validate` without
+  storage; `/cda/validate` and `/fhir/validate` provide separate CDA checks.
+  Same-origin workbench actions do not require a channel redeploy; the
+  optional gateway routes above require the deployed routing update.
+  VACD conversion and external-send acceptance remain separate.
   No external demo-server write has been verified. Import-wide duplicate
   verification and 400/401/downstream outage tests after refactoring remain open.
 
@@ -154,7 +193,10 @@ It contains two functions:
 | Method | External path | Middleware path | Response target | Forward query |
 |---|---|---|---|---|
 | POST | `/v1/cda/vacd/convert` | `/cda/vacd/convert` | none | yes |
-| POST | `/v1/cda/vacd/import` | `/cda/vacd/prepare` | hapi | yes |
+| POST | `/v1/cda/vacd/import` | `/cda/vacd/prepare` (disabled, HTTP 410) | none | yes |
+| POST | `/v1/cda/vacd/validate` | `/cda/vacd/validate` | none | yes |
+| POST | `/v1/cda/validate` | `/cda/validate` | none | yes |
+| POST | `/v1/fhir/validate` | `/fhir/validate` | none | no |
 | POST | `/v1/cda/convert` | `/cda/convert` | none | yes |
 | POST | `/v1/cda/import` | `/cda/convert` | hapi | yes |
 | POST | `/v1/emediplan/import` | `/emediplan/prepare` | hapi | no |

@@ -29,8 +29,8 @@ function workbench() {
 test('only implemented routes are released', () => {
   const {cases} = workbench();
   assert.deepEqual(Array.from(cases, item => item.id), [
-    'patient-everything', 'bundle-import', 'cda-convert', 'cda-import',
-    'vacd-convert', 'vacd-import', 'vacd-send',
+    'patient-everything', 'bundle-import', 'cda-convert', 'cda-validate', 'cda-bundle-validate', 'cda-import',
+    'vacd-convert', 'vacd-validate', 'vacd-send',
     'emed-convert', 'emed-import', 'emed-qr-convert', 'emed-qr-import', 'echosos-resolve'
   ]);
 });
@@ -85,7 +85,7 @@ test('EchoSOS URL uses resolve, not the unsupported external qr route', () => {
   assert.equal(context.requestFor(item).body, elements.payload.value);
 });
 
-for (const id of ['vacd-convert', 'vacd-import', 'vacd-send']) {
+for (const id of ['vacd-convert', 'vacd-validate', 'vacd-send', 'cda-validate']) {
   test(`${id}: raw XML and explicit route`, () => {
     const {context, elements, cases} = workbench();
     const item = cases.find(item => item.id === id);
@@ -94,7 +94,7 @@ for (const id of ['vacd-convert', 'vacd-import', 'vacd-send']) {
     assert.equal(request.body, elements.payload.value);
     assert.equal(request.headers['Content-Type'], 'application/xml; charset=UTF-8');
     const url = context.urlFor(item);
-    assert.equal(url.origin, id === 'vacd-send' ? 'https://middleware.example' : 'https://api.example');
+    assert.equal(url.origin, id === 'vacd-convert' ? 'https://api.example' : 'https://middleware.example');
   });
 }
 
@@ -115,7 +115,10 @@ test('response metadata separates the browser URL from the configured processing
     ['emed-qr-convert', 'Middleware (QR-Dekodierung und Konvertierung, kein HAPI-Write)'],
     ['vacd-send', 'Middleware → konfiguriertes externes VACD-FHIR-Ziel'],
     ['patient-everything', 'FHIR-Server direkt'],
-    ['cda-convert', 'BridgeLink → Middleware (kein HAPI-Write)']
+    ['cda-convert', 'BridgeLink → Middleware (kein HAPI-Write)'],
+    ['cda-validate', 'Middleware → interner HAPI-Validator (keine Speicherung)'],
+    ['cda-bundle-validate', 'Middleware → interner HAPI-Validator (keine Speicherung)'],
+    ['vacd-validate', 'Middleware → interner HAPI-Validator (keine Speicherung)']
   ]) {
     const item = cases.find(item => item.id === id);
     const url = context.urlFor(item);

@@ -14,6 +14,10 @@ def add_author_display(resource, entry, field="author"):
         resource["performer"] = [{"actor": {"display": author}}]
     elif resource_type == "Encounter":
         resource["participant"] = [{"individual": {"display": author}}]
+    elif resource_type == "Goal":
+        resource["expressedBy"] = {"display": author}
+    elif resource_type == "CareTeam":
+        resource.setdefault("note", []).append({"text": "CDA author: " + author})
     else:
         resource[field] = [{"display": author}]
     return resource

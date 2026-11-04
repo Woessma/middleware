@@ -239,7 +239,7 @@ class CdaVariantImportTests(unittest.TestCase):
         self.assertIn("Practitioner", resource_types)
         self.assertIn("Organization", resource_types)
 
-    def test_transaction_bundle_includes_ch_ips_composition_with_section_references(self):
+    def test_transaction_bundle_preserves_cda_type_with_ch_core_composition(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
              patch.object(cda_bundle_service, "resolve_patient_id", return_value="123"), \
              patch.object(cda_bundle_service, "resolve_practitioner_id", return_value="456"), \
@@ -257,11 +257,11 @@ class CdaVariantImportTests(unittest.TestCase):
 
         self.assertEqual(
             composition["meta"]["profile"][0],
-            "http://fhir.ch/ig/ch-ips/StructureDefinition/ch-ips-composition",
+            "http://fhir.ch/ig/ch-core/StructureDefinition/ch-core-composition",
         )
         self.assertEqual(
             composition["type"]["coding"][0]["code"],
-            "60591-5",
+            "34764-1",
         )
         self.assertEqual(composition["subject"]["reference"], "Patient/123")
         self.assertEqual(composition["author"][0]["reference"], "Practitioner/456")

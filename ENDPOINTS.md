@@ -18,6 +18,36 @@ Stand: 2026-11-04
 
 ## Status
 
+### Separate Validierung ohne Speicherung
+
+Die Werkbank bietet CDA- und VACD-Validierung als Same-Origin-Aufrufe zur
+Middleware an; neue BridgeLink-Routen sind dafuer nicht erforderlich.
+`POST /cda/validate` akzeptiert dieselben XML-Eingaben wie Convert und
+`bundle_type=transaction|document`. `POST /cda/vacd/validate` erzeugt immer
+ein CH-VACD-Dokument. Beide liefern das originale interne HAPI-
+OperationOutcome als `application/fhir+json`, nicht das konvertierte Bundle.
+
+Mit `POST /fhir/validate` lassen sich bereits konvertierte Bundles aus
+beliebigen CDA-Use-Cases (auch eTOC/UMZH) separat pruefen. Der JSON-Body
+ist direkt das Bundle. Es wird nicht stabilisiert, angereichert oder
+gespeichert. Geprueft werden FHIR R4 und die tatsaechlich deklarierten
+Profile; dies fuegt keine fehlenden Profildeklarationen hinzu.
+
+HTTP 200 bedeutet eine ausgefuehrte Pruefung, nicht Fehlerfreiheit:
+`issue.severity=error|fatal` kennzeichnet Validierungsfehler. Warnungen,
+Diagnostik und betroffene Felder bleiben unveraendert sichtbar; die Werkbank
+zeigt auch Fehler in einem HTTP-200-Outcome als Fehler an.
+Nicht erreichbarer Validator, unerwartete HTTP-Antworten oder ungueltige
+Outcomes liefern HTTP 502 mit Fehler-OperationOutcome. Ein anderer
+Ressourcentyp als Bundle liefert bei `/fhir/validate` HTTP 400.
+Gueltige Fehler-OperationOutcomes des Validators bei HTTP 400/422 werden
+mit Originalstatus und vollstaendiger Diagnostik weitergereicht, etwa bei
+nicht parsebaren FHIR-Werten.
+Die Zieladresse ist ausschliesslich das konfigurierte interne `FHIR_BASE`;
+Clients koennen kein externes Validierungsziel angeben.
+
+Andere Importwege erhalten dadurch noch keine automatische Validierungssperre.
+
 ✅ **Im Testlab getestet und freigegeben (2026-11-04):**
 
 | Use Case | Endpunkt | Ergebnis |
@@ -40,14 +70,28 @@ Testlab-Abnahme, keine pauschale Bestaetigung aller Profile und Fehlerfaelle.
 
 ### Dispatcher und Werkbank: aktueller Stand
 
-Der gespeicherte Channel-Export hat Revision 108. OL_CORE und OL_ROUTING sind
+Der gespeicherte Channel-Stand entspricht funktional dem neuesten Export
+Revision 114. OL_CORE und OL_ROUTING sind
 importiert, zugewiesen und deployt; die bestehende JWT-Library bleibt erhalten.
 Nach dem Refactoring wurden CDA Convert (200/transaction), eMediplan Convert
 (200/collection), unbekannter Endpunkt (404/OperationOutcome) und PDF-/QR-Import
-(200/transaction-response) geprueft. 31 fokussierte Node-Tests bestanden.
+(200/transaction-response) geprueft. Nach der CORS-Korrektur bestanden
+41 fokussierte Node-Tests.
 
-VACD Convert und Import sind in der Routing-Tabelle eingerichtet, aber noch
-nicht live abgenommen. Der externe VACD-Versand ist ebenfalls nicht bestaetigt.
+Browser-CORS ist jetzt im Channel behandelt: erlaubte OPTIONS werden lokal
+mit 204 beantwortet, ohne Middleware-/HAPI-Aufruf. Die Antwortheader erlauben
+genau `https://middleware.local.omnilink.ch` und Authorization/Content-Type/Accept.
+Echte Requests bleiben JWT-geschuetzt. Live bestaetigt sind der oeffentliche
+Preflight mit CORS-Headern und ein authentifizierter Browser-CDA-Convert
+(200/transaction, kein HAPI-Write). Nicht jede Gateway-Route ist damit neu
+abgenommen. Ein Docker-Neustart ist fuer Channel-Aenderungen nicht erforderlich.
+
+VACD Convert bleibt eingerichtet. Der VACD-HAPI-Import ist serverseitig
+deaktiviert: `/cda/vacd/prepare` und `/cda/vacd/import` liefern HTTP 410
+mit OperationOutcome. Der bestehende BridgeLink-Importpfad laeuft dadurch
+in einen Fehler ohne HAPI-Write. Der separate externe VACD-Versand ist
+jetzt durch verpflichtende interne CH-VACD-Validierung abgesichert;
+ein echter externer Live-Versand bleibt nicht abgenommen.
 Die Werkbank verbirgt interne Middleware-Pfade in der Anzeige; Browser-
 Netzwerkdetails und originale FHIR-Antworten bleiben davon unberuehrt.
 
@@ -270,12 +314,15 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `GET` | `/metadata` | Liefert CapabilityStatement im Debug-Modus | FHIR-Metadaten |
 | `POST` | `/cda/debug` | Parst CDA und liefert Profil, Patient, Header und Sections | CDA-Diagnose |
 | `POST` | `/cda/convert` | Konvertiert CDA in ein FHIR-Bundle | CDA -> FHIR |
+| `POST` | `/cda/validate` | Konvertiert CDA und validiert intern ohne Speicherung; `bundle_type=transaction` oder `document` | CDA -> FHIR -> HAPI `$validate` |
+| `POST` | `/fhir/validate` | Validiert ein vorhandenes FHIR-Bundle gegen deklarierte Profile, ohne Speicherung | FHIR -> HAPI `$validate` |
 | `POST` | `/cda/import` | Proxy: leitet CDA mit Bearer-Token an BridgeLink; BridgeLink schreibt nach HAPI | CDA -> BridgeLink -> HAPI |
 | `POST` | `/cda/etoc/convert` | Erzeugt ein CH-eTOC-Dokumentbundle | CDA -> CH-eTOC |
 | `POST` | `/cda/umzh/convert` | Erzeugt ein UMZH-FHIR-Bundle | CDA -> UMZH |
 | `POST` | `/cda/umzh/send` | Konvertiert CDA und versendet den UMZH-Workflow | UMZH-Sendefluss |
 | `POST` | `/cda/vacd/convert` | Erzeugt ein CH-VACD-Dokumentbundle | CDA -> CH-VACD |
-| `POST` | `/cda/vacd/prepare` | Bereitet CH-VACD als Transaction fuer BridgeLink vor, kein Write | CDA -> CH-VACD -> Transaction |
+| `POST` | `/cda/vacd/validate` | Konvertiert und validiert das CH-VACD-Dokument ohne Speicherung | CDA -> CH-VACD -> HAPI `$validate` |
+| `POST` | `/cda/vacd/prepare`, `/cda/vacd/import` | Deaktiviert, HTTP 410 mit OperationOutcome | Kein Import |
 | `POST` | `/cda/vacd/send` | Konvertiert CDA und versendet an den VACD-Zielserver | CH-VACD-Sendefluss |
 | `POST` | `/emediplan/convert` | Konvertiert Text, PDF oder QR-Bild in ein FHIR-Bundle | eMediplan -> FHIR |
 | `POST` | `/emediplan/prepare` | Bereitet eMediplan oder FHIR-JSON mit Importpruefungen als Transaction-Bundle vor; kein Write | BridgeLink -> Middleware -> BridgeLink |
@@ -618,6 +665,10 @@ Referenzserver (z. B. `https://vaccination-demo.raly.ch/api/fhir`, Default via
 Ablauf:
 
 1. CDA wird wie bei `/cda/vacd/convert` zu einem CH-VACD-Document-Bundle konvertiert.
+   Vor jedem Zielkontakt wird das Dokument intern gegen die deklarierten
+   CH-VACD-/CH-Core-Profile validiert. `error`/`fatal` blockiert mit HTTP 422
+   und OperationOutcome; Validator-Ausfall oder ungueltige Antwort mit HTTP
+   502. Es wird in diesen Faellen kein Zielpatient gesucht oder angelegt.
 2. Die enthaltene `Patient`-Ressource wird zunaechst beim Zielserver gesucht, um
    Duplikate zu vermeiden (analog zum Find-or-Create-Ablauf gegen den eigenen
    FHIR-Server in `services/patient_service.py`): zuerst per `GET
@@ -637,7 +688,20 @@ Ablauf:
    (`subject.reference`, `patient.reference`, `performer.actor.reference`, Section-
    Entries usw.) werden zur relativen Form `<ResourceType>/<id>` aufgeloest statt
    `urn:uuid:`-Referenzen zu verwenden.
-4. Das aktualisierte Bundle wird per `POST {ziel}/Bundle` an den Zielserver gesendet.
+4. Das aktualisierte Bundle wird erneut intern validiert. Nur ohne
+   `error`/`fatal` wird genau dieser Payload per `POST {ziel}/Bundle`
+   gesendet. Auch ein Ausfall dieser zweiten Pruefung verhindert den
+   Dokumentversand. Der Patientenabgleich ist dann bereits erfolgt:
+   Ein Zielpatient kann bereits angelegt worden sein; kein automatisches
+   Rollback. Die Fehlerantwort weist darauf hin. Bei Profilfehlern zeigt
+   `X-VACD-Validation-Phase=before-bundle` diese Phase.
+
+Warnungen allein blockieren nicht. Erfolgreiche Sendeberichte enthalten
+beide vollstaendigen OperationOutcomes unter
+`send.validation.before_patient` und `send.validation.before_bundle`.
+Eine vorherige manuelle Validierung ist kein Freigabetoken: jeder
+Sendeaufruf wird erneut geprueft. CH-VACD-Dokumenttyp und Profildeklaration
+sind auch bei direktem Aufruf des Sendeservice zwingend.
 
 `outbound_authorization` (Query-Parameter) wird unveraendert als `Authorization`-
 Header an beide Aufrufe (Patient und Bundle) weitergereicht.

@@ -36,7 +36,7 @@ from fastapi import (
     Query,
     Response,
 )
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.concurrency import run_in_threadpool
 
@@ -63,7 +63,8 @@ from parser.hl7v2.oru_r01_parser import parse_oru_r01, to_transaction_bundle
 
 # Builder
 from builders.ch_core_patient_builder import (
-    build_ch_core_patient
+    build_ch_core_patient,
+    ensure_contact_address,
 )
 
 from builders.ch_core_practitioner_builder import (
@@ -128,6 +129,7 @@ from services.umzh_send_service import (
 )
 from services.vacd_send_service import (
     send_vacd_bundle,
+    VacdValidationRejected,
     _embed_precreated_resource,
 )
 from services.emediplan_service import (
@@ -175,6 +177,7 @@ from config import (
     VACD_SEND_TIMEOUT,
 )
 from services.jwks_service import JwksConfigurationError, build_jwks
+from services.fhir_validation_service import FhirValidationError, validate_fhir_bundle
 
 
 UMZH_SEND_BASE_URL = os.getenv("UMZH_SEND_BASE_URL", "")
@@ -1857,23 +1860,7 @@ def _mark_vacd_bundle(bundle):
                     for profile in resource_profiles
                 ]
                 for contact in resource.get("contact") or []:
-                    if not any(
-                        coding.get("code") in {"MTH", "FTH"}
-                        for relation in contact.get("relationship") or []
-                        for coding in relation.get("coding") or []
-                    ):
-                        address = contact.setdefault("address", {})
-                        for field in ("city", "postalCode", "country"):
-                            if not address.get(field) and not address.get(f"_{field}"):
-                                address[f"_{field}"] = {
-                                    "extension": [{
-                                        "url": (
-                                            "http://hl7.org/fhir/StructureDefinition/"
-                                            "data-absent-reason"
-                                        ),
-                                        "valueCode": "unknown",
-                                    }]
-                                }
+                    ensure_contact_address(contact)
                     contact.pop("telecom", None)
                     contact["extension"] = [
                         extension
@@ -1989,26 +1976,71 @@ async def cda_vacd_convert(
         )
 
 
+def _validation_outcome_response(status_code, code, diagnostics):
+    return JSONResponse(
+        status_code=status_code,
+        media_type="application/fhir+json",
+        content={
+            "resourceType": "OperationOutcome",
+            "issue": [{"severity": "error", "code": code, "diagnostics": diagnostics}],
+        },
+    )
+
+
+async def _validate_converted_bundle(bundle):
+    try:
+        status_code, outcome = await run_in_threadpool(validate_fhir_bundle, bundle)
+    except ValueError as ex:
+        return _validation_outcome_response(400, "invalid", str(ex))
+    except FhirValidationError as ex:
+        logger.error("FHIR validation failed: %s", ex)
+        return _validation_outcome_response(502, "exception", str(ex))
+    return JSONResponse(
+        status_code=status_code, content=outcome, media_type="application/fhir+json"
+    )
+
+
+@app.post("/fhir/validate")
+async def fhir_validate(bundle: dict):
+    return await _validate_converted_bundle(bundle)
+
+
+@app.post("/cda/validate")
+async def cda_validate(
+    request: Request,
+    bundle_type: str = Query("transaction", pattern="^(transaction|document)$"),
+    file: Optional[UploadFile] = File(None),
+    raw_xml: Optional[str] = Form(None),
+):
+    bundle = await cda_convert(request, bundle_type=bundle_type, file=file, raw_xml=raw_xml)
+    return await _validate_converted_bundle(bundle)
+
+
+@app.post("/cda/vacd/validate")
+async def cda_vacd_validate(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    raw_xml: Optional[str] = Form(None),
+):
+    bundle = await cda_vacd_convert(
+        request, bundle_type="document", file=file, raw_xml=raw_xml
+    )
+    return await _validate_converted_bundle(bundle)
+
+
+@app.post("/cda/vacd/import")
 @app.post("/cda/vacd/prepare")
 async def cda_vacd_prepare(
     request: Request,
     file: Optional[UploadFile] = File(None),
     raw_xml: Optional[str] = Form(None),
 ):
-    _bridge_link_authorization(request)
-    document = await cda_vacd_convert(
-        request, bundle_type="document", file=file, raw_xml=raw_xml
+    logger.warning("Disabled VACD HAPI import requested")
+    return _validation_outcome_response(
+        410,
+        "not-supported",
+        "VACD HAPI import is disabled. Use /cda/vacd/validate without storage.",
     )
-    try:
-        bundle = _stabilize_bundle(document)
-        # Document-only profiles must not describe the transaction envelope.
-        bundle.get("meta", {}).pop("profile", None)
-        return _validate_bundle(bundle)
-    except ValueError as ex:
-        raise HTTPException(status_code=400, detail=str(ex)) from ex
-    except requests.RequestException as ex:
-        logger.exception("VACD import preparation failed")
-        raise HTTPException(status_code=502, detail="FHIR preflight unavailable") from ex
 
 
 @app.post("/cda/vacd/send")
@@ -2062,7 +2094,8 @@ async def cda_vacd_send(
 
         bundle = _validate_bundle(_mark_vacd_bundle(bundle))
 
-        send_report = send_vacd_bundle(
+        send_report = await run_in_threadpool(
+            send_vacd_bundle,
             bundle=bundle,
             destination_base_url=resolved_destination,
             outbound_authorization=outbound_authorization,
@@ -2076,6 +2109,27 @@ async def cda_vacd_send(
             "send": send_report,
         }
 
+    except VacdValidationRejected as ex:
+        logger.warning("VACD external send blocked by validation: phase=%s", ex.phase)
+        outcome = copy.deepcopy(ex.outcome)
+        if ex.phase == "before-bundle":
+            outcome["issue"].append({
+                "severity": "information",
+                "code": "informational",
+                "diagnostics": (
+                    "Document not sent; destination patient step already completed. "
+                    "A patient may have been created."
+                ),
+            })
+        return JSONResponse(
+            status_code=422,
+            media_type="application/fhir+json",
+            content=outcome,
+            headers={"X-VACD-Validation-Phase": ex.phase},
+        )
+    except FhirValidationError as ex:
+        logger.error("VACD external send blocked: %s", ex)
+        return _validation_outcome_response(502, "exception", str(ex))
     except ET.ParseError as ex:
         raise HTTPException(
             status_code=400,

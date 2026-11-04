@@ -52,7 +52,28 @@ Abnahme aller CDA-Varianten oder der verbleibenden Terminologiewarnungen.
 
 Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt nicht automatisch alle generischen CDA-Sections, sondern filtert auf die für CH VACD relevanten Ressourcen und Sections.
 
-## Endpoint
+## Aktuelle Endpunkte
+
+- Konvertierung: `POST /cda/vacd/convert`
+- Validierung ohne Speicherung: `POST /cda/vacd/validate`
+- HAPI-Import deaktiviert: `POST /cda/vacd/prepare` und
+  `POST /cda/vacd/import` liefern HTTP 410 mit OperationOutcome.
+- Separater externer Versand: `POST /cda/vacd/send` erfordert jetzt bei
+  jedem Aufruf eine erfolgreiche interne CH-VACD-Validierung, sowohl vor
+  dem ersten Zielkontakt als auch nach dem Umschreiben der Zielreferenzen.
+  Fehler/fatal blockieren mit HTTP 422; Validator-Ausfall mit HTTP 502.
+  Warnungen bleiben sichtbar und blockieren allein nicht.
+  Beide Outcomes stehen bei erfolgreichem Versand unter `send.validation`.
+  Scheitert die zweite Pruefung, wird kein Dokument gesendet; ein im
+  vorhergehenden Schritt angelegter Zielpatient kann bereits existieren.
+
+Die Validierung liefert das interne HAPI-OperationOutcome mit allen
+Warnungen, nicht das Bundle. HTTP 200 ist allein kein Konformitaetsnachweis;
+`issue.severity=error|fatal` ist ausschlaggebend.
+
+## Historische Endpunkte und weiterhin deploytes Gateway-Routing
+
+Die nachfolgend beschriebene Importvorbereitung ist inzwischen deaktiviert.
 
 - Intern: `POST /cda/vacd/convert`
 - Importvorbereitung: `POST /cda/vacd/prepare` (Bearer erforderlich,
@@ -68,11 +89,12 @@ Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt n
 | `/v1/cda/vacd/convert` | `/cda/vacd/convert` | `none` |
 | `/v1/cda/vacd/import` | `/cda/vacd/prepare` | `hapi` |
 
-Die Importvorbereitung ergaenzt die FHIR-Transaction-Requests und entfernt
-die Document-Profile vom aeusseren Transaction-Bundle. Die Profile der
-enthaltenen Composition und Immunization bleiben erhalten. Destination 02
-schreibt erst anschliessend nach HAPI. Der HTTP Sender muss Authorization
-und `Content-Type: application/xml; charset=UTF-8` weiterreichen.
+Die Tabelle beschreibt die weiterhin deployte BridgeLink-Konfiguration.
+Der Importpfad ist durch die Middleware gesperrt: deren HTTP 410 wird
+von Destination 01 als Gateway-Fehler behandelt, ohne `fhirJson` fuer
+Destination 02 zu setzen. Es findet kein HAPI-Import statt.
+Die neue Validierung wird same-origin direkt ueber die Middleware aufgerufen;
+ein Channel-Redeploy ist dafuer nicht erforderlich.
 
 Der separate openEHR-Versand geht aus der Werkbank same-origin an
 `/cda/vacd/send`, standardmaessig mit

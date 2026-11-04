@@ -1,3 +1,6 @@
+import html
+
+
 CH_CORE_COMPOSITION_PROFILE = (
     "http://fhir.ch/ig/ch-core/StructureDefinition/ch-core-composition"
 )
@@ -208,6 +211,16 @@ def build_ch_core_composition(
 
         if note_references:
             section_entry["entry"] = note_references
+
+        if section_entry and not note_references:
+            narrative = section.get("narrativeText") or section.get("text")
+            if not isinstance(narrative, str) or not narrative.strip():
+                narrative = "No structured entries were extracted from this CDA section."
+            section_entry["text"] = {
+                "status": "generated",
+                "div": '<div xmlns="http://www.w3.org/1999/xhtml">'
+                + html.escape(narrative) + "</div>",
+            }
 
         if section_entry:
             composition["section"].append(section_entry)

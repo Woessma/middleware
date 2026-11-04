@@ -5,6 +5,8 @@
 | Use Case | Request-Ziel | HAPI-Write |
 |---|---|---|
 | CDA Convert | BridgeLink `/v1/cda/convert` | Nein |
+| CDA Validate (Transaction/Document) | Same-Origin `/cda/validate` | Nein |
+| CDA FHIR-Bundle separat validieren | Same-Origin `/fhir/validate` | Nein |
 | CDA Import | Same-Origin `/cda/import` -> BridgeLink | Ja |
 | eMediplan JSON / CHMED16A Convert | BridgeLink `/v1/emediplan/convert` | Nein |
 | eMediplan JSON / CHMED16A Import | BridgeLink `/v1/emediplan/import` | Ja |
@@ -14,12 +16,43 @@
 | EchoSOS-URL Import | BridgeLink `/v1/echosos/resolve` | Ja |
 | Patient `$everything` | FHIR `Patient/{id}/$everything` | Nein |
 | VACD Convert | BridgeLink `/v1/cda/vacd/convert` (Routing eingerichtet, Live-Abnahme offen) | Nein |
-| VACD HAPI-Import | BridgeLink `/v1/cda/vacd/import` (Routing eingerichtet, Live-Abnahme offen) | Ja |
+| VACD Validate | Same-Origin `/cda/vacd/validate` | Nein |
 | VACD openEHR-Send | Same-Origin `/cda/vacd/send` | Externer Demo-FHIR-Server |
 
-Die VACD-Pfade sind fuer die naechste Abnahme vorbereitet, noch nicht live
-bestaetigt. Routing und Grenzen:
+Der VACD-HAPI-Import ist aus der Werkbank entfernt und serverseitig
+deaktiviert (HTTP 410 auch ueber die bisherige Importvorbereitung).
+Der externe VACD-Sendeweg bleibt davon getrennt und nicht live abgenommen.
+Er validiert jetzt verpflichtend intern vor dem ersten Zielkontakt und
+erneut vor dem Dokumentversand. Fehler/fatal oder Validator-Ausfall
+blockieren den naechsten Schritt. Warnungen bleiben im Sendebericht
+unter `send.validation` sichtbar. Nach dem Patientenabgleich kann bei
+einem Fehler der zweiten Pruefung bereits ein Zielpatient existieren.
+Die Validierung liefert ein OperationOutcome mit allen Fehlern und Warnungen;
+auch bei HTTP 200 wird `error`/`fatal` als Fehler angezeigt.
+Fuer bereits konvertierte CDA-Bundles (einschliesslich eTOC/UMZH) steht die
+separate JSON-Bundle-Validierung zur Verfuegung. Kein automatischer Import
+nach einer erfolgreichen Validierung.
+Routing und Grenzen:
 [CH-VACD](docs/ch-vacd-immunization-administration.md).
+
+### Abnahme der separaten Validierung (2026-11-04)
+
+Am deployten System mit der lokalen CDA-EPIC-Stichprobe geprueft:
+
+| Validierung | Fehler | Warnungen |
+|---|---|---|
+| CDA Transaction | 0 | 186 |
+| CDA Document | 0 | 84 |
+| VACD Document | 0 | 27 |
+
+Die Sperren `/cda/vacd/prepare` und `/cda/vacd/import` liefern HTTP 410.
+Synthetische Negativtests bestaetigen die Weitergabe eines ungueltigen
+FHIR-Enumerationswerts als HTTP 400 mit Originaldiagnostik sowie eines
+unbekannten Profils als Fehler im HTTP-200-OperationOutcome.
+93 Python- und 32 Node-Regressionstests bestanden. Die neue Auswahl,
+der Verarbeitungsweg ohne Speicherung und die Entfernung des VACD-Imports
+wurden im Browser auch bei 390 Pixeln Breite geprueft. Kein klinischer
+Import und kein externer VACD-Versand wurden dabei ausgefuehrt.
 
 Weitere im Quellcode enthaltene Use-Cases bleiben ausgeblendet, solange ihre
 Gateway-Routen nicht freigegeben sind. eMediplan-JSON wird als
@@ -49,19 +82,54 @@ Adressen unter `link.self`; diese werden bewusst nicht umgeschrieben.
 
 ## Aktueller Betriebsstand (2026-11-04)
 
+- Tagesabschluss: Middleware mit separater Validierung und verpflichtender
+  externer VACD-Sendepruefung deployt. VACD-HAPI-Import bleibt deaktiviert.
+- Abschliessender Regressionstest vor Git-Sync: 99 Python- und 41 Node-Tests
+  bestanden; beide Git-Remotes vor dem Commit ohne Divergenz.
+- CORS im Channel korrigiert: nur Preflight fuer den exakten Werkbank-Origin
+  darf ohne JWT passieren; echte Aufrufe bleiben JWT-geschuetzt.
+  Live bestaetigt: OPTIONS 204 mit CORS-Headern und Browser-CDA-Convert
+  200/transaction mit erfolgreicher JWT-Pruefung, ohne HAPI-Write.
+  Bruno-Erfolg allein prueft keine Browser-CORS-Regeln.
+- Frischer Channel-Export Revision 114 wurde gegen die versionierten
+  Routing-/Transformerquellen und Listener-Einstellungen abgeglichen.
+- Separate JSON-Bundle-Validierung lieferte auch ueber die oeffentliche
+  Middleware-Adresse und im Browser ein OperationOutcome (HTTP 200).
+  Dies ist kein Nachweis fuer die zusaetzlichen Gateway-Validierungsrouten.
+- Generisches CDA liefert CH-Core-Compositions mit urspruenglichem
+  CDA-Dokumenttyp, nicht mehr pauschal CH IPS. Interne HAPI-Pruefung der
+  CDA-EPIC-Stichprobe: Transaction und Document jeweils 0 Fehler.
+  186 bzw. 84 Warnungen bleiben; keine vollstaendige Terminologieabnahme.
+  Details: [CDA-Korrekturen](docs/bridgelink-cda-usecases.md).
 - Werkbank-Anpassungen sind gebaut und deployt. Die Routenanzeige wurde im
   Browser bei 1440, 808 und 390 Pixeln Breite ohne Abschneiden geprueft.
-- Dispatcher-Revision 108 verwendet OL_CORE und OL_ROUTING; die JWT-Library
-  und Destinations bleiben unveraendert.
+- Dispatcher-Revision 114 verwendet OL_CORE und OL_ROUTING; JWT-Validierung
+  fuer echte Requests bleibt erhalten. Listener, Source-Transformer und
+  Destination-99-Response-Transformer behandeln jetzt CORS-Preflights.
 - Nach der Auslagerung: CDA Convert (200/transaction), eMediplan Convert
   (200/collection) und unbekannter Endpunkt (404/OperationOutcome) bestaetigt.
 - PDF-/QR-Import liefert weiterhin 200/transaction-response; die gezeigte
   Observation blieb auf Version 1. Keine neue Vollpruefung aller Ressourcen.
-- 13 Werkbanktests sowie 18 Core-/Routingtests bestanden.
+- 41 Werkbank-/Core-/Routing-/CORS-Tests bestanden.
 - VACD-Live-Abnahme, 400-/401- und Ausfalltests nach dem Refactoring sind offen.
 
 Channel-Snapshot, Library-Importe, Rollback und Sync beider Git-Remotes:
 [BridgeLink-Dokumentation](bridgelink/README.md).
+
+### Offene Punkte fuer die Fortsetzung
+
+- Warnungen aus den Profilpruefungen fachlich/terminologisch auswerten;
+  fehlerfreie Stichproben sind keine pauschale IG-Abnahme.
+- Vollstaendiger CH-EMED-Dokumentworkflow und spaetere IPS-Erzeugung
+  aus HAPI bleiben separate Vorhaben.
+- Kein echter externer VACD-Live-Versand: beide HAPI-Pruefungen mit lokaler
+  CDA-Datei bestanden, externe Patienten-/Bundle-Schritte nur simuliert.
+- Alle Gateway-Routen nach CORS-Aenderung authentifiziert nachtesten,
+  insbesondere Fehlerantworten/Tokenablauf, ohne unbeabsichtigte Writes.
+- Werkbank-Anzeige: Nach einem Netzwerkfehler koennen alte Antwortmetadaten
+  stehen bleiben. Separat korrigieren; kein Nachweis eines aktuellen HTTP 200.
+- Eine verpflichtende FHIR-IG-Validierung vor saemtlichen bestehenden
+  Importwegen ist noch nicht implementiert.
 
 ## eMediplan-Abnahme (2026-11-04)
 

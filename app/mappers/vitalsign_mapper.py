@@ -4,6 +4,7 @@ import uuid
 
 from terminology.loinc import get_loinc_display
 from utils.fhir_utils import (
+    fhir_decimal,
     cda_ts_to_fhir_date,
     cda_ts_to_fhir_datetime
 )
@@ -168,9 +169,7 @@ def map_vitalsign_section(
                 observation[
                     "valueQuantity"
                 ] = {
-                    "value": value.get(
-                        "value"
-                    ),
+                    "value": fhir_decimal(value["value"]),
                     "unit": value.get(
                         "unit"
                     ),

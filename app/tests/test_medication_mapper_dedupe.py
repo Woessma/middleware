@@ -63,7 +63,10 @@ class MedicationMapperDedupeTests(unittest.TestCase):
         dosage = medication["dosage"][0]
 
         self.assertEqual(dosage["text"], "Einnahme: 1 Tablette (1.25 mg) 1 mal täglich morgens [1-0-0-0]")
-        self.assertEqual(dosage["doseAndRate"][0]["doseQuantity"], {"value": "1.25", "unit": "mg"})
+        self.assertEqual(dosage["doseAndRate"][0]["doseQuantity"], {
+            "value": 1.25, "unit": "mg",
+            "system": "http://unitsofmeasure.org", "code": "mg",
+        })
         self.assertTrue(medication["note"])
         self.assertIn(
             "Einnahme: 1 Tablette (1.25 mg) 1 mal täglich morgens [1-0-0-0]",

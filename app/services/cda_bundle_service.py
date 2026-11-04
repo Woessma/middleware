@@ -752,7 +752,7 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
         ),
         encounter_reference=encounter_ref,
         language=_extract_document_language(root),
-        use_ch_ips_profile=True,
+        use_ch_ips_profile=False,
     )
 
     deduped_entries.append(
@@ -781,6 +781,24 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
             for entry in document_entries
             if entry.get("resource", {}).get("resourceType") != "Composition"
         ]
+
+        reference_map = {
+            f"{entry['resource']['resourceType']}/{entry['resource']['id']}": entry["fullUrl"]
+            for entry in document_entries
+        }
+
+        def rewrite_document_references(value):
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    if key == "reference" and isinstance(item, str):
+                        value[key] = reference_map.get(item, item)
+                    else:
+                        rewrite_document_references(item)
+            elif isinstance(value, list):
+                for item in value:
+                    rewrite_document_references(item)
+
+        rewrite_document_references(document_entries)
 
         bundle = {
             "resourceType": "Bundle",

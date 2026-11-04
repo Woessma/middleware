@@ -23,7 +23,9 @@ https://vaccination-demo.raly.ch/api/fhir):
    "<ResourceType>/<id>" form instead of a urn:uuid. The Patient entry's id is the
    one assigned by (or matched on) the destination server, plus an identifier with
    system "urn:che:epr:ch-vacd:ehr-id" is added.
-4. POST the resulting document Bundle to the destination server.
+The CH-VACD document must pass internal validation before step 1 and again
+after reference rewriting, immediately before POST /Bundle. Validation errors
+or an unavailable validator block the next external step.
 """
 from __future__ import annotations
 
@@ -34,8 +36,41 @@ from urllib.parse import quote
 import requests
 
 from config import FHIR_BASE
+from services.fhir_validation_service import FhirValidationError, validate_fhir_bundle
 
 VACD_EHR_ID_SYSTEM = "urn:che:epr:ch-vacd:ehr-id"
+VACD_DOCUMENT_PROFILE = (
+    "http://fhir.ch/ig/ch-vacd/StructureDefinition/"
+    "ch-vacd-document-immunization-administration"
+)
+
+
+class VacdValidationRejected(Exception):
+    def __init__(self, outcome: dict, phase: str):
+        super().__init__("VACD validation failed; external document send blocked")
+        self.outcome = outcome
+        self.phase = phase
+
+
+def _require_valid_vacd(bundle: dict, phase: str) -> dict:
+    if (
+        bundle.get("type") != "document"
+        or VACD_DOCUMENT_PROFILE not in bundle.get("meta", {}).get("profile", [])
+    ):
+        raise VacdValidationRejected({
+            "resourceType": "OperationOutcome",
+            "issue": [{
+                "severity": "error",
+                "code": "invalid",
+                "diagnostics": "A CH-VACD immunization administration document is required",
+            }],
+        }, phase)
+    status, outcome = validate_fhir_bundle(bundle)
+    if status >= 300 or any(
+        issue["severity"] in {"error", "fatal"} for issue in outcome["issue"]
+    ):
+        raise VacdValidationRejected(outcome, phase)
+    return outcome
 
 
 def _base(base_url: str) -> str:
@@ -197,6 +232,8 @@ def send_vacd_bundle(
     if patient_entry is None:
         raise ValueError("Bundle does not contain a Patient resource")
 
+    preflight_outcome = _require_valid_vacd(bundle, "before-patient")
+    old_patient_id = patient_entry["resource"].get("id")
     patient_resource = patient_entry.get("resource") or {}
 
     try:
@@ -227,39 +264,29 @@ def send_vacd_bundle(
     if not any(ident.get("system") == VACD_EHR_ID_SYSTEM for ident in identifiers):
         identifiers.append({"system": VACD_EHR_ID_SYSTEM, "value": assigned_id})
 
-    composition_entry = _first_entry_of_type(entries, "Composition")
-    composition = (composition_entry or {}).get("resource") or {}
-
     # Rewrite every entry to the CH-VACD example's fullUrl/reference scheme: absolute
     # fullUrl per resource, and relative "ResourceType/id" references between entries
     # (plain urn:uuid matching triggered a NullPointerException on the raly.ch demo).
     old_ref_to_new = {}
-    known_references = set()
+    if old_patient_id:
+        old_ref_to_new[f"Patient/{old_patient_id}"] = f"Patient/{assigned_id}"
     for entry in entries:
         resource = entry.get("resource") or {}
         resource_type = resource.get("resourceType")
         resource_id = resource.get("id")
         old_full_url = entry.get("fullUrl")
         if resource_type and resource_id and old_full_url:
-            known_references.add(f"{resource_type}/{resource_id}")
             old_ref_to_new[old_full_url] = f"{resource_type}/{resource_id}"
             entry["fullUrl"] = f"{_base(destination_base_url)}/{resource_type}/{resource_id}"
 
-    # Drop any author/custodian reference that could not be embedded (e.g. the
-    # precreated Practitioner/Organization no longer exists on FHIR_BASE), to avoid
-    # sending the destination server a reference it can never resolve.
-    if composition:
-        composition["author"] = [
-            author for author in composition.get("author") or []
-            if author.get("reference") in known_references
-        ]
-        if not composition["author"]:
-            composition.pop("author", None)
-        custodian = composition.get("custodian") or {}
-        if custodian.get("reference") not in known_references:
-            composition.pop("custodian", None)
-
     _rewrite_references(bundle, old_ref_to_new)
+    try:
+        final_outcome = _require_valid_vacd(bundle, "before-bundle")
+    except FhirValidationError as ex:
+        raise FhirValidationError(
+            "Final VACD validation unavailable; document not sent; "
+            "destination patient step already completed"
+        ) from ex
 
     bundle_url = f"{_base(destination_base_url)}/Bundle"
     try:
@@ -291,6 +318,10 @@ def send_vacd_bundle(
     return {
         "status": "sent" if bundle_result.get("ok") else "partial-error",
         "destination_base_url": _base(destination_base_url),
+        "validation": {
+            "before_patient": preflight_outcome,
+            "before_bundle": final_outcome,
+        },
         "patient": {
             "url": f"{_base(destination_base_url)}/Patient",
             "assigned_id": assigned_id,

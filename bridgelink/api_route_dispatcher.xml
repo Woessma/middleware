@@ -3,7 +3,7 @@
   <nextMetaDataId>5</nextMetaDataId>
   <name>api_route_dispatcher</name>
   <description>Central OmniLink API Gateway</description>
-  <revision>108</revision>
+  <revision>114</revision>
   <sourceConnector version="26.3.1">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -11,7 +11,13 @@
       <pluginProperties>
         <com.mirth.connect.plugins.httpauth.javascript.JavaScriptHttpAuthProperties version="26.3.1">
   <authType>JAVASCRIPT</authType>
-          <script>return omniLinkJwtAuthenticate();</script>
+          <script>if (String(sourceMap.get('method') || '').toUpperCase() === 'OPTIONS') {
+    var headers = sourceMap.get('headers');
+    return headers != null
+        &amp;&amp; String(headers.getHeader('Origin') || '') === 'https://middleware.local.omnilink.ch'
+        &amp;&amp; /^(GET|POST)$/.test(String(headers.getHeader('Access-Control-Request-Method') || ''));
+}
+return omniLinkJwtAuthenticate();</script>
         </com.mirth.connect.plugins.httpauth.javascript.JavaScriptHttpAuthProperties>
       </pluginProperties>
       <listenerConnectorProperties version="26.3.1">
@@ -40,7 +46,24 @@
       <responseContentType>application/json</responseContentType>
       <responseDataTypeBinary>false</responseDataTypeBinary>
       <responseStatusCode>${responseStatusCode}</responseStatusCode>
-      <responseHeaders class="linked-hash-map"/>
+      <responseHeaders class="linked-hash-map">
+        <entry>
+          <string>Access-Control-Allow-Origin</string>
+          <list><string>https://middleware.local.omnilink.ch</string></list>
+        </entry>
+        <entry>
+          <string>Access-Control-Allow-Methods</string>
+          <list><string>GET, POST, OPTIONS</string></list>
+        </entry>
+        <entry>
+          <string>Access-Control-Allow-Headers</string>
+          <list><string>Authorization, Content-Type, Accept</string></list>
+        </entry>
+        <entry>
+          <string>Vary</string>
+          <list><string>Origin</string></list>
+        </entry>
+      </responseHeaders>
       <responseHeadersVariable></responseHeadersVariable>
       <useResponseHeadersVariable>false</useResponseHeadersVariable>
       <charset>UTF-8</charset>
@@ -59,6 +82,13 @@
     sourceMap,
     connectorMessage.getRawData()
 );
+
+if (request.method === &apos;OPTIONS&apos;) {
+    var headers = sourceMap.get(&apos;headers&apos;);
+    request.origin = olCoreGetHeader(headers, &apos;Origin&apos;);
+    request.preflightMethod = olCoreGetHeader(headers, &apos;Access-Control-Request-Method&apos;);
+    request.preflightHeaders = olCoreGetHeader(headers, &apos;Access-Control-Request-Headers&apos;);
+}
 
 olRouteApply(
     request,
@@ -753,7 +783,11 @@ var middlewareResponse = channelMap.get(&apos;middlewareResponse&apos;);
 var responseTarget =
     String(channelMap.get(&apos;responseTarget&apos;) || &apos;none&apos;);
 
-if (gatewayError != null) {
+if (String(channelMap.get(&apos;corsPreflight&apos;) || &apos;&apos;) === &apos;true&apos;) {
+
+    setClientResponse(&apos;&apos;, &apos;204&apos;);
+
+} else if (gatewayError != null) {
 
     var errorStatus =
         String(channelMap.get(&apos;gatewayErrorStatusCode&apos;) || &apos;&apos;);
@@ -909,7 +943,7 @@ return;</undeployScript>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1793787419723</time>
+        <time>1793804461023</time>
         <timezone>Europe/Zurich</timezone>
       </lastModified>
       <pruningSettings>
@@ -1078,6 +1112,33 @@ return;</undeployScript>
     log.info(&apos;PATH=&apos; + request.path);
     log.info(&apos;METHOD=&apos; + request.method);
 
+    if (request.method === &apos;OPTIONS&apos;) {
+        var preflightRoute = olRouteResolve(request.preflightMethod, request.path);
+        var allowedHeaders = /^(authorization|content-type|accept)$/;
+        var requestedHeaders = String(request.preflightHeaders || &apos;&apos;).toLowerCase().split(&apos;,&apos;);
+        var validHeaders = true;
+        for (var i = 0; i &lt; requestedHeaders.length; i++) {
+            var header = requestedHeaders[i].trim();
+            if (header !== &apos;&apos; &amp;&amp; !allowedHeaders.test(header)) {
+                validHeaders = false;
+            }
+        }
+        if (
+            request.origin !== &apos;https://middleware.local.omnilink.ch&apos; ||
+            !validHeaders
+        ) {
+            olCoreSetGatewayError(target, 403, &apos;forbidden&apos;, &apos;CORS preflight not allowed&apos;);
+            log.warn(&apos;CORS preflight rejected&apos;);
+        } else if (preflightRoute == null) {
+            olCoreSetGatewayError(target, 404, &apos;not-found&apos;, &apos;Unknown preflight endpoint&apos;);
+            log.warn(&apos;Unknown CORS preflight endpoint&apos;);
+        } else {
+            target.put(&apos;corsPreflight&apos;, &apos;true&apos;);
+            log.info(&apos;CORS preflight accepted - no destination call&apos;);
+        }
+        return;
+    }
+
     var route = olRouteResolve(request.method, request.path);
 
     if (route == null) {
@@ -1160,8 +1221,29 @@ return;</undeployScript>
             id: &apos;vacd.import&apos;, method: &apos;POST&apos;,
             path: &apos;/v1/cda/vacd/import&apos;,
             middlewarePath: &apos;/cda/vacd/prepare&apos;,
-            responseTarget: &apos;hapi&apos;, forwardQuery: true,
-            logMessage: &apos;VACD (&apos; + path + &apos;), responseTarget=hapi&apos;
+            responseTarget: &apos;none&apos;, forwardQuery: true,
+            logMessage: &apos;VACD import disabled, responseTarget=none&apos;
+        },
+        {
+            id: &apos;vacd.validate&apos;, method: &apos;POST&apos;,
+            path: &apos;/v1/cda/vacd/validate&apos;,
+            middlewarePath: &apos;/cda/vacd/validate&apos;,
+            responseTarget: &apos;none&apos;, forwardQuery: true,
+            logMessage: &apos;VACD validation, responseTarget=none&apos;
+        },
+        {
+            id: &apos;cda.validate&apos;, method: &apos;POST&apos;,
+            path: &apos;/v1/cda/validate&apos;,
+            middlewarePath: &apos;/cda/validate&apos;,
+            responseTarget: &apos;none&apos;, forwardQuery: true,
+            logMessage: &apos;CDA validation, responseTarget=none&apos;
+        },
+        {
+            id: &apos;fhir.validate&apos;, method: &apos;POST&apos;,
+            path: &apos;/v1/fhir/validate&apos;,
+            middlewarePath: &apos;/fhir/validate&apos;,
+            responseTarget: &apos;none&apos;, forwardQuery: false,
+            logMessage: &apos;FHIR validation, responseTarget=none&apos;
         },
         {
             id: &apos;cda.convert&apos;, method: &apos;POST&apos;,

@@ -5,6 +5,7 @@ import hashlib
 from fhir.fhir_helpers import oid_to_fhir_system
 from terminology.emediplan_medication_map import resolve_medication_identity
 from utils.fhir_utils import (
+    fhir_decimal,
     cda_ts_to_fhir_datetime
 )
 from mappers.author_helpers import add_author_display
@@ -183,6 +184,13 @@ def _build_dosage(entry):
 
     # PROC-MAP-02: Keep quantitative dose as structured FHIR doseAndRate for CDA round-trips.
     if dose_quantity:
+        dose_quantity = dict(dose_quantity)
+        if dose_quantity.get("value") is not None:
+            dose_quantity["value"] = fhir_decimal(dose_quantity["value"])
+        if dose_quantity.get("unit") and not dose_quantity.get("code"):
+            dose_quantity["code"] = dose_quantity["unit"]
+        if dose_quantity.get("code") and not dose_quantity.get("system"):
+            dose_quantity["system"] = "http://unitsofmeasure.org"
         dosage["doseAndRate"] = [
             {
                 "doseQuantity": dose_quantity
