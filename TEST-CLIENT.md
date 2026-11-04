@@ -65,6 +65,19 @@ Channel-Snapshot, Library-Importe, Rollback und Sync beider Git-Remotes:
 
 ## eMediplan-Abnahme (2026-11-04)
 
+- FHIR-R4-Strukturkorrektur: Collection-Eintraege erhalten stabile UUID-fullUrls;
+  lokale Referenzen verwenden diese URLs. Ressourcen-IDs und fachliche
+  Identifier bleiben unveraendert. Die Transaction-Aufbereitung beruecksichtigt
+  die bisherigen fullUrls beim Umschreiben der Referenzen.
+- Ein synthetisches Konverter-Bundle wurde intern mit HAPI `Bundle/$validate`
+  erneut geprueft: 0 Fehler, 4 Warnungen, 2 Hinweise (vorher 6 Fehler).
+  Narrative-/GTIN-Hinweise und CH-EMED-MedicationStatement-Abweichungen bleiben
+  offen; dies ist keine vollstaendige CH-EMED-Dokumentabnahme.
+- VACD besitzt bereits UUID-fullUrls und Referenzumschreibung. Die
+  Dokumentaufbereitung entfernt jetzt zusaetzlich Transaction-Felder
+  `entry.request` und `entry.response`. Struktur-/Importregressionen:
+  insgesamt 51 Python-Tests bestanden. Vollstaendige VACD-Profilabnahme offen.
+
 - JSON-/CHMED16A-Konvertierung und PDF-/QR-Konvertierung liefern ein
   FHIR-`collection`-Bundle ohne HAPI-Write.
 - JSON- und PDF-/QR-Import wurden bis HAPI getestet; die Antwort ist ein

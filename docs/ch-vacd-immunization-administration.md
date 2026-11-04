@@ -4,7 +4,51 @@ Stand: 2026-11-04
 
 ## Zweck
 
-Der Middleware-Endpoint `POST /cda/vacd/convert` konvertiert ein CDA-Dokument in ein CH VACD Immunization Administration Document nach CH VACD 1.0.0 (STU 2 Ballot) auf FHIR R4. Für den openEHR-basierten Versand wird dieses Dokumentformat verwendet: https://fhir.ch/ig/ch-vacd/1.0.0/immunization-administration-document.html
+Der Middleware-Endpoint `POST /cda/vacd/convert` erzeugt ein CH VACD
+Immunization Administration Document auf FHIR R4. Die aktuelle interne
+Profilpruefung verwendet die in HAPI installierten CH-VACD-/CH-Core-Profile
+6.0.0. Die urspruengliche Versandorientierung an CH VACD 1.0.0 ist kein
+Nachweis einer vollstaendigen Konformitaet mit diesen neueren Profilen.
+
+## Interne Validierung und Korrekturen (2026-11-04)
+
+Die lokale CDA-Testdatei wurde ohne Speicherung und ohne externen Versand
+konvertiert und mit HAPI `Bundle/$validate` geprueft: 16 Ressourcen,
+urspruenglich 13 Fehler. Nach den Codekorrekturen und Ergaenzung der fehlenden
+Validator-Definition liefert das deployte System 0 Fehler, 27 Warnungen und
+707 Hinweise. HTTP 200 allein ist kein Nachweis fuer Fehlerfreiheit.
+
+- Die VACD-Composition traegt nicht mehr das unpassende CH-IPS-Profil.
+- Immunizations ohne vorhandene Verification-Extension erhalten den
+  VACD-SNOMED-Code `76104008` (nicht bestaetigt). Vorhandene explizite
+  Bestaetigungen bleiben erhalten; ein CDA-Import bestaetigt keine Impfung.
+- Fehlende Pflichtfelder einer Kontaktadresse werden mit FHIR
+  `data-absent-reason=unknown` markiert, nicht mit erfundenen Adresswerten.
+  Vorhandene Werte bleiben erhalten; Elternnamen-Kontakte benoetigen keine
+  zusaetzliche Adresse.
+- Der gemeinsame CDA-Allergie-Mapper verwendet `reaction.severity` statt des
+  ungueltigen Top-Level-Felds `severity`. Ohne Reaktion wird der Schweregrad
+  als Notiz erhalten, ohne eine Manifestation zu erfinden.
+- 64 fokussierte Python-Regressionstests bestanden.
+
+Behobener Validator-Blocker: Das installierte CH-Core-Adressprofil referenziert
+`http://hl7.org/fhir/StructureDefinition/iso21090-codedString|5.3.0-ballot-tc1`.
+Diese Definition fehlte in HAPI und verursachte Fehler in der
+Adress-Extension-Slicing-Auswertung sowie im erforderlichen Patient-Slice.
+Mit Zustimmung des Nutzers wurde die unveraenderte offizielle
+StructureDefinition aus `hl7.fhir.uv.extensions.r4#5.3.0-ballot-tc1`
+(FHIR 4.0.1) per PUT nach `StructureDefinition/iso21090-codedString`
+importiert. Quelle:
+https://packages.fhir.org/hl7.fhir.uv.extensions.r4/5.3.0-ballot-tc1
+Canonical und Version wurden nach dem Import erneut gelesen und geprueft.
+Ein Neustart war nicht erforderlich. Dies ersetzt nicht die Installation des
+vollstaendigen Extension-Packages; bei einer neuen HAPI-Instanz muss diese
+Abhaengigkeit ebenfalls bereitgestellt werden.
+
+Die erneute Validierung erfolgte am laufenden Middleware-System mit derselben
+CDA-Datei. Keine klinischen Ressourcen wurden gespeichert und kein externes
+VACD-Ziel aufgerufen. Fehlerfreiheit dieser Stichprobe ist keine pauschale
+Abnahme aller CDA-Varianten oder der verbleibenden Terminologiewarnungen.
 
 Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt nicht automatisch alle generischen CDA-Sections, sondern filtert auf die für CH VACD relevanten Ressourcen und Sections.
 
@@ -17,7 +61,7 @@ Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt n
 - Eingabe: CDA als Multipart-Datei `file`, Formularfeld `raw_xml` oder Raw-Body
 - Bundle-Typ: immer `document`
 
-### BridgeLink-Routing (im Channel einzurichten)
+### BridgeLink-Routing (in OL_ROUTING eingerichtet)
 
 | Externer Pfad | Middleware-Ziel | responseTarget |
 |---|---|---|
@@ -126,4 +170,6 @@ Die Middleware-Regressionsabdeckung liegt in `app/tests/test_vacd_convert.py` un
 - Filterung generischer Ressourcen
 - Auflösung interner Referenzen
 
-Der aktuelle Validatorlauf meldet keine fatalen oder Fehler-Issues. Hinweise wie „Definition could not be found“ für CH-VACD-Profile bedeuten, dass das CH-VACD-Package im verwendeten Validator nicht geladen wurde.
+Ein frueherer Validatorlauf ohne geladene CH-VACD-Profile war kein
+Konformitaetsnachweis. Massgeblich ist die interne HAPI-Pruefung mit den
+geladenen Profilen und der oben dokumentierten behobenen Abhaengigkeit.

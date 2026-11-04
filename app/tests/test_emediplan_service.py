@@ -17,6 +17,39 @@ from services.emediplan_service import (
 
 
 class EmediplanServiceTests(unittest.TestCase):
+    def test_collection_full_urls_are_stable_and_all_local_references_resolve(self):
+        source = self._sample_emediplan_object()
+        source["Patient"]["Med"] = {
+            "Meas": [{"Type": 1, "Unit": 2, "Val": "53"}],
+            "Rc": [{"Id": 1, "R": [577]}],
+        }
+        raw = json.dumps(source).encode()
+        first = emediplan_to_fhir_bundle(raw)
+        second = emediplan_to_fhir_bundle(raw)
+        self.assertEqual(first, second)
+        urls = {entry["fullUrl"] for entry in first["entry"]}
+        self.assertEqual(len(urls), len(first["entry"]))
+        for entry in first["entry"]:
+            self.assertTrue(entry["fullUrl"].startswith("urn:uuid:"))
+            self.assertNotIn("request", entry)
+
+        references = []
+
+        def collect(value):
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    if key == "reference":
+                        references.append(item)
+                    else:
+                        collect(item)
+            elif isinstance(value, list):
+                for item in value:
+                    collect(item)
+
+        collect(first)
+        self.assertTrue(references)
+        self.assertTrue(all(reference in urls for reference in references))
+
     def _sample_emediplan_object(self):
         return {
             "Id": "plan-1",
@@ -85,7 +118,7 @@ class EmediplanServiceTests(unittest.TestCase):
         )
         self.assertEqual(
             statement["informationSource"]["reference"],
-            f"Practitioner/{practitioner['id']}",
+            next(entry["fullUrl"] for entry in bundle["entry"] if entry["resource"] == practitioner),
         )
 
     def _sample_chmed16a_payload(self):
@@ -917,7 +950,7 @@ class EmediplanServiceTests(unittest.TestCase):
         self.assertEqual(len(statements), 1)
         self.assertEqual(
             statements[0]["medicationReference"]["reference"],
-            f"Medication/{medications[0]['id']}",
+            next(entry["fullUrl"] for entry in bundle["entry"] if entry["resource"] == medications[0]),
         )
 
     def test_convert_maps_medical_data_to_observations_and_conditions(self):
@@ -942,7 +975,9 @@ class EmediplanServiceTests(unittest.TestCase):
             for entry in bundle["entry"]
             if entry["resource"].get("resourceType") == "Patient"
         )
-        patient_ref = f"Patient/{patient['id']}"
+        patient_ref = next(
+            entry["fullUrl"] for entry in bundle["entry"] if entry["resource"] == patient
+        )
 
         observations = [
             entry["resource"]

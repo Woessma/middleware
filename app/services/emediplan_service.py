@@ -949,10 +949,26 @@ def emediplan_to_fhir_bundle(raw_content):
         if practitioner:
             _append_resource_if_new(resources, seen_resource_keys, practitioner)
 
+    full_urls = {
+        f"{resource['resourceType']}/{resource['id']}": (
+            f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, 'https://emediplan.ch/fhir/' + resource['resourceType'] + '/' + resource['id'])}"
+        )
+        for resource in resources
+    }
+
+    for resource in resources:
+        _rewrite_reference_values(resource, full_urls)
+
     bundle = {
         "resourceType": "Bundle",
         "type": "collection",
-        "entry": [{"resource": resource} for resource in resources],
+        "entry": [
+            {
+                "fullUrl": full_urls[f"{resource['resourceType']}/{resource['id']}"],
+                "resource": resource,
+            }
+            for resource in resources
+        ],
     }
 
     if plan_id:
@@ -1109,6 +1125,9 @@ def bundle_to_transaction_bundle(bundle):
         transaction_entry = build_bundle_entry(resource)
 
         aliases = []
+
+        if entry.get("fullUrl"):
+            aliases.append(entry["fullUrl"])
 
         if original_resource_type and original_resource_id:
             aliases.append(f"{original_resource_type}/{original_resource_id}")

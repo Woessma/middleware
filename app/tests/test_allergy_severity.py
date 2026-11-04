@@ -6,6 +6,19 @@ from mappers.allergy_mapper import map_allergy_section
 
 
 class AllergySeverityTests(unittest.TestCase):
+    def assert_fhir_severity(self, resource, severity):
+        self.assertNotIn("severity", resource)
+        if resource.get("reaction"):
+            self.assertTrue(all(
+                reaction.get("severity") == severity
+                for reaction in resource["reaction"]
+            ))
+        else:
+            self.assertIn(
+                {"text": f"CDA allergy severity: {severity}"},
+                resource.get("note", []),
+            )
+
     def test_severity_relation_is_mapped_to_fhir(self):
         xml = '''
         <ClinicalDocument xmlns="urn:hl7-org:v3">
@@ -47,7 +60,7 @@ class AllergySeverityTests(unittest.TestCase):
             'Patient/123',
             {}
         )
-        self.assertEqual(resources[0]['severity'], 'severe')
+        self.assert_fhir_severity(resources[0], 'severe')
 
     def test_severity_observation_with_code_sev_under_subj_is_mapped(self):
         xml = '''
@@ -95,7 +108,7 @@ class AllergySeverityTests(unittest.TestCase):
             'Patient/123',
             {}
         )
-        self.assertEqual(resources[0]['severity'], 'moderate')
+        self.assert_fhir_severity(resources[0], 'moderate')
 
     def test_severity_is_parsed_when_main_node_is_observation(self):
         xml = '''
@@ -139,7 +152,7 @@ class AllergySeverityTests(unittest.TestCase):
             'Patient/123',
             {}
         )
-        self.assertEqual(resources[0]['severity'], 'moderate')
+        self.assert_fhir_severity(resources[0], 'moderate')
 
     def test_severity_is_parsed_from_nested_reaction_observation(self):
         xml = '''
@@ -194,7 +207,7 @@ class AllergySeverityTests(unittest.TestCase):
             'Patient/123',
             {}
         )
-        self.assertEqual(resources[0]['severity'], 'moderate')
+        self.assert_fhir_severity(resources[0], 'moderate')
 
     def test_epic_style_textual_severity_is_mapped(self):
         xml = '''
@@ -237,7 +250,7 @@ class AllergySeverityTests(unittest.TestCase):
             'Patient/123',
             {}
         )
-        self.assertEqual(resources[0]['severity'], 'severe')
+        self.assert_fhir_severity(resources[0], 'severe')
 
     def test_life_threatening_criticality_is_mapped_to_high(self):
         entry = {

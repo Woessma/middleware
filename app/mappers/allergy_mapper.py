@@ -476,9 +476,6 @@ def map_allergy_section(
 
         severity = _map_severity(entry)
 
-        if severity:
-            allergy["severity"] = severity
- 
         allergy_type_note = _get_allergy_type_note(entry)
  
         if allergy_type_note:
@@ -498,7 +495,14 @@ def map_allergy_section(
             ),
         )
         if reactions:
+            if severity:
+                for reaction in reactions:
+                    reaction["severity"] = severity
             allergy["reaction"] = reactions
+        elif severity:
+            allergy.setdefault("note", []).append({
+                "text": f"CDA allergy severity: {severity}"
+            })
  
         resources.append(allergy)
  

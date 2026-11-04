@@ -3,10 +3,111 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from main import app
+from main import app, _mark_vacd_bundle
+from fhir.bundle import build_bundle_entry
 
 
 class VacdConvertEndpointTests(unittest.TestCase):
+    def test_vacd_profiles_and_missing_data_do_not_claim_clinical_verification(self):
+        verification_url = (
+            "http://fhir.ch/ig/ch-vacd/StructureDefinition/"
+            "ch-vacd-ext-verification-status"
+        )
+        confirmed = {
+            "url": verification_url,
+            "valueCoding": {"system": "http://snomed.info/sct", "code": "59156000"},
+        }
+        source = {
+            "entry": [
+                {"resource": {
+                    "resourceType": "Composition", "id": "composition",
+                    "meta": {"profile": [
+                        "http://fhir.ch/ig/ch-ips/StructureDefinition/ch-ips-composition"
+                    ]},
+                }},
+                {"resource": {
+                    "resourceType": "Patient", "id": "patient",
+                    "contact": [
+                        {"relationship": [{"coding": [{"code": "C"}]}]},
+                        {"relationship": [{"coding": [{"code": "C"}]}],
+                         "address": {"city": "Synthetic City"}},
+                        {"relationship": [{"coding": [{"code": "MTH"}]}]},
+                    ],
+                }},
+                {"resource": {"resourceType": "Immunization", "id": "unverified"}},
+                {"resource": {
+                    "resourceType": "Immunization", "id": "verified",
+                    "extension": [confirmed],
+                }},
+            ]
+        }
+        bundle = _mark_vacd_bundle(source)
+        composition, patient, unverified, verified = [
+            entry["resource"] for entry in bundle["entry"]
+        ]
+        self.assertNotIn(
+            "http://fhir.ch/ig/ch-ips/StructureDefinition/ch-ips-composition",
+            composition["meta"]["profile"],
+        )
+        for field in ("city", "postalCode", "country"):
+            self.assertEqual(
+                patient["contact"][0]["address"][f"_{field}"]["extension"][0]["valueCode"],
+                "unknown",
+            )
+        self.assertEqual(patient["contact"][1]["address"]["city"], "Synthetic City")
+        self.assertNotIn("_city", patient["contact"][1]["address"])
+        self.assertNotIn("address", patient["contact"][2])
+        self.assertEqual(unverified["extension"][0]["valueCoding"]["code"], "76104008")
+        self.assertEqual(verified["extension"], [confirmed])
+        _mark_vacd_bundle(bundle)
+        self.assertEqual(len(unverified["extension"]), 1)
+
+    def test_vacd_document_keeps_full_urls_and_resolves_local_references(self):
+        source = {
+            "resourceType": "Bundle",
+            "type": "transaction",
+            "entry": [
+                build_bundle_entry({
+                    "resourceType": "Patient", "id": "synthetic-patient",
+                }),
+                build_bundle_entry({
+                    "resourceType": "Composition", "id": "synthetic-composition",
+                    "subject": {"reference": "Patient/synthetic-patient"},
+                }),
+                build_bundle_entry({
+                    "resourceType": "Immunization", "id": "synthetic-immunization",
+                    "patient": {"reference": "Patient/synthetic-patient"},
+                }),
+            ],
+        }
+        with (
+            patch("main.cda_to_fhir_bundle", return_value=source),
+            patch("main._validate_bundle", side_effect=lambda bundle: bundle),
+        ):
+            response = TestClient(app).post(
+                "/cda/vacd/convert", content=b"<ClinicalDocument />"
+            )
+        self.assertEqual(response.status_code, 200, response.text)
+        bundle = response.json()
+        self.assertEqual(bundle["type"], "document")
+        self.assertTrue(bundle["identifier"]["value"].startswith("urn:uuid:"))
+        self.assertIn("timestamp", bundle)
+        self.assertEqual(bundle["entry"][0]["resource"]["resourceType"], "Composition")
+        urls = {entry["fullUrl"] for entry in bundle["entry"]}
+        self.assertEqual(len(urls), len(bundle["entry"]))
+        patient_url = next(
+            entry["fullUrl"] for entry in bundle["entry"]
+            if entry["resource"]["resourceType"] == "Patient"
+        )
+        self.assertEqual(bundle["entry"][0]["resource"]["subject"]["reference"], patient_url)
+        immunization = next(
+            entry["resource"] for entry in bundle["entry"]
+            if entry["resource"]["resourceType"] == "Immunization"
+        )
+        self.assertEqual(immunization["patient"]["reference"], patient_url)
+        for entry in bundle["entry"]:
+            self.assertNotIn("request", entry)
+
     def test_vacd_prepare_returns_transaction_without_document_envelope_profiles(self):
         source = {
             "resourceType": "Bundle",

@@ -1668,6 +1668,10 @@ def _mark_vacd_bundle(bundle):
     bundle["entry"] = filtered_entries
     entries = filtered_entries
 
+    for entry in entries:
+        entry.pop("request", None)
+        entry.pop("response", None)
+
     resource_full_urls = {}
     for entry in entries:
         resource = entry.get("resource") or {}
@@ -1752,6 +1756,7 @@ def _mark_vacd_bundle(bundle):
                 if profile not in {
                     "http://fhir.ch/ig/ch-core/StructureDefinition/ch-core-composition",
                     "http://fhir.ch/ig/ch-core/StructureDefinition/ch-core-composition-epr",
+                    "http://fhir.ch/ig/ch-ips/StructureDefinition/ch-ips-composition",
                 }
             ]
             ch_core_composition_profile = (
@@ -1827,6 +1832,20 @@ def _mark_vacd_bundle(bundle):
                 if immunization_profile not in resource_profiles:
                     resource_profiles.append(immunization_profile)
                 resource_meta["profile"] = resource_profiles
+                verification_url = (
+                    "http://fhir.ch/ig/ch-vacd/StructureDefinition/"
+                    "ch-vacd-ext-verification-status"
+                )
+                extensions = resource.setdefault("extension", [])
+                if not any(item.get("url") == verification_url for item in extensions):
+                    extensions.append({
+                        "url": verification_url,
+                        "valueCoding": {
+                            "system": "http://snomed.info/sct",
+                            "code": "76104008",
+                            "display": "Not confirmed by (contextual qualifier) (qualifier value)",
+                        },
+                    })
 
             if resource_type == "Patient":
                 resource_meta = resource.setdefault("meta", {})
@@ -1838,6 +1857,23 @@ def _mark_vacd_bundle(bundle):
                     for profile in resource_profiles
                 ]
                 for contact in resource.get("contact") or []:
+                    if not any(
+                        coding.get("code") in {"MTH", "FTH"}
+                        for relation in contact.get("relationship") or []
+                        for coding in relation.get("coding") or []
+                    ):
+                        address = contact.setdefault("address", {})
+                        for field in ("city", "postalCode", "country"):
+                            if not address.get(field) and not address.get(f"_{field}"):
+                                address[f"_{field}"] = {
+                                    "extension": [{
+                                        "url": (
+                                            "http://hl7.org/fhir/StructureDefinition/"
+                                            "data-absent-reason"
+                                        ),
+                                        "valueCode": "unknown",
+                                    }]
+                                }
                     contact.pop("telecom", None)
                     contact["extension"] = [
                         extension
