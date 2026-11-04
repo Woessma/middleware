@@ -5,7 +5,10 @@ import pymupdf
 import qrcode
 from PIL import Image
 
-from services.emediplan_qr_service import extract_emediplan_payload_from_file
+from services.emediplan_qr_service import (
+    _looks_like_emediplan_payload,
+    extract_emediplan_payload_from_file,
+)
 
 
 SAMPLE_PAYLOAD = "CHMED16A1H4sIAAAAAAAEAKtWyk0tLtHNSUxPzC22UkjOzytJTS7RUcpJAsoUAwAr69MtHAAAAA=="
@@ -32,6 +35,9 @@ def _pdf_bytes_with_qr(data):
 
 
 class EmediplanQrServiceTests(unittest.TestCase):
+    def test_recognizes_chmed16a_prefix_case_insensitively(self):
+        self.assertTrue(_looks_like_emediplan_payload("chmed16a0{}"))
+
     def test_extracts_payload_from_qr_png(self):
         png_bytes = _qr_png_bytes(SAMPLE_PAYLOAD)
 

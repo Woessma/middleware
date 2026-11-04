@@ -66,6 +66,44 @@ class BundleDedupeTests(unittest.TestCase):
 
         self.assertEqual(len(deduped), 1)
 
+    def test_stabilize_dedupes_entries_reconciled_to_same_resource_id(self):
+        stabilized = _stabilize_bundle(
+            {
+                "resourceType": "Bundle",
+                "type": "transaction",
+                "entry": [
+                    {
+                        "resource": {
+                            "resourceType": "Medication",
+                            "id": "existing-medication",
+                            "identifier": [
+                                {"system": "urn:test:pharmacode", "value": "111"}
+                            ],
+                        },
+                        "request": {
+                            "method": "PUT",
+                            "url": "Medication/existing-medication",
+                        },
+                    },
+                    {
+                        "resource": {
+                            "resourceType": "Medication",
+                            "id": "existing-medication",
+                            "identifier": [
+                                {"system": "urn:epc:id:sgtin", "value": "222"}
+                            ],
+                        },
+                        "request": {
+                            "method": "PUT",
+                            "url": "Medication/existing-medication",
+                        },
+                    },
+                ],
+            }
+        )
+
+        self.assertEqual(len(stabilized["entry"]), 1)
+
     def test_dedupe_removes_same_business_identity_even_when_post_url_differs(self):
         entries = [
             {

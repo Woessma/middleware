@@ -7,17 +7,35 @@ except Exception:  # pragma: no cover
     load_workbook = None
 
 
-DEFAULT_PHARMACODE_XLSX = os.getenv(
-    "EMEDIPLAN_PHARMACODE_XLSX",
-    "/app/terminology/data/20260901__MappingPharmacodeToGtinToSwissmedicDescription.xlsx",
-)
-
-DEFAULT_PRODUCTNUMBER_XLSX = os.getenv(
-    "EMEDIPLAN_PRODUCTNUMBER_XLSX",
-    "/app/terminology/data/20260701__MappingProductNumberToSwissmedicDescription.xlsx",
-)
-
 COMPENDIUM_SEARCH_URL = "https://compendium.ch/de/search"
+
+
+def _default_mapping_path(env_name, current_filename, legacy_filename):
+    configured_path = os.getenv(env_name)
+    if configured_path:
+        return configured_path
+
+    data_dirs = (
+        "/app/terminology/data",
+        os.path.join(os.path.dirname(__file__), "data"),
+    )
+    candidates = [
+        *(os.path.join(directory, current_filename) for directory in data_dirs),
+        *(os.path.join(directory, legacy_filename) for directory in data_dirs),
+    ]
+    return next((path for path in candidates if os.path.exists(path)), candidates[0])
+
+
+DEFAULT_PHARMACODE_XLSX = _default_mapping_path(
+    "EMEDIPLAN_PHARMACODE_XLSX",
+    "MappingPharmacodeToGtinToSwissmedicDescription.xlsx",
+    "20260901__MappingPharmacodeToGtinToSwissmedicDescription.xlsx",
+)
+DEFAULT_PRODUCTNUMBER_XLSX = _default_mapping_path(
+    "EMEDIPLAN_PRODUCTNUMBER_XLSX",
+    "MappingProductNumberToSwissmedicDescription.xlsx",
+    "20260701__MappingProductNumberToSwissmedicDescription.xlsx",
+)
 
 
 def _clean(value):

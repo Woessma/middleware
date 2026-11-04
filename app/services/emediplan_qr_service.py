@@ -28,7 +28,10 @@ def _images_from_pdf(raw_bytes):
 
 
 def _looks_like_emediplan_payload(text):
-    return text.startswith(EMEDIPLAN_PREFIX) or text.startswith("{")
+    return (
+        text[: len(EMEDIPLAN_PREFIX)].casefold() == EMEDIPLAN_PREFIX.casefold()
+        or text.startswith("{")
+    )
 
 
 def extract_emediplan_payload_from_file(raw_bytes, content_type=None):

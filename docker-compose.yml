@@ -15,6 +15,7 @@ services:
       - EPIC_PUBLIC_KEY_PATH=/run/epic/epic-public.pem
       - EPIC_JWKS_KID=${EPIC_JWKS_KID:-epic-key-1}
       - BRIDGELINK_CDA_IMPORT_URL=${BRIDGELINK_CDA_IMPORT_URL:-https://api.omnilink.ch/v1/cda/import}
+      - BRIDGELINK_EMEDIPLAN_IMPORT_URL=${BRIDGELINK_EMEDIPLAN_IMPORT_URL:-https://api.omnilink.ch/v1/emediplan/import}
     volumes:
       - type: bind
         source: ${EPIC_PUBLIC_KEY_HOST_PATH:-/home/ansibleadmin/.local/share/omnilink/epic/epic-public.pem}

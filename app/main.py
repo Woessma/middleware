@@ -131,9 +131,21 @@ from services.vacd_send_service import (
     _embed_precreated_resource,
 )
 from services.emediplan_service import (
+    enrich_emediplan_bundle,
     emediplan_to_fhir_bundle,
     fhir_medications_to_epic_cda,
     fetch_medication_bundle_from_fhir_server,
+)
+from services.patient_service import (
+    PatientMatchConflictError,
+    PatientLookupError,
+    find_matching_patient,
+    find_patient_by_id,
+)
+from services.fhir_duplicate_service import (
+    FhirDuplicateLookupError,
+    FhirResourceMatchConflictError,
+    find_existing_resource_by_identifier,
 )
 from services.emediplan_qr_service import extract_emediplan_payload_from_file, resolve_emediplan_payload
 from services.echosos_service import import_echosos, extract_echosos_url, parse_echosos_data
@@ -175,6 +187,10 @@ BRIDGELINK_CDA_URL = "https://api.omnilink.ch/v1/cda/convert"
 BRIDGELINK_CDA_IMPORT_URL = os.getenv(
     "BRIDGELINK_CDA_IMPORT_URL",
     BRIDGELINK_CDA_URL,
+)
+BRIDGELINK_EMEDIPLAN_IMPORT_URL = os.getenv(
+    "BRIDGELINK_EMEDIPLAN_IMPORT_URL",
+    "https://api.omnilink.ch/v1/emediplan/import",
 )
 ECHOSOS_IMPORT_URL = "https://api.omnilink.ch/v1/echosos/resolve"
 
@@ -285,6 +301,11 @@ def _stabilize_bundle(bundle):
             method = request["method"]
 
         identity = _bundle_resource_identity(resource)
+        dedupe_identity = (
+            ("id", resource.get("resourceType"), resource["id"])
+            if resource.get("id")
+            else identity
+        )
         if method == "POST" and identity[0] == "identifier":
             if "ifNoneExist" not in request:
                 identifier_values = [
@@ -300,16 +321,133 @@ def _stabilize_bundle(bundle):
         ensure_resource_narrative(resource)
         stabilized_entry["request"] = request
 
-        if identity in seen:
-            logger.info("SKIP DUPLICATE BUNDLE RESOURCE: %s", identity)
+        if dedupe_identity in seen:
+            logger.info("SKIP DUPLICATE BUNDLE RESOURCE: %s", dedupe_identity)
             continue
 
-        seen.add(identity)
+        seen.add(dedupe_identity)
         stabilized_entries.append(stabilized_entry)
 
     stabilized = copy.deepcopy(bundle)
     stabilized["entry"] = stabilized_entries
     return stabilized
+
+
+def _rewrite_bundle_references(value, reference_map):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key == "reference" and isinstance(child, str):
+                value[key] = reference_map.get(child, child)
+            else:
+                _rewrite_bundle_references(child, reference_map)
+    elif isinstance(value, list):
+        for child in value:
+            _rewrite_bundle_references(child, reference_map)
+
+
+def _reconcile_emediplan_patients(bundle):
+    patient_entries = [
+        entry
+        for entry in bundle.get("entry", [])
+        if (entry.get("resource") or {}).get("resourceType") == "Patient"
+    ]
+    entries_to_remove = set()
+
+    for entry in patient_entries:
+        patient = entry["resource"]
+        existing = find_matching_patient(patient)
+        if not existing:
+            continue
+
+        existing_id = existing.get("id")
+        if not existing_id:
+            raise PatientLookupError("Gefundener FHIR Patient enthält keine ID.")
+        target_reference = f"Patient/{existing_id}"
+        reference_map = {}
+        if patient.get("id"):
+            reference_map[f"Patient/{patient['id']}"] = target_reference
+        if entry.get("fullUrl"):
+            reference_map[entry["fullUrl"]] = target_reference
+
+        _rewrite_bundle_references(bundle, reference_map)
+        entries_to_remove.add(id(entry))
+        logger.info("eMediplan Patient wiederverwendet: %s", existing_id)
+
+    if entries_to_remove:
+        bundle["entry"] = [
+            entry for entry in bundle.get("entry", [])
+            if id(entry) not in entries_to_remove
+        ]
+
+    included_patient_refs = {
+        f"Patient/{(entry.get('resource') or {}).get('id')}"
+        for entry in bundle.get("entry", [])
+        if (entry.get("resource") or {}).get("resourceType") == "Patient"
+        and (entry.get("resource") or {}).get("id")
+    }
+    patient_refs = set()
+
+    def collect_patient_references(value):
+        if isinstance(value, dict):
+            reference = value.get("reference")
+            if isinstance(reference, str) and reference.startswith("Patient/"):
+                patient_refs.add(reference.split("/_history/", 1)[0])
+            for child in value.values():
+                collect_patient_references(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect_patient_references(child)
+
+    collect_patient_references(bundle)
+    for patient_reference in patient_refs - included_patient_refs:
+        patient_id = patient_reference.split("/", 1)[1]
+        if not find_patient_by_id(patient_id):
+            raise ValueError(
+                f"Referenzierter FHIR Patient {patient_id} wurde nicht gefunden."
+            )
+
+    return bundle
+
+
+def _reconcile_existing_emediplan_resources(bundle):
+    reference_map = {}
+    for entry in bundle.get("entry", []):
+        resource = entry.get("resource") or {}
+        resource_type = resource.get("resourceType")
+        if resource_type not in {"Medication", "MedicationStatement", "Practitioner"}:
+            continue
+
+        existing = find_existing_resource_by_identifier(resource)
+        if not existing:
+            continue
+
+        existing_id = existing["id"]
+        previous_id = resource.get("id")
+        target_reference = f"{resource_type}/{existing_id}"
+        if previous_id:
+            reference_map[f"{resource_type}/{previous_id}"] = target_reference
+        if entry.get("fullUrl"):
+            reference_map[entry["fullUrl"]] = target_reference
+
+        resource["id"] = existing_id
+        entry["request"] = {"method": "PUT", "url": target_reference}
+        logger.info(
+            "eMediplan %s wiederverwendet: %s",
+            resource_type,
+            existing_id,
+        )
+
+    _rewrite_bundle_references(bundle, reference_map)
+    return bundle
+
+
+def _prepare_emediplan_import_bundle(bundle):
+    bundle = _stabilize_bundle(bundle)
+    bundle["type"] = "transaction"
+    bundle = enrich_emediplan_bundle(bundle)
+    bundle = _reconcile_emediplan_patients(bundle)
+    bundle = _reconcile_existing_emediplan_resources(bundle)
+    return _validate_bundle(_stabilize_bundle(bundle))
 
 
 app = FastAPI(
@@ -522,7 +660,25 @@ def admin_document(document_id: str):
     }
 
 
-async def _bridge_link_cda_post(request: Request, target_url: str) -> Response:
+def _bridge_link_authorization(request: Request) -> str:
+    authorization = request.headers.get("authorization", "")
+    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
+        raise HTTPException(
+            status_code=401,
+            detail="A Keycloak ****** is required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return authorization
+
+
+async def _bridge_link_post(
+    request: Request,
+    target_url: str,
+    *,
+    body: Optional[bytes] = None,
+    content_type: Optional[str] = None,
+    use_case: str = "CDA",
+) -> Response:
     authorization = request.headers.get("authorization", "")
     if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
         raise HTTPException(
@@ -531,13 +687,16 @@ async def _bridge_link_cda_post(request: Request, target_url: str) -> Response:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    headers = {"Authorization": authorization}
+    headers = {"Authorization": _bridge_link_authorization(request)}
     for header_name in ("accept", "content-type"):
         header_value = request.headers.get(header_name)
         if header_value:
             headers[header_name.title()] = header_value
+    if content_type:
+        headers["Content-Type"] = content_type
 
-    body = await request.body()
+    if body is None:
+        body = await request.body()
     try:
         upstream = await run_in_threadpool(
             requests.post,
@@ -547,10 +706,10 @@ async def _bridge_link_cda_post(request: Request, target_url: str) -> Response:
             timeout=300,
         )
     except requests.RequestException as exc:
-        logger.warning("BridgeLink CDA request failed: %s", exc)
+        logger.warning("BridgeLink %s request failed: %s", use_case, exc)
         raise HTTPException(
             status_code=502,
-            detail="BridgeLink CDA endpoint unavailable",
+            detail=f"BridgeLink {use_case} endpoint unavailable",
         ) from exc
 
     response_headers = {
@@ -827,7 +986,7 @@ async def external_patient_duplicate_everything(request: Request):
 
 @app.post("/_proxy/bridge/cda")
 async def bridge_link_cda_proxy(request: Request):
-    return await _bridge_link_cda_post(request, BRIDGELINK_CDA_URL)
+    return await _bridge_link_post(request, BRIDGELINK_CDA_URL)
 
 
 @app.post("/echosos/preview")
@@ -849,15 +1008,7 @@ async def echosos_preview(request: Request):
 
 @app.post("/echosos/import")
 async def echosos_import_proxy(request: Request):
-    authorization = request.headers.get("authorization", "")
-    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
-        raise HTTPException(
-            status_code=401,
-            detail="A Keycloak ****** is required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    headers = {"Authorization": authorization}
+    headers = {"Authorization": _bridge_link_authorization(request)}
     for header_name in ("accept", "content-type"):
         header_value = request.headers.get(header_name)
         if header_value:
@@ -1909,7 +2060,7 @@ def _warn_duplicate_observation_identifiers(bundle):
 @app.post("/cda/import")
 async def cda_import_proxy(request: Request):
     """Importiert CDA ueber BridgeLink; BridgeLink schreibt das Bundle nach HAPI FHIR."""
-    return await _bridge_link_cda_post(request, BRIDGELINK_CDA_IMPORT_URL)
+    return await _bridge_link_post(request, BRIDGELINK_CDA_IMPORT_URL)
 
 
 @app.post("/emediplan/convert")
@@ -1950,6 +2101,7 @@ async def emediplan_import(
     file: Optional[UploadFile] = File(None),
     raw_payload: Optional[str] = Form(None),
 ):
+    _bridge_link_authorization(request)
     if file is not None:
         payload = await file.read()
         content_type = file.content_type
@@ -1968,10 +2120,26 @@ async def emediplan_import(
 
     try:
         payload = resolve_emediplan_payload(payload, content_type)
-        bundle = _validate_bundle(emediplan_to_fhir_bundle(payload))
-        return bundle
+        bundle = _prepare_emediplan_import_bundle(emediplan_to_fhir_bundle(payload))
+        bundle_body = json.dumps(bundle).encode("utf-8")
+        return await _bridge_link_post(
+            request,
+            BRIDGELINK_EMEDIPLAN_IMPORT_URL,
+            body=bundle_body,
+            content_type="application/fhir+json",
+            use_case="eMediplan import",
+        )
+    except HTTPException:
+        raise
+    except PatientMatchConflictError as ex:
+        raise HTTPException(status_code=409, detail=str(ex)) from ex
+    except FhirResourceMatchConflictError as ex:
+        raise HTTPException(status_code=409, detail=str(ex)) from ex
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
+    except (requests.RequestException, PatientLookupError, FhirDuplicateLookupError) as ex:
+        logger.exception("FHIR preflight failed during eMediplan import")
+        raise HTTPException(status_code=502, detail="FHIR preflight lookup unavailable") from ex
     except Exception as ex:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(ex))
@@ -1983,6 +2151,7 @@ async def emediplan_import_bundle(
     file: Optional[UploadFile] = File(None),
     raw_json: Optional[str] = Form(None),
 ):
+    _bridge_link_authorization(request)
     if file is not None:
         raw_content = await file.read()
         json_payload = raw_content.decode("utf-8")
@@ -2006,10 +2175,26 @@ async def emediplan_import_bundle(
         )
 
     try:
-        _validate_bundle(bundle)
-        return bundle
+        bundle = _prepare_emediplan_import_bundle(bundle)
+        bundle_body = json.dumps(bundle).encode("utf-8")
+        return await _bridge_link_post(
+            request,
+            BRIDGELINK_EMEDIPLAN_IMPORT_URL,
+            body=bundle_body,
+            content_type="application/fhir+json",
+            use_case="eMediplan bundle import",
+        )
+    except HTTPException:
+        raise
+    except PatientMatchConflictError as ex:
+        raise HTTPException(status_code=409, detail=str(ex)) from ex
+    except FhirResourceMatchConflictError as ex:
+        raise HTTPException(status_code=409, detail=str(ex)) from ex
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
+    except (requests.RequestException, PatientLookupError, FhirDuplicateLookupError) as ex:
+        logger.exception("FHIR preflight failed during eMediplan bundle import")
+        raise HTTPException(status_code=502, detail="FHIR preflight lookup unavailable") from ex
     except Exception as ex:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(ex))
@@ -2048,6 +2233,7 @@ async def emediplan_qr_import(
     request: Request,
     file: Optional[UploadFile] = File(None),
 ):
+    _bridge_link_authorization(request)
     if file is not None:
         raw_bytes = await file.read()
         content_type = file.content_type
@@ -2063,10 +2249,26 @@ async def emediplan_qr_import(
 
     try:
         payload = extract_emediplan_payload_from_file(raw_bytes, content_type)
-        bundle = _validate_bundle(emediplan_to_fhir_bundle(payload))
-        return bundle
+        bundle = _prepare_emediplan_import_bundle(emediplan_to_fhir_bundle(payload))
+        bundle_body = json.dumps(bundle).encode("utf-8")
+        return await _bridge_link_post(
+            request,
+            BRIDGELINK_EMEDIPLAN_IMPORT_URL,
+            body=bundle_body,
+            content_type="application/fhir+json",
+            use_case="eMediplan QR import",
+        )
+    except HTTPException:
+        raise
+    except PatientMatchConflictError as ex:
+        raise HTTPException(status_code=409, detail=str(ex)) from ex
+    except FhirResourceMatchConflictError as ex:
+        raise HTTPException(status_code=409, detail=str(ex)) from ex
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
+    except (requests.RequestException, PatientLookupError, FhirDuplicateLookupError) as ex:
+        logger.exception("FHIR preflight failed during eMediplan QR import")
+        raise HTTPException(status_code=502, detail="FHIR preflight lookup unavailable") from ex
     except Exception as ex:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(ex))

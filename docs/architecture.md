@@ -50,7 +50,7 @@ EPIC CDA
 - Interner Browser-Relay: `POST /_proxy/bridge/cda` (aelterer Alias von `/cda/import`) leitet CDA-Requests mit Bearer-Token an den festen BridgeLink-Endpunkt weiter; dies ist kein zusaetzlicher externer CDA-Endpunkt.
 - Weitere CDA-Funktionen intern: `/cda/debug`, `/cda/convert`, `/cda/etoc/convert`, `/cda/umzh/convert`, `/cda/umzh/send`, `/cda/vacd/convert`, `/cda/vacd/send` (in Konstruktion)
 - CH-VACD-API: `/cda/vacd/convert` fuer CH-VACD Immunization Administration Documents
-- eMediplan-API: `/emediplan/convert`, `/emediplan/import`, `/emediplan/import-bundle`, `/emediplan/qr/convert`, `/emediplan/qr/import`, `/emediplan/epic-cda`
+- eMediplan-API: `/emediplan/convert` und `/emediplan/qr/convert` liefern FHIR-Bundles ohne Write; Importpfade gleichen Patient, Medication, MedicationStatement und Practitioner gegen FHIR ab, stabilisieren Duplikate, reichern GLNs sowie Pharmacode/GTIN an und schreiben ueber BridgeLink (`BRIDGELINK_EMEDIPLAN_IMPORT_URL`)
 - EPIC-CDA-API: `/fhir/medications/epic-cda`, `/fhir/medications/epic-cda/from-server` (Default `count=100`)
 - Medication-Lookup fuer angereicherte Produktdaten: `_include=MedicationStatement:medication`
 - UMZH Convert: `workflow_stage=initial|updated|completed`, optional `target=default|sandbox-placer`

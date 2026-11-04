@@ -1,4 +1,6 @@
 import base64
+import binascii
+import copy
 import datetime as dt
 import gzip
 import hashlib
@@ -7,6 +9,7 @@ import re
 import uuid
 import xml.dom.minidom
 import xml.etree.ElementTree as ET
+import zlib
 import requests
 
 from fhir.bundle import build_bundle_entry
@@ -135,22 +138,35 @@ def _gender_from_emediplan(value):
 
 
 def _decode_chmed16a_string(payload_text):
-    compact = re.sub(r"\s+", "", payload_text)
+    match = re.fullmatch(
+        r"CHMED16A([01])(.*)",
+        payload_text.strip(),
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        raise ValueError("Unsupported CHMED16A transmission format")
 
-    if not compact.startswith(EMEDIPLAN_PREFIX):
-        raise ValueError("Unsupported eMediplan transmission format")
-
-    if len(compact) <= len(EMEDIPLAN_PREFIX):
+    compression, payload = match.groups()
+    if not payload.strip():
         raise ValueError("Missing CHMED16A payload")
 
-    payload = compact[len(EMEDIPLAN_PREFIX) + 1 :]
-
-    if not payload:
-        raise ValueError("Empty CHMED16A payload")
-
-    compressed = base64.b64decode(payload)
-    json_bytes = gzip.decompress(compressed)
-    return json.loads(json_bytes.decode("utf-8"))
+    try:
+        if compression == "0":
+            json_text = payload
+        else:
+            encoded_payload = re.sub(r"\s+", "", payload)
+            compressed = base64.b64decode(encoded_payload, validate=True)
+            json_text = gzip.decompress(compressed).decode("utf-8")
+        return json.loads(json_text)
+    except (
+        binascii.Error,
+        EOFError,
+        gzip.BadGzipFile,
+        json.JSONDecodeError,
+        UnicodeDecodeError,
+        zlib.error,
+    ) as ex:
+        raise ValueError("Invalid CHMED16A payload") from ex
 
 
 def parse_emediplan_payload(raw_content):
@@ -162,7 +178,7 @@ def parse_emediplan_payload(raw_content):
     if text.startswith("{"):
         return json.loads(text)
 
-    if text.startswith(EMEDIPLAN_PREFIX):
+    if text[: len(EMEDIPLAN_PREFIX)].casefold() == EMEDIPLAN_PREFIX.casefold():
         return _decode_chmed16a_string(text)
 
     raise ValueError(
@@ -944,6 +960,130 @@ def emediplan_to_fhir_bundle(raw_content):
             "system": "https://emediplan.ch/fhir/NamingSystem/emediplan-plan-id",
             "value": plan_id,
         }
+
+    return bundle
+
+
+def enrich_emediplan_bundle(bundle):
+    """Apply Swiss Pharmacode/GTIN mappings and best-effort GLN enrichment."""
+    bundle = copy.deepcopy(bundle)
+    if bundle.get("resourceType") != "Bundle":
+        return bundle
+
+    medication_systems = {
+        "https://emediplan.ch/fhir/NamingSystem/pharmacode": 3,
+        "urn:epc:id:sgtin": 2,
+    }
+
+    for entry in bundle.get("entry") or []:
+        resource = entry.get("resource") or {}
+        resource_type = resource.get("resourceType")
+
+        if resource_type == "Practitioner":
+            gln = next(
+                (
+                    _clean(identifier.get("value"))
+                    for identifier in resource.get("identifier") or []
+                    if isinstance(identifier, dict)
+                    and identifier.get("system") == GLN_SYSTEM
+                    and _is_valid_gln(_clean(identifier.get("value")))
+                ),
+                None,
+            )
+            if gln:
+                refdata_entry = lookup_gln(gln, partner_type="NAT")
+                if refdata_entry:
+                    if not resource.get("name") and refdata_entry.get("name"):
+                        resource["name"] = [{"text": refdata_entry["name"]}]
+                    if not resource.get("address") and refdata_entry.get("address"):
+                        resource["address"] = [
+                            {
+                                key: value
+                                for key, value in refdata_entry["address"].items()
+                                if value
+                            }
+                        ]
+            continue
+
+        if resource_type != "Medication":
+            continue
+
+        code = resource.setdefault("code", {})
+        if not isinstance(code, dict):
+            raise ValueError("Medication.code must be a CodeableConcept")
+        codings = code.setdefault("coding", [])
+        if codings is None:
+            codings = []
+            code["coding"] = codings
+        if isinstance(codings, dict):
+            codings = [codings]
+            code["coding"] = codings
+        if not isinstance(codings, list):
+            raise ValueError("Medication.code.coding must be a list")
+
+        source_codings = [
+            coding
+            for coding in codings
+            if isinstance(coding, dict)
+            and coding.get("system") in medication_systems
+            and coding.get("code")
+        ]
+        if not source_codings:
+            for identifier in resource.get("identifier") or []:
+                if not isinstance(identifier, dict):
+                    continue
+                if identifier.get("system") in medication_systems and identifier.get("value"):
+                    source_coding = {
+                        "system": identifier["system"],
+                        "code": identifier["value"],
+                    }
+                    if not any(
+                        item.get("system") == source_coding["system"]
+                        and item.get("code") == source_coding["code"]
+                        for item in codings
+                        if isinstance(item, dict)
+                    ):
+                        codings.append(source_coding)
+                    source_codings.append(source_coding)
+
+        for source_coding in source_codings:
+            resolved = resolve_medication_identity(
+                medication_systems[source_coding["system"]],
+                str(source_coding["code"]),
+            )
+            display = resolved.get("display")
+            if display:
+                source_coding.setdefault("display", display)
+                code.setdefault("text", display)
+
+            gtin = resolved.get("gtin")
+            if gtin:
+                gtin_coding = {
+                    "system": "urn:epc:id:sgtin",
+                    "code": gtin,
+                }
+                if display:
+                    gtin_coding["display"] = display
+                if not any(
+                    item.get("system") == gtin_coding["system"]
+                    and item.get("code") == gtin_coding["code"]
+                    for item in codings
+                    if isinstance(item, dict)
+                ):
+                    codings.append(gtin_coding)
+
+            if resolved.get("form") and not resource.get("form"):
+                resource["form"] = _codeable_concept_from_source(resolved["form"])
+            if resolved.get("ingredient") and not resource.get("ingredient"):
+                ingredient = {
+                    "itemCodeableConcept": _codeable_concept_from_source(
+                        resolved["ingredient"]
+                    ),
+                }
+                strength = _ratio_from_source(resolved.get("strength"))
+                if strength:
+                    ingredient["strength"] = strength
+                resource["ingredient"] = [ingredient]
 
     return bundle
 

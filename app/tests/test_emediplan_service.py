@@ -6,11 +6,13 @@ import xml.etree.ElementTree as ET
 from unittest.mock import Mock, patch
 
 from services.emediplan_service import (
+    enrich_emediplan_bundle,
     emediplan_to_fhir_bundle,
     fhir_medications_to_epic_cda,
     fetch_medication_bundle_from_fhir_server,
     import_emediplan_to_fhir_server,
     import_bundle_to_fhir_server,
+    parse_emediplan_payload,
 )
 
 
@@ -121,6 +123,31 @@ class EmediplanServiceTests(unittest.TestCase):
 
         self.assertEqual(statement["status"], "active")
         self.assertIn("medicationReference", statement)
+
+    def test_parse_chmed16a_uncompressed_json_preserves_string_whitespace(self):
+        source = b'CHMED16A0{"Rmk":"take  with  food"}'
+
+        payload = parse_emediplan_payload(source)
+
+        self.assertEqual(payload["Rmk"], "take  with  food")
+
+    def test_parse_chmed16a_prefix_is_case_insensitive(self):
+        payload = self._sample_chmed16a_payload().replace(
+            b"CHMED16A1", b"chmed16a1", 1
+        )
+
+        parsed = parse_emediplan_payload(payload)
+
+        self.assertEqual(parsed["Id"], "plan-1")
+
+    def test_parse_chmed16a_rejects_unsupported_compression_and_invalid_data(self):
+        for payload in (
+            b"CHMED16A2{}",
+            b"CHMED16A1not-base64",
+            b"CHMED16A1bm90LWd6aXA=",
+        ):
+            with self.subTest(payload=payload), self.assertRaises(ValueError):
+                parse_emediplan_payload(payload)
 
     def test_create_epic_cda_from_fhir_bundle(self):
         med_object_json = json.dumps(self._sample_emediplan_object()).encode("utf-8")
@@ -1004,6 +1031,81 @@ class EmediplanServiceTests(unittest.TestCase):
             risk_display_by_code["571"],
             "Allergy to acetylsalicylic acid",
         )
+
+    @patch("services.emediplan_service.lookup_gln")
+    @patch("services.emediplan_service.resolve_medication_identity")
+    def test_import_bundle_enriches_pharmacode_gtin_and_practitioner_gln(
+        self,
+        resolve_medication,
+        lookup_gln,
+    ):
+        resolve_medication.return_value = {
+            "id": "7680485780715",
+            "id_type": 2,
+            "display": "Torem 10, Tabletten",
+            "gtin": "7680485780715",
+            "form": "Tablette",
+            "ingredient": "Torasemid",
+            "strength": {
+                "numerator": {"value": 10, "unit": "mg"},
+                "denominator": {"value": 1, "unit": "1"},
+            },
+        }
+        lookup_gln.return_value = {
+            "name": "Max Muster",
+            "address": {"city": "Bern", "line": []},
+        }
+        bundle = {
+            "resourceType": "Bundle",
+            "type": "transaction",
+            "entry": [
+                {
+                    "resource": {
+                        "resourceType": "Medication",
+                        "code": {
+                            "coding": [
+                                {
+                                    "system": "https://emediplan.ch/fhir/NamingSystem/pharmacode",
+                                    "code": "1551274",
+                                }
+                            ]
+                        },
+                    }
+                },
+                {
+                    "resource": {
+                        "resourceType": "Practitioner",
+                        "identifier": [
+                            {
+                                "system": "urn:oid:2.51.1.3",
+                                "value": "7601009545993",
+                            }
+                        ],
+                    }
+                },
+            ],
+        }
+
+        result = enrich_emediplan_bundle(bundle)
+        medication = result["entry"][0]["resource"]
+        practitioner = result["entry"][1]["resource"]
+
+        self.assertIn(
+            {
+                "system": "urn:epc:id:sgtin",
+                "code": "7680485780715",
+                "display": "Torem 10, Tabletten",
+            },
+            medication["code"]["coding"],
+        )
+        self.assertEqual(medication["code"]["text"], "Torem 10, Tabletten")
+        self.assertEqual(medication["form"], {"text": "Tablette"})
+        self.assertEqual(
+            medication["ingredient"][0]["itemCodeableConcept"],
+            {"text": "Torasemid"},
+        )
+        self.assertEqual(practitioner["name"], [{"text": "Max Muster"}])
+        self.assertEqual(practitioner["address"], [{"city": "Bern"}])
 
 
 if __name__ == "__main__":

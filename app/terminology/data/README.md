@@ -8,12 +8,13 @@ Download source: https://www.emediplan.ch/downloads/ (monthly mapping export).
 
 Expected filenames:
 
-- 20260901__MappingPharmacodeToGtinToSwissmedicDescription.xlsx
-- 20260701__MappingProductNumberToSwissmedicDescription.xlsx
+- MappingPharmacodeToGtinToSwissmedicDescription.xlsx
+- MappingProductNumberToSwissmedicDescription.xlsx
 
 Note: pharmacodes can be superseded when a product's packaging changes (e.g. Pharmacode
 809693 for "Aldactone 50 mg" was replaced by 809701 in the current Swissmedic export).
 Unresolved pharmacodes fall back to the raw code plus a Compendium search link.
+The middleware also accepts the former date-prefixed filenames as a fallback.
 
 You can override file paths via environment variables:
 

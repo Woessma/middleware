@@ -236,10 +236,10 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/cda/vacd/convert` | Erzeugt ein CH-VACD-Dokumentbundle | CDA -> CH-VACD |
 | `POST` | `/cda/vacd/send` | Konvertiert CDA und versendet an den VACD-Zielserver | CH-VACD-Sendefluss |
 | `POST` | `/emediplan/convert` | Konvertiert Text, PDF oder QR-Bild in ein FHIR-Bundle | eMediplan -> FHIR |
-| `POST` | `/emediplan/import` | Erzeugt und validiert ein Transaction-Bundle | eMediplan -> BridgeLink -> HAPI |
-| `POST` | `/emediplan/import-bundle` | Validiert ein FHIR-Resource-Objekt oder Bundle | Bundle -> BridgeLink -> HAPI |
+| `POST` | `/emediplan/import` | Konvertiert eMediplan-Daten und importiert das FHIR-Bundle über BridgeLink | eMediplan -> FHIR -> BridgeLink -> HAPI |
+| `POST` | `/emediplan/import-bundle` | Validiert ein FHIR-Resource-Objekt oder Bundle und importiert es über BridgeLink | FHIR-JSON -> BridgeLink -> HAPI |
 | `POST` | `/emediplan/qr/convert` | Liest einen eMediplan-QR-Code und konvertiert ihn | eMediplan-QR -> FHIR |
-| `POST` | `/emediplan/qr/import` | Liest einen eMediplan-QR-Code und erzeugt ein Transaction-Bundle | eMediplan-QR -> BridgeLink -> HAPI |
+| `POST` | `/emediplan/qr/import` | Liest einen eMediplan-QR-Code, konvertiert und importiert über BridgeLink | eMediplan-QR -> FHIR -> BridgeLink -> HAPI |
 | `POST` | `/emediplan/epic-cda` | Konvertiert eMediplan-Daten in Epic-CDA-XML | eMediplan -> Epic CDA |
 | `POST` | `/fhir/medications/epic-cda` | Konvertiert ein FHIR-Bundle in Epic-CDA-XML | FHIR -> Epic CDA |
 | `GET` | `/fhir/medications/epic-cda/from-server` | Liest Medikamente aus FHIR und liefert Epic-CDA-XML | FHIR -> Epic CDA |
@@ -249,6 +249,46 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/fhir/stabilize` | Stabilisiert ein FHIR-Resource-Objekt oder Bundle | FHIR-Importvorbereitung |
 | `POST` | `/fhir/convert` | Stabilisiert, validiert und verarbeitet ein FHIR-Bundle | FHIR-Import |
 | `POST` | `/terminology/{resource_type}/{operation}` | Leitet Terminologieoperationen an TX weiter | Terminologie |
+
+### eMediplan-Import ueber BridgeLink
+
+`POST /emediplan/import` konvertiert Text/PDF-eMediplan-Daten in der Middleware,
+validiert das FHIR-Transaction-Bundle und sendet das FHIR-JSON mit dem
+Keycloak-Bearer-Token an BridgeLink. `POST /emediplan/qr/import` liest
+zunaechst den QR-Code aus dem PDF/Bild und nutzt denselben Importpfad.
+Der QR-Inhalt wird gemaess dem offiziellen
+[CHMED16A-Datenmodell](https://github.com/ig-emediplan/specification/tree/main/chmed16a)
+und [ChTransmissionFormat](https://github.com/ig-emediplan/specification/tree/main/chtransmissionformat)
+als `CHMED16A0` (un-komprimiertes JSON) oder `CHMED16A1` (Base64-kodiertes
+GZIP-JSON) verarbeitet. Andere CHMED-Versionen werden hier nicht als
+CHMED16A interpretiert.
+`POST /emediplan/import-bundle` nimmt stattdessen ein fertiges FHIR-Resource-
+Objekt oder Bundle entgegen, validiert es und sendet es ebenfalls als
+`application/fhir+json` an BridgeLink.
+
+Die Import-URL ist ueber `BRIDGELINK_EMEDIPLAN_IMPORT_URL` konfigurierbar und
+standardmaessig `https://api.omnilink.ch/v1/emediplan/import`. Der BridgeLink-
+Channel muss FHIR-JSON annehmen, den Write nach HAPI ausfuehren und die
+Transaction-Antwort zurueckgeben. Die Middleware gibt BridgeLink-HTTP-Status,
+Body und relevante Antwortheader unveraendert weiter. `/emediplan/convert`
+und `/emediplan/qr/convert` bleiben reine Konvertierungsendpunkte ohne Write.
+
+Vor jedem eMediplan-Write stabilisiert die Middleware das Bundle und entfernt
+in-Bundle-Duplikate. Patientinnen und Patienten werden auf dem Ziel-FHIR-Server
+zuerst per Identifier und ersatzweise per exakt abgeglichenem Namen und
+Geburtsdatum gesucht. Ein bereits vorhandener Patient wird nicht erneut
+geschrieben; Referenzen werden auf dessen FHIR-ID umgestellt. Medication,
+MedicationStatement und Practitioner werden ebenfalls per Identifier
+abgeglichen und bei einem Treffer unter der bestehenden FHIR-ID aktualisiert.
+Mehrdeutige Treffer brechen mit HTTP `409` ab; nicht erreichbare FHIR-Patienten-
+oder Identifier-Suchen brechen mit HTTP `502` ab.
+
+Pharmacode und GTIN werden gegen die mit der Middleware ausgelieferten
+Swissmedic-Zuordnungsdateien abgeglichen. Bekannte Pharmacodes erhalten die
+zugehörige GTIN-Codierung und verfuegbare Produktdaten. Practitioner-GLNs werden
+validiert und best-effort mit Refdata-Name und -Adresse angereichert. Diese
+Abgleiche laufen auch beim Import eines bereits bestehenden FHIR-JSON-Bundles;
+der Terminology-Service validiert zusaetzlich die von ihm unterstuetzten Codes.
 
 ### EchoSOS ueber BridgeLink
 
@@ -439,20 +479,20 @@ Das bedeutet: Der Ablauf kann auch so aussehen:
 So ist der Convert-Call nicht der eigentliche Import, sondern die Vorstufe fuer den direkten FHIR-Write ueber BridgeLink.
 
 #### 2. BridgeLink-Import-Endpunkte
-Diese Endpunkte erzeugen und validieren ein Transaction-Bundle. BridgeLink schreibt
-das Bundle anschließend in den FHIR-Server.
 
 Beispiele:
 
 - `POST /cda/import`
 - `POST /emediplan/import`
 - `POST /emediplan/import-bundle`
+- `POST /emediplan/qr/import`
 
 Erwartung:
 
-- `200 OK` mit einem validierten FHIR-Transaction-Bundle
+- `200 OK` mit der BridgeLink/FHIR-Transaction-Antwort
 - `400 Bad Request` bei ungültigem Input
-- Der HAPI-FHIR-Status kommt erst aus dem nachgelagerten BridgeLink-Write
+- Die Middleware validiert das Bundle vor dem BridgeLink-Write. Der HAPI-Status
+  und die Entry-Ergebnisse stammen aus der BridgeLink-Transaction-Antwort.
 
 #### 3. Conversion-to-XML-Endpunkte
 Diese Endpunkte liefern als Output XML statt JSON.
