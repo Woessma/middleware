@@ -1,3 +1,5 @@
+import base64
+import gzip
 import json
 import unittest
 from unittest.mock import Mock, patch
@@ -9,7 +11,15 @@ from main import (
     _prepare_emediplan_import_bundle as app_module_prepare,
     app,
 )
-from services.patient_service import find_matching_patient
+from services.fhir_duplicate_service import (
+    FhirDuplicateLookupError,
+    FhirResourceMatchConflictError,
+)
+from services.patient_service import (
+    PatientLookupError,
+    PatientMatchConflictError,
+    find_matching_patient,
+)
 
 
 class EmediplanBridgeLinkImportTests(unittest.TestCase):
@@ -36,6 +46,115 @@ class EmediplanBridgeLinkImportTests(unittest.TestCase):
         upstream.content = b'{"resourceType":"Bundle","type":"transaction-response"}'
         upstream.headers = {"Content-Type": "application/fhir+json"}
         return upstream
+
+    @patch("main.requests.post")
+    @patch("main._validate_bundle", side_effect=lambda bundle: bundle)
+    def test_prepare_accepts_raw_and_encoded_emediplan_without_bridge_callback(
+        self, validate_bundle, post
+    ):
+        source = {
+            "Id": "test-plan",
+            "Patient": {"FName": "Test", "LName": "Example", "BDt": "1980-01-01"},
+            "Medicaments": [],
+        }
+        source_json = json.dumps(source).encode("utf-8")
+        encoded = base64.b64encode(gzip.compress(source_json))
+        for payload in (source_json, b"CHMED16A0" + source_json, b"CHMED16A1" + encoded):
+            with self.subTest(payload=payload[:20]):
+                response = self.client.post(
+                    "/emediplan/prepare",
+                    content=payload,
+                    headers={"Authorization": self.authorization},
+                )
+                self.assertEqual(response.status_code, 200, response.text)
+                self.assertEqual(response.json()["type"], "transaction")
+                self.assertTrue(response.json()["entry"])
+        post.assert_not_called()
+
+    @patch("main.requests.post")
+    @patch("main._prepare_emediplan_import_bundle")
+    @patch("main.emediplan_to_fhir_bundle")
+    def test_prepare_accepts_fhir_without_emediplan_conversion(
+        self, convert, prepare, post
+    ):
+        prepare.return_value = self.bundle
+        for source in (self.bundle, {"resourceType": "Patient", "id": "test-patient"}):
+            with self.subTest(resource_type=source["resourceType"]):
+                response = self.client.post(
+                    "/emediplan/prepare",
+                    json=source,
+                    headers={"Authorization": self.authorization},
+                )
+                self.assertEqual(response.status_code, 200)
+                prepare.assert_called_with(source)
+        convert.assert_not_called()
+        post.assert_not_called()
+
+    @patch("main.requests.post")
+    @patch("main._prepare_emediplan_import_bundle")
+    @patch("main.resolve_emediplan_payload", return_value=b'{"Medicaments":[]}')
+    @patch("main.emediplan_to_fhir_bundle")
+    def test_prepare_accepts_qr_image_and_multipart(
+        self, convert, resolve, prepare, post
+    ):
+        convert.return_value = self.bundle
+        prepare.return_value = self.bundle
+        headers = {"Authorization": self.authorization}
+        response = self.client.post(
+            "/emediplan/prepare",
+            content=b"image bytes",
+            headers={**headers, "Content-Type": "image/png"},
+        )
+        self.assertEqual(response.status_code, 200)
+        resolve.assert_called_with(b"image bytes", "image/png")
+        response = self.client.post(
+            "/emediplan/prepare",
+            files={"file": ("plan.png", b"image bytes", "image/png")},
+            headers=headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        resolve.assert_called_with(b"image bytes", "image/png")
+        prepare.assert_called_with(self.bundle)
+        post.assert_not_called()
+
+    @patch("main.requests.post")
+    @patch("main._prepare_emediplan_import_bundle")
+    def test_prepare_maps_preflight_errors(self, prepare, post):
+        for error, expected in (
+            (PatientMatchConflictError("ambiguous"), 409),
+            (FhirResourceMatchConflictError("ambiguous"), 409),
+            (PatientLookupError("unavailable"), 502),
+            (FhirDuplicateLookupError("unavailable"), 502),
+        ):
+            with self.subTest(error=type(error).__name__):
+                prepare.side_effect = error
+                response = self.client.post(
+                    "/emediplan/prepare",
+                    json=self.bundle,
+                    headers={"Authorization": self.authorization},
+                )
+                self.assertEqual(response.status_code, expected)
+        post.assert_not_called()
+
+    @patch("main.requests.post")
+    @patch("main.resolve_emediplan_payload")
+    def test_prepare_requires_bearer(self, resolve, post):
+        response = self.client.post("/emediplan/prepare", json=self.bundle)
+        self.assertEqual(response.status_code, 401)
+        resolve.assert_not_called()
+        post.assert_not_called()
+
+    @patch("main.requests.post")
+    def test_prepare_rejects_empty_and_invalid_payloads(self, post):
+        for payload in (b"", b"{invalid", b"CHMED16A1invalid"):
+            with self.subTest(payload=payload):
+                response = self.client.post(
+                    "/emediplan/prepare",
+                    content=payload,
+                    headers={"Authorization": self.authorization},
+                )
+                self.assertEqual(response.status_code, 400, response.text)
+        post.assert_not_called()
 
     @patch("main.requests.post")
     @patch("main._validate_bundle")

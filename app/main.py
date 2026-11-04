@@ -2095,6 +2095,49 @@ async def emediplan_convert(
         raise HTTPException(status_code=500, detail=str(ex))
 
 
+@app.post("/emediplan/prepare")
+async def emediplan_prepare(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    raw_payload: Optional[str] = Form(None),
+):
+    _bridge_link_authorization(request)
+    if file is not None:
+        payload = await file.read()
+        content_type = file.content_type
+    elif raw_payload:
+        payload = raw_payload.encode("utf-8")
+        content_type = None
+    else:
+        payload = await request.body()
+        content_type = request.headers.get("content-type")
+
+    if not payload:
+        raise HTTPException(status_code=400, detail="No eMediplan payload provided")
+
+    try:
+        payload = resolve_emediplan_payload(payload, content_type)
+        text = payload.decode("utf-8").strip()
+        source = json.loads(text) if text.startswith("{") else None
+        if isinstance(source, dict) and "resourceType" in source:
+            bundle = source
+        else:
+            bundle = emediplan_to_fhir_bundle(payload)
+        return _prepare_emediplan_import_bundle(bundle)
+    except HTTPException:
+        raise
+    except (PatientMatchConflictError, FhirResourceMatchConflictError) as ex:
+        raise HTTPException(status_code=409, detail=str(ex)) from ex
+    except ValueError as ex:
+        raise HTTPException(status_code=400, detail=str(ex)) from ex
+    except (requests.RequestException, PatientLookupError, FhirDuplicateLookupError) as ex:
+        logger.exception("FHIR preflight failed during eMediplan preparation")
+        raise HTTPException(status_code=502, detail="FHIR preflight lookup unavailable") from ex
+    except Exception as ex:
+        logger.exception("eMediplan preparation failed")
+        raise HTTPException(status_code=500, detail=str(ex)) from ex
+
+
 @app.post("/emediplan/import")
 async def emediplan_import(
     request: Request,

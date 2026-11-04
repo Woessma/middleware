@@ -236,6 +236,7 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/cda/vacd/convert` | Erzeugt ein CH-VACD-Dokumentbundle | CDA -> CH-VACD |
 | `POST` | `/cda/vacd/send` | Konvertiert CDA und versendet an den VACD-Zielserver | CH-VACD-Sendefluss |
 | `POST` | `/emediplan/convert` | Konvertiert Text, PDF oder QR-Bild in ein FHIR-Bundle | eMediplan -> FHIR |
+| `POST` | `/emediplan/prepare` | Bereitet eMediplan oder FHIR-JSON mit Importpruefungen als Transaction-Bundle vor; kein Write | BridgeLink -> Middleware -> BridgeLink |
 | `POST` | `/emediplan/import` | Konvertiert eMediplan-Daten und importiert das FHIR-Bundle über BridgeLink | eMediplan -> FHIR -> BridgeLink -> HAPI |
 | `POST` | `/emediplan/import-bundle` | Validiert ein FHIR-Resource-Objekt oder Bundle und importiert es über BridgeLink | FHIR-JSON -> BridgeLink -> HAPI |
 | `POST` | `/emediplan/qr/convert` | Liest einen eMediplan-QR-Code und konvertiert ihn | eMediplan-QR -> FHIR |
@@ -251,6 +252,18 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/terminology/{resource_type}/{operation}` | Leitet Terminologieoperationen an TX weiter | Terminologie |
 
 ### eMediplan-Import ueber BridgeLink
+
+Der externe BridgeLink-Endpunkt `POST /v1/emediplan/import` muss auf
+`https://middleware.local.omnilink.ch/emediplan/prepare` routen und
+`responseTarget=hapi` setzen. Dieser Middleware-Endpunkt nimmt CHMED16A-Text,
+eMediplan-JSON, PDF/QR-Bilder oder FHIR-JSON entgegen. Er verlangt einen
+Bearer-Header, fuehrt die gemeinsamen Importpruefungen aus und liefert ein
+Transaction-Bundle zurueck, ohne BridgeLink aufzurufen oder nach HAPI zu schreiben.
+Destination 02 in BridgeLink fuehrt den anschliessenden HAPI-Write aus.
+Der HTTP Sender muss den zum Eingang passenden Content-Type weitergeben
+(z.B. `application/json`, `text/plain`, `application/pdf` oder `image/png`).
+`/fhir/convert` ist fuer eMediplan-Rohdaten ungeeignet; `/emediplan/import`
+als Rueckrufziel wuerde eine Schleife erzeugen.
 
 `POST /emediplan/import` konvertiert Text/PDF-eMediplan-Daten in der Middleware,
 validiert das FHIR-Transaction-Bundle und sendet das FHIR-JSON mit dem
