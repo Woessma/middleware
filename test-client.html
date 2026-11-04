@@ -101,7 +101,7 @@
       ['FHIR Bundle','fhir-convert','Bundle stabilisieren + importieren','POST','/fhir/convert','json','Stabilisiert das Bundle und importiert es über den konfigurierten FHIR-Server.',sampleBundle],
       ['FHIR Bundle','fhir-direct','Bundle über BridgeLink senden','POST','/','json','Sendet ein bereits gültiges Transaction-Bundle über BridgeLink an FHIR.',sampleBundle,[], 'fhir'],
       ['FHIR Abfragen','patient-everything','Patient $everything','GET','/Patient/{patient_id}/$everything','none','Lädt den Patienten und alle verknüpften Ressourcen über BridgeLink aus FHIR.',undefined,[{name:'patient_id',label:'Patient-ID',type:'text',value:'cf480118-7313-4f78-8043-549b9aceec91',path:true},{name:'_count',label:'Max. Treffer',type:'number',value:'500'}],'fhir'],
-      ['FHIR Bundle','bundle-import','eMediplan Bundle importieren','POST','/emediplan/import-bundle','json','Validiert ein vorhandenes FHIR-Bundle und importiert es über BridgeLink nach FHIR.',sampleBundle],
+      ['eMediplan','bundle-import','eMediplan FHIR-JSON importieren','POST','/emediplan/import','json','Prüft Patient, Duplikate, GLN und Terminologie eines FHIR-Bundles; BridgeLink schreibt nach HAPI.',sampleBundle],
       ['CDA','cda-convert','CDA → FHIR Bundle','POST','/cda/convert','xml','Konvertiert CDA in ein Transaction- oder Document-Bundle.',undefined,[{name:'bundle_type',label:'Bundle-Typ',type:'select',options:['transaction','document'],value:'transaction'}]],
       ['Freigegeben','cda-import','CDA → FHIR Import über BridgeLink','POST','/cda/import','xml','Sendet CDA mit Keycloak-Bearer-Token same-origin an die Middleware; diese leitet den Import an BridgeLink weiter, das nach HAPI FHIR schreibt.',undefined,[],'same-origin'],
       ['CDA','cda-debug','CDA analysieren (Debug)','POST','/cda/debug','xml-file','Liest Profil, Header, Patient und Sections. Nur im Debug-Modus verfügbar.'],
@@ -112,10 +112,11 @@
       ['UMZH','umzh-send','CDA → UMZH senden','POST','/cda/umzh/send','xml','Konvertiert CDA und sendet die Ressourcen an das Zielsystem.',undefined,[...workflow,{name:'destination_base_url',label:'Zielsystem Basis-URL',type:'text',placeholder:'https://ziel.example/fhir',wide:true},{name:'outbound_authorization',label:'Outbound Authorization',type:'password',placeholder:'Bearer …',wide:true,hint:'Die aktuelle API überträgt diesen Wert als Query-Parameter. Nur in einer kontrollierten Testumgebung verwenden.'}]],
       ['HL7v2','hl7-convert','ORU^R01 → FHIR Bundle','POST','/hl7v2/convert','hl7','Konvertiert ORU^R01 mit Patient und Laborwerten.',sampleHl7],
       ['HL7v2','hl7-import','ORU^R01 → FHIR Import über BridgeLink','POST','/hl7v2/import','hl7','Konvertiert ORU^R01; BridgeLink schreibt das Bundle in FHIR.',sampleHl7],
-      ['eMediplan','emed-convert','eMediplan → FHIR Bundle','POST','/emediplan/convert','text','Konvertiert eMediplan in ein angereichertes FHIR-Bundle.'],
-      ['eMediplan','emed-import','eMediplan → FHIR Import über BridgeLink','POST','/emediplan/import','text','Konvertiert und validiert eMediplan; BridgeLink schreibt das FHIR-Bundle nach HAPI.'],
-      ['eMediplan','emed-qr-convert','eMediplan QR (PDF/Bild) → FHIR Bundle','POST','/emediplan/qr/convert','binary-file','Liest den eMediplan-QR-Code aus einem PDF oder Bild und gibt ein FHIR Bundle zurück.'],
-      ['eMediplan','emed-qr-import','eMediplan QR (PDF/Bild) → FHIR Import über BridgeLink','POST','/emediplan/qr/import','binary-file','Liest und konvertiert den eMediplan-QR-Code; BridgeLink schreibt das FHIR-Bundle nach HAPI.'],
+      ['eMediplan','emed-convert','eMediplan JSON / CHMED16A → FHIR Bundle','POST','/emediplan/convert','text','Konvertiert eMediplan-JSON oder CHMED16A0/1 über BridgeLink. Kein HAPI-Write.'],
+      ['eMediplan','emed-import','eMediplan JSON / CHMED16A → FHIR Import','POST','/emediplan/import','text','BridgeLink lässt Patient, Duplikate, GLN und Terminologie prüfen und schreibt das Transaction-Bundle nach HAPI. Wiederimport mit derselben Eingabe prüft die Wiederverwendung.'],
+      ['eMediplan','emed-qr-convert','eMediplan QR (PDF/Bild) → FHIR Bundle','POST','/emediplan/qr/convert','binary-file','Liest den QR-Code lokal in der Middleware und liefert ein FHIR-Bundle. Kein HAPI-Write.',undefined,[],'same-origin'],
+      ['eMediplan','emed-qr-import','eMediplan QR (PDF/Bild) → FHIR Import über BridgeLink','POST','/emediplan/qr/import','binary-file','Die Middleware dekodiert PDF/Bild, prüft Patient, Duplikate, GLN und Terminologie und sendet FHIR-JSON über BridgeLink nach HAPI.',undefined,[],'same-origin'],
+      ['EchoSOS','echosos-resolve','EchoSOS URL → FHIR Import über BridgeLink','POST','/echosos/resolve','text','Sendet die EchoSOS-URL aus dem QR-Code an BridgeLink; die Middleware bereitet das Bundle für den HAPI-Write vor.'],
       ['EchoSOS','echosos-qr','EchoSOS QR/PKPass → BridgeLink FHIR Import','POST','/echosos/qr','binary-file','Dekodiert EchoSOS, sucht den Patienten nach Name und Geburtsdatum und liefert ein Transaction-Bundle an BridgeLink für den HAPI-Write.'],
       ['EPIC CDA','fhir-epic','FHIR Bundle → EPIC CDA','POST','/fhir/medications/epic-cda','json','Erzeugt ein EPIC-Medikations-CDA aus einem FHIR-Bundle.',sampleBundle],
       ['EPIC CDA','emed-epic','eMediplan → EPIC CDA','POST','/emediplan/epic-cda','binary-file','Konvertiert eMediplan (Text, PDF oder Bild mit QR-Code) über FHIR in ein EPIC-Medikations-CDA.'],
@@ -131,14 +132,44 @@
     ].map(([group,id,name,method,path,input,description,template,params=[],target='middleware'])=>({group,id,name,method,path,input,description,template,params,target}));
     const el=Object.fromEntries(['useCase','route','description','params','payload','inputLabel','fileInput','runBtn','formatBtn','status','output','responseMeta','reuseBtn','downloadBtn'].map(id=>[id,document.getElementById(id)]));
     let lastResponse=null,lastContentType='application/json';
-    const approvedUseCaseIds=new Set(['cda-import']);
+    const approvedUseCaseIds=new Set(['cda-convert','cda-import','emed-convert','emed-import','bundle-import','emed-qr-convert','emed-qr-import','echosos-resolve','patient-everything']);
     function visibleCases(){return cases.filter(item=>approvedUseCaseIds.has(item.id))}
     function current(){return visibleCases().find(item=>item.id===el.useCase.value)||visibleCases()[0]}
     function populate(){const previous=el.useCase.value;el.useCase.replaceChildren();const groups=new Map();for(const item of visibleCases()){if(!groups.has(item.group)){const group=document.createElement('optgroup');group.label=item.group;groups.set(item.group,group);el.useCase.append(group)}const option=document.createElement('option');option.value=item.id;option.textContent=item.name;groups.get(item.group).append(option)}if(visibleCases().some(item=>item.id===previous))el.useCase.value=previous}
     function render(){const item=current();el.route.replaceChildren();const method=document.createElement('span');method.className='method';method.textContent=item.method;const path=document.createElement('span');path.className='route-path';path.textContent=(item.target==='fhir'?'FHIR ':item.target==='same-origin'?'Same-origin BridgeLink-Proxy ':'')+item.path;el.route.append(method,path);el.description.textContent=item.description;el.params.replaceChildren();for(const spec of item.params){const box=document.createElement('div');if(spec.wide)box.className='wide';const label=document.createElement('label');label.htmlFor='param-'+spec.name;label.textContent=spec.label;let input;if(spec.type==='select'){input=document.createElement('select');for(const value of spec.options){const option=document.createElement('option');option.value=value;option.textContent=value;input.append(option)}}else{input=document.createElement('input');input.type=spec.type||'text';input.placeholder=spec.placeholder||''}input.id='param-'+spec.name;input.dataset.param=spec.name;if(spec.path)input.dataset.path='true';input.value=spec.value||'';box.append(label,input);if(spec.hint){const hint=document.createElement('div');hint.className='hint';hint.textContent=spec.hint;box.append(hint)}el.params.append(box)}const none=item.input==='none';const binaryFile=item.input==='binary-file';el.payload.disabled=none||binaryFile;el.fileInput.disabled=none;el.formatBtn.hidden=item.input!=='json';el.inputLabel.textContent=none?'Keine Request-Eingabe erforderlich':binaryFile?'PDF oder Bild mit QR-Code':item.input==='json'?'FHIR JSON / Parameters':item.input.startsWith('xml')?'CDA XML':item.input==='hl7'?'HL7v2 Nachricht':'Payload';el.fileInput.accept=binaryFile?'.pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg,text/plain':item.input==='json'?'.json,application/json':item.input.startsWith('xml')?'.xml,text/xml,application/xml':item.input==='hl7'?'.hl7,.txt,text/plain':'.txt,.json';el.payload.placeholder=none?'Dieser Use Case verwendet nur Query-Parameter.':binaryFile?'Datei auswählen – kein Text-Payload notwendig.':'Payload einfügen oder Datei auswählen …';el.payload.value=item.template===undefined?'':typeof item.template==='string'?item.template:JSON.stringify(item.template,null,2);el.fileInput.value=''}
     function auth(){const headers=window.keycloakAuthHeaders();if(!headers.Authorization)throw Error('Bitte zuerst mit Keycloak anmelden.');return headers}
     function urlFor(item){const base=item.target==='same-origin'?window.location.origin:document.getElementById(item.target==='fhir'?'fhirUrl':'middlewareUrl').value.trim().replace(/\/+$/,'');if(!base)throw Error(`Bitte ${item.target==='fhir'?'FHIR-Server':'BridgeLink'} URL eingeben.`);let path=item.path;el.params.querySelectorAll('[data-path]').forEach(input=>{if(!input.value.trim())throw Error(`Bitte ${input.previousElementSibling.textContent} eingeben.`);path=path.replace(`{${input.dataset.param}}`,encodeURIComponent(input.value.trim()))});const url=new URL(base+path);el.params.querySelectorAll('[data-param]:not([data-path])').forEach(input=>{if(input.value.trim())url.searchParams.set(input.dataset.param,input.value.trim())});return url}
-    function requestFor(item){const headers={Accept:'application/fhir+json, application/json, application/xml, text/xml, text/plain',...auth()},options={method:item.method,headers,mode:'cors',credentials:'same-origin'};if(item.input==='none')return options;const selectedFile=el.fileInput.files[0];if(item.id==='cda-import'&&selectedFile){options.body=selectedFile;headers['Content-Type']='application/xml; charset=UTF-8';return options}if(item.input==='binary-file'){if(!selectedFile)throw Error('Bitte eine Datei auswählen.');const form=new FormData();form.append('file',selectedFile,selectedFile.name);options.body=form;return options}const value=el.payload.value.trim();if(!value)throw Error('Bitte CDA-XML als Raw-Body eingeben oder eine Datei auswählen.');if(item.input==='json'){options.body=JSON.stringify(JSON.parse(value));headers['Content-Type']='application/fhir+json'}else if(item.input==='xml-file'){const form=new FormData();form.append('file',new Blob([value],{type:'application/xml'}),el.fileInput.files[0]?.name||'document.xml');options.body=form}else{options.body=value;headers['Content-Type']=item.input==='xml'?'application/xml; charset=UTF-8':'text/plain; charset=utf-8'}return options}
+    function requestFor(item){
+      const headers={Accept:'application/fhir+json, application/json, application/xml, text/xml, text/plain',...auth()};
+      const options={method:item.method,headers,mode:'cors',credentials:'same-origin'};
+      if(item.input==='none')return options;
+      const selectedFile=el.fileInput.files[0];
+      if(item.id==='cda-import'&&selectedFile){options.body=selectedFile;headers['Content-Type']='application/xml; charset=UTF-8';return options}
+      if(item.input==='binary-file'){
+        if(!selectedFile)throw Error('Bitte eine Datei auswählen.');
+        const form=new FormData();
+        form.append('file',selectedFile,selectedFile.name);
+        options.body=form;
+        return options;
+      }
+      const value=el.payload.value.trim();
+      if(!value)throw Error('Bitte einen Payload eingeben oder eine Datei auswählen.');
+      if(item.input==='json'){
+        options.body=JSON.stringify(JSON.parse(value));
+        headers['Content-Type']='application/fhir+json';
+      }else if(['emed-convert','emed-import'].includes(item.id)&&value.startsWith('{')){
+        options.body=JSON.stringify(JSON.parse(value));
+        headers['Content-Type']='application/json';
+      }else if(item.input==='xml-file'){
+        const form=new FormData();
+        form.append('file',new Blob([value],{type:'application/xml'}),selectedFile?.name||'document.xml');
+        options.body=form;
+      }else{
+        options.body=value;
+        headers['Content-Type']=item.input==='xml'?'application/xml; charset=UTF-8':'text/plain; charset=utf-8';
+      }
+      return options;
+    }
     function parse(text,type){const trimmed=text.trim();if(!trimmed)return{};if(type.includes('json')||trimmed.startsWith('{')||trimmed.startsWith('[')){try{return JSON.parse(text)}catch{return text}}return text}
     function display(value){el.output.textContent=typeof value==='string'?value:JSON.stringify(value,null,2)}
     function status(text,type=''){el.status.textContent=text;el.status.className=`status ${type}`.trim()}
@@ -162,8 +193,6 @@
     render=function(){baseRender();const echoSelected=current().id==='echosos-qr-import';cameraBtn.hidden=!echoSelected;if(echoSelected){el.fileInput.accept='.pkpass,.png,.jpg,.jpeg,image/png,image/jpeg,application/vnd.apple.pkpass';el.fileInput.setAttribute('capture','environment')}else{el.fileInput.removeAttribute('capture')}};
     cameraBtn.addEventListener('click',()=>{el.fileInput.setAttribute('capture','environment');el.fileInput.click()});
     populate();render();
-    el.inputLabel.textContent='CDA XML: Text oder UTF-8-XML-Datei (Versand als Raw-Body)';
-    el.payload.placeholder='CDA-XML als Raw-Body einfügen oder unten eine XML-Datei auswählen.';
   </script>
 </body>
 </html>

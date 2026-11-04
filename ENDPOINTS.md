@@ -117,6 +117,14 @@ https://middleware.local.omnilink.ch/test-client.html
 
 Weitere Clients:
 
+In der API-Werkbank sind CDA-Convert/-Import, eMediplan-JSON/CHMED16A-
+Convert/-Import, eMediplan-FHIR-JSON-Import, PDF/QR-Convert/-Import,
+EchoSOS-URL-Import und Patient `$everything` freigeschaltet.
+Text-/JSON-eMediplan-Aufrufe nutzen die BridgeLink-Routen; PDF/QR-Dateien
+nutzen die bestehenden Same-Origin-Middleware-Endpunkte, beim Import mit
+anschliessendem BridgeLink-Write. Nicht implementierte Gateway-Routen bleiben
+ausgeblendet. Alle Requests verwenden den aktiven Keycloak-Bearer-Token.
+
 ```text
 https://middleware.local.omnilink.ch/echosos-fhir-test.html
 https://middleware.local.omnilink.ch/fhir-query-client.html
