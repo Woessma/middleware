@@ -20,7 +20,7 @@ function workbench() {
     document: {getElementById: () => ({value: 'https://api.example/v1'})}
   });
   const script = html.slice(html.indexOf('const sampleBundle='), html.indexOf('const el='));
-  const approved = html.slice(html.indexOf('const approvedUseCaseIds='), html.indexOf('function current()'));
+  const approved = html.slice(html.indexOf('const vacdSendCase='), html.indexOf('function current()'));
   const requests = html.slice(html.indexOf('function urlFor('), html.indexOf('function parse('));
   vm.runInContext(`${script}\n${approved}\n${requests}\nthis.approved=visibleCases();`, context);
   return {context, elements, cases: context.approved};
@@ -30,6 +30,7 @@ test('only implemented routes are released', () => {
   const {cases} = workbench();
   assert.deepEqual(Array.from(cases, item => item.id), [
     'patient-everything', 'bundle-import', 'cda-convert', 'cda-import',
+    'vacd-convert', 'vacd-import', 'vacd-send',
     'emed-convert', 'emed-import', 'emed-qr-convert', 'emed-qr-import', 'echosos-resolve'
   ]);
 });
@@ -82,4 +83,24 @@ test('EchoSOS URL uses resolve, not the unsupported external qr route', () => {
   elements.payload.value = 'https://eid.echosos.com/#synthetic';
   assert.equal(context.urlFor(item).pathname, '/v1/echosos/resolve');
   assert.equal(context.requestFor(item).body, elements.payload.value);
+});
+
+for (const id of ['vacd-convert', 'vacd-import', 'vacd-send']) {
+  test(`${id}: raw XML and explicit route`, () => {
+    const {context, elements, cases} = workbench();
+    const item = cases.find(item => item.id === id);
+    elements.payload.value = '<ClinicalDocument />';
+    const request = context.requestFor(item);
+    assert.equal(request.body, elements.payload.value);
+    assert.equal(request.headers['Content-Type'], 'application/xml; charset=UTF-8');
+    const url = context.urlFor(item);
+    assert.equal(url.origin, id === 'vacd-send' ? 'https://middleware.example' : 'https://api.example');
+  });
+}
+
+test('VACD send report errors are not shown as success', () => {
+  const {context} = workbench();
+  vm.runInContext(html.slice(html.indexOf('function fhirResponseError('), html.indexOf('async function run()')), context);
+  assert.match(context.fhirResponseError({send: {status: 'partial-error', bundle: {error: 'rejected'}}}), /rejected/);
+  assert.equal(context.fhirResponseError({send: {status: 'sent'}}), '');
 });

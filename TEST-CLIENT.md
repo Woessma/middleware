@@ -13,6 +13,13 @@
 | eMediplan PDF/QR Import | Same-Origin `/emediplan/qr/import` -> BridgeLink | Ja |
 | EchoSOS-URL Import | BridgeLink `/v1/echosos/resolve` | Ja |
 | Patient `$everything` | FHIR `Patient/{id}/$everything` | Nein |
+| VACD Convert | BridgeLink `/v1/cda/vacd/convert` (Channel-Routing erforderlich) | Nein |
+| VACD HAPI-Import | BridgeLink `/v1/cda/vacd/import` (Channel-Routing erforderlich) | Ja |
+| VACD openEHR-Send | Same-Origin `/cda/vacd/send` | Externer Demo-FHIR-Server |
+
+Die VACD-Pfade sind fuer die naechste Abnahme vorbereitet, noch nicht live
+bestaetigt. Routing und Grenzen:
+[CH-VACD](docs/ch-vacd-immunization-administration.md).
 
 Weitere im Quellcode enthaltene Use-Cases bleiben ausgeblendet, solange ihre
 Gateway-Routen nicht freigegeben sind. eMediplan-JSON wird als

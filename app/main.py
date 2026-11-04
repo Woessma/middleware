@@ -1953,6 +1953,28 @@ async def cda_vacd_convert(
         )
 
 
+@app.post("/cda/vacd/prepare")
+async def cda_vacd_prepare(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    raw_xml: Optional[str] = Form(None),
+):
+    _bridge_link_authorization(request)
+    document = await cda_vacd_convert(
+        request, bundle_type="document", file=file, raw_xml=raw_xml
+    )
+    try:
+        bundle = _stabilize_bundle(document)
+        # Document-only profiles must not describe the transaction envelope.
+        bundle.get("meta", {}).pop("profile", None)
+        return _validate_bundle(bundle)
+    except ValueError as ex:
+        raise HTTPException(status_code=400, detail=str(ex)) from ex
+    except requests.RequestException as ex:
+        logger.exception("VACD import preparation failed")
+        raise HTTPException(status_code=502, detail="FHIR preflight unavailable") from ex
+
+
 @app.post("/cda/vacd/send")
 async def cda_vacd_send(
     request: Request,

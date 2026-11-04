@@ -1,6 +1,6 @@
 # CH VACD Immunization Administration
 
-Stand: 2026-09-23
+Stand: 2026-11-04
 
 ## Zweck
 
@@ -11,9 +11,39 @@ Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt n
 ## Endpoint
 
 - Intern: `POST /cda/vacd/convert`
-- Intern, in Konstruktion: `POST /cda/vacd/convert`
+- Importvorbereitung: `POST /cda/vacd/prepare` (Bearer erforderlich,
+  Transaction-Bundle ohne Write und ohne BridgeLink-Rueckaufruf)
+- openEHR-Versand: `POST /cda/vacd/send`
 - Eingabe: CDA als Multipart-Datei `file`, Formularfeld `raw_xml` oder Raw-Body
 - Bundle-Typ: immer `document`
+
+### BridgeLink-Routing (im Channel einzurichten)
+
+| Externer Pfad | Middleware-Ziel | responseTarget |
+|---|---|---|
+| `/v1/cda/vacd/convert` | `/cda/vacd/convert` | `none` |
+| `/v1/cda/vacd/import` | `/cda/vacd/prepare` | `hapi` |
+
+Die Importvorbereitung ergaenzt die FHIR-Transaction-Requests und entfernt
+die Document-Profile vom aeusseren Transaction-Bundle. Die Profile der
+enthaltenen Composition und Immunization bleiben erhalten. Destination 02
+schreibt erst anschliessend nach HAPI. Der HTTP Sender muss Authorization
+und `Content-Type: application/xml; charset=UTF-8` weiterreichen.
+
+Der separate openEHR-Versand geht aus der Werkbank same-origin an
+`/cda/vacd/send`, standardmaessig mit
+`destination_base_url=https://vaccination-demo.raly.ch/api/fhir`.
+Er legt gegebenenfalls einen Patienten auf diesem externen Ziel an und
+sendet das Document-Bundle an dessen `/Bundle`-Endpunkt. Dies ist kein
+direkter openEHR REST-Composition-Upload, sondern die FHIR-Schnittstelle
+des openEHR-basierten Referenzservers.
+
+Fuer externe Demo-Systeme ausschliesslich vollstaendig synthetische Daten
+verwenden. Vorhandene CDA-Testdateien sind nicht automatisch anonymisiert.
+Der hier dokumentierte Implementierungsstand bestaetigt noch keinen
+erfolgreichen Live-Versand oder eine vollstaendige CH-VACD-Profilvalidierung.
+Die Werkbank zeigt einen fehlerhaften `send`-Report auch bei HTTP 200 als
+Fehler an; nur `send.status=sent` meldet erfolgreichen Versand.
 
 Beispiel mit cURL:
 

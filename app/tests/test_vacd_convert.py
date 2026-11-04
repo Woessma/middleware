@@ -7,6 +7,65 @@ from main import app
 
 
 class VacdConvertEndpointTests(unittest.TestCase):
+    def test_vacd_prepare_returns_transaction_without_document_envelope_profiles(self):
+        source = {
+            "resourceType": "Bundle",
+            "type": "document",
+            "entry": [
+                {"resource": {"resourceType": "Composition", "id": "test-composition"}},
+                {"resource": {"resourceType": "Patient", "id": "test-patient"}},
+            ],
+        }
+        with (
+            patch("main.cda_to_fhir_bundle", return_value=source),
+            patch("main._validate_bundle", side_effect=lambda bundle: bundle),
+            patch("main.requests.post") as post,
+        ):
+            response = TestClient(app).post(
+                "/cda/vacd/prepare",
+                content=b"<ClinicalDocument />",
+                headers={"Authorization": "Bearer synthetic-test-token"},
+            )
+        self.assertEqual(response.status_code, 200, response.text)
+        bundle = response.json()
+        self.assertEqual(bundle["type"], "transaction")
+        self.assertNotIn("profile", bundle["meta"])
+        self.assertTrue(all(entry.get("request") for entry in bundle["entry"]))
+        self.assertIn(
+            "http://fhir.ch/ig/ch-vacd/StructureDefinition/ch-vacd-composition-immunization-administration",
+            bundle["entry"][0]["resource"]["meta"]["profile"],
+        )
+        post.assert_not_called()
+
+    def test_vacd_prepare_requires_bearer(self):
+        with patch("main.cda_to_fhir_bundle") as convert:
+            response = TestClient(app).post("/cda/vacd/prepare", content=b"<ClinicalDocument />")
+        self.assertEqual(response.status_code, 401)
+        convert.assert_not_called()
+
+    def test_vacd_send_keeps_document_format_and_returns_send_report(self):
+        source = {
+            "resourceType": "Bundle",
+            "entry": [
+                {"resource": {"resourceType": "Composition", "id": "test-composition"}},
+                {"resource": {"resourceType": "Patient", "id": "test-patient"}},
+            ],
+        }
+        with (
+            patch("main.cda_to_fhir_bundle", return_value=source),
+            patch("main._validate_bundle", side_effect=lambda bundle: bundle),
+            patch("main.send_vacd_bundle", return_value={"status": "sent"}) as send,
+        ):
+            response = TestClient(app).post(
+                "/cda/vacd/send",
+                params={"destination_base_url": "https://vacd.example/fhir"},
+                content=b"<ClinicalDocument />",
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["send"]["status"], "sent")
+        self.assertEqual(send.call_args.kwargs["bundle"]["type"], "document")
+        self.assertEqual(send.call_args.kwargs["destination_base_url"], "https://vacd.example/fhir")
+
     def test_vacd_convert_endpoint_adds_vacd_meta_and_profile(self):
         sample_bundle = {
             "resourceType": "Bundle",

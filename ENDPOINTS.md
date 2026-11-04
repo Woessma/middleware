@@ -258,6 +258,7 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/cda/umzh/convert` | Erzeugt ein UMZH-FHIR-Bundle | CDA -> UMZH |
 | `POST` | `/cda/umzh/send` | Konvertiert CDA und versendet den UMZH-Workflow | UMZH-Sendefluss |
 | `POST` | `/cda/vacd/convert` | Erzeugt ein CH-VACD-Dokumentbundle | CDA -> CH-VACD |
+| `POST` | `/cda/vacd/prepare` | Bereitet CH-VACD als Transaction fuer BridgeLink vor, kein Write | CDA -> CH-VACD -> Transaction |
 | `POST` | `/cda/vacd/send` | Konvertiert CDA und versendet an den VACD-Zielserver | CH-VACD-Sendefluss |
 | `POST` | `/emediplan/convert` | Konvertiert Text, PDF oder QR-Bild in ein FHIR-Bundle | eMediplan -> FHIR |
 | `POST` | `/emediplan/prepare` | Bereitet eMediplan oder FHIR-JSON mit Importpruefungen als Transaction-Bundle vor; kein Write | BridgeLink -> Middleware -> BridgeLink |
