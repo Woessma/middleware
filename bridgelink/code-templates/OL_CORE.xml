@@ -1,0 +1,106 @@
+<list>
+  <codeTemplateLibrary version="26.3.1">
+    <id>9f793691-429e-4e16-b25e-eaa4de70841d</id>
+    <name>OL_CORE</name>
+    <revision>1</revision>
+    <description>OmniLink HTTP helpers, version 1. No JWT validation, routing or clinical processing. Explicit arguments; no globalMap or payload logging.</description>
+    <includeNewChannels>false</includeNewChannels>
+    <enabledChannelIds>
+      <string>2aaa5ae8-a6f6-49d1-a469-5a9b77a44b0a</string>
+    </enabledChannelIds>
+    <disabledChannelIds/>
+    <codeTemplates>
+      <codeTemplate version="26.3.1">
+        <id>d1c21cfb-fd71-46b4-a881-13baa05875d8</id>
+        <name>olCoreGetHeader</name>
+        <revision>1</revision>
+        <contextSet>
+          <delegate class="sorted-set">
+            <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+            <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+            <contextType>DESTINATION_DISPATCHER</contextType>
+            <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+          </delegate>
+        </contextSet>
+        <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+          <type>FUNCTION</type>
+          <code><![CDATA[function olCoreGetHeader(headers, name) {
+    if (headers == null) {
+        return '';
+    }
+
+    var value = headers.getHeader(name);
+    return value == null ? '' : String(value);
+}]]></code>
+        </properties>
+      </codeTemplate>
+      <codeTemplate version="26.3.1">
+        <id>b1e08378-0a6f-4f90-bd7d-154dc644a3c4</id>
+        <name>olCoreReadHttpRequest</name>
+        <revision>1</revision>
+        <contextSet>
+          <delegate class="sorted-set">
+            <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+          </delegate>
+        </contextSet>
+        <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+          <type>FUNCTION</type>
+          <code><![CDATA[function olCoreReadHttpRequest(source, rawBody) {
+    var uri = String(source.get('uri') || '');
+    var queryIndex = uri.indexOf('?');
+
+    return {
+        method: String(source.get('method') || '').toUpperCase(),
+        path: (
+            queryIndex >= 0 ? uri.substring(0, queryIndex) : uri
+        ).toLowerCase(),
+        query: queryIndex >= 0 ? uri.substring(queryIndex) : '',
+        body: String(rawBody),
+        authorization: olCoreGetHeader(
+            source.get('headers'),
+            'Authorization'
+        )
+    };
+}]]></code>
+        </properties>
+      </codeTemplate>
+      <codeTemplate version="26.3.1">
+        <id>c6549e1d-02db-4217-9e1c-03286f88f79c</id>
+        <name>olCoreSetGatewayError</name>
+        <revision>1</revision>
+        <contextSet>
+          <delegate class="sorted-set">
+            <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+            <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+            <contextType>DESTINATION_DISPATCHER</contextType>
+            <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+          </delegate>
+        </contextSet>
+        <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+          <type>FUNCTION</type>
+          <code><![CDATA[function olCoreSetGatewayError(target, status, code, diagnostics) {
+    var statusText = String(status);
+
+    if (!/^[45][0-9][0-9]$/.test(statusText)) {
+        throw new Error('olCoreSetGatewayError: HTTP status must be 400-599');
+    }
+    if (code == null || String(code) === '' ||
+        diagnostics == null || String(diagnostics) === '') {
+        throw new Error('olCoreSetGatewayError: code and diagnostics are required');
+    }
+
+    target.put('gatewayError', JSON.stringify({
+        resourceType: 'OperationOutcome',
+        issue: [{
+            severity: 'error',
+            code: String(code),
+            diagnostics: String(diagnostics)
+        }]
+    }));
+    target.put('gatewayErrorStatusCode', statusText);
+}]]></code>
+        </properties>
+      </codeTemplate>
+    </codeTemplates>
+  </codeTemplateLibrary>
+</list>

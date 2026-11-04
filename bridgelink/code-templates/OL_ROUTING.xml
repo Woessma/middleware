@@ -1,0 +1,172 @@
+<list>
+  <codeTemplateLibrary version="26.3.1">
+    <id>6863fe91-ea93-41d4-8e15-01dba70ccf39</id>
+    <name>OL_ROUTING</name>
+    <revision>1</revision>
+    <description>OmniLink dispatcher routing, version 1. Requires OL_CORE. Preserves existing destinations, query rules and CDA encoding heuristic. No HTTP calls or JWT validation.</description>
+    <includeNewChannels>false</includeNewChannels>
+    <enabledChannelIds>
+      <string>2aaa5ae8-a6f6-49d1-a469-5a9b77a44b0a</string>
+    </enabledChannelIds>
+    <disabledChannelIds/>
+    <codeTemplates>
+      <codeTemplate version="26.3.1">
+        <id>2988effe-c16e-4e0a-877d-ae2c1190638e</id>
+        <name>olRouteResolve</name>
+        <revision>1</revision>
+        <contextSet>
+          <delegate class="sorted-set">
+            <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+          </delegate>
+        </contextSet>
+        <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+          <type>FUNCTION</type>
+          <code><![CDATA[function olRouteResolve(method, path) {
+    var routes = [
+        {
+            id: 'vacd.convert', method: 'POST',
+            path: '/v1/cda/vacd/convert',
+            middlewarePath: '/cda/vacd/convert',
+            responseTarget: 'none', forwardQuery: true,
+            logMessage: 'VACD (' + path + '), responseTarget=none'
+        },
+        {
+            id: 'vacd.import', method: 'POST',
+            path: '/v1/cda/vacd/import',
+            middlewarePath: '/cda/vacd/prepare',
+            responseTarget: 'hapi', forwardQuery: true,
+            logMessage: 'VACD (' + path + '), responseTarget=hapi'
+        },
+        {
+            id: 'cda.convert', method: 'POST',
+            path: '/v1/cda/convert',
+            middlewarePath: '/cda/convert',
+            responseTarget: 'none', forwardQuery: true,
+            checkCdaEncoding: true,
+            logMessage: 'CDA (' + path + '), responseTarget=none'
+        },
+        {
+            id: 'cda.import', method: 'POST',
+            path: '/v1/cda/import',
+            middlewarePath: '/cda/convert',
+            responseTarget: 'hapi', forwardQuery: true,
+            checkCdaEncoding: true,
+            logMessage: 'CDA (' + path + '), responseTarget=hapi'
+        },
+        {
+            id: 'emediplan.import', method: 'POST',
+            path: '/v1/emediplan/import',
+            middlewarePath: '/emediplan/prepare',
+            responseTarget: 'hapi',
+            logMessage: 'eMediplan preparation, responseTarget=hapi'
+        },
+        {
+            id: 'emediplan.convert', method: 'POST',
+            path: '/v1/emediplan/convert',
+            middlewarePath: '/emediplan/convert',
+            responseTarget: 'none',
+            logMessage: 'eMediplan conversion, responseTarget=none'
+        },
+        {
+            id: 'echosos.resolve', method: 'POST',
+            path: '/v1/echosos/resolve',
+            middlewarePath: '/echosos/qr',
+            responseTarget: 'hapi',
+            logMessage: 'EchoSOS'
+        },
+        {
+            id: 'epic.jwks', method: 'GET',
+            path: '/v1/.well-known/jwks.json',
+            middlewarePath: '/.well-known/jwks.json',
+            responseTarget: 'none', emptyBody: true,
+            logMessage: 'Epic JWKS'
+        }
+    ];
+
+    for (var i = 0; i < routes.length; i++) {
+        if (routes[i].method === method && routes[i].path === path) {
+            return routes[i];
+        }
+    }
+
+    return null;
+}]]></code>
+        </properties>
+      </codeTemplate>
+      <codeTemplate version="26.3.1">
+        <id>371588fc-7b6e-470f-9778-bb08afebf38b</id>
+        <name>olRouteApply</name>
+        <revision>1</revision>
+        <contextSet>
+          <delegate class="sorted-set">
+            <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+          </delegate>
+        </contextSet>
+        <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+          <type>FUNCTION</type>
+          <code><![CDATA[function olRouteApply(request, target, middlewareBaseUrl, log) {
+    target.put('middlewareAuthorization', request.authorization);
+    target.put('requestBody', request.body);
+    target.put('targetMethod', request.method);
+    target.put('responseTarget', 'none');
+
+    log.info('PATH=' + request.path);
+    log.info('METHOD=' + request.method);
+
+    var route = olRouteResolve(request.method, request.path);
+
+    if (route == null) {
+        olCoreSetGatewayError(
+            target, 404, 'not-found',
+            'Unknown endpoint: ' + request.path
+        );
+        log.warn(
+            'Unknown endpoint: method=' + request.method +
+            ', path=' + request.path
+        );
+        return;
+    }
+
+    if (middlewareBaseUrl == null || String(middlewareBaseUrl) === '') {
+        throw new Error('olRouteApply: middlewareBaseUrl is required');
+    }
+
+    if (route.checkCdaEncoding) {
+        var corrupted =
+               request.body.indexOf('\u00c3') >= 0
+            || request.body.indexOf('\u00c2') >= 0
+            || request.body.indexOf('\ufffd') >= 0;
+
+        log.info(
+            'CDA encoding check: corrupted=' + corrupted +
+            ', length=' + request.body.length
+        );
+
+        if (corrupted) {
+            olCoreSetGatewayError(
+                target, 400, 'invalid',
+                'CDA enth\u00e4lt fehlerhafte Zeichenkodierung. Bitte den Request mit Content-Type: application/xml; charset=UTF-8 senden.'
+            );
+            log.warn('CDA encoding problem detected - request rejected');
+            return;
+        }
+    }
+
+    target.put(
+        'targetUrl',
+        String(middlewareBaseUrl) + route.middlewarePath +
+        (route.forwardQuery ? request.query : '')
+    );
+    target.put('responseTarget', route.responseTarget);
+
+    if (route.emptyBody) {
+        target.put('requestBody', '');
+    }
+
+    log.info('Routing -> ' + route.logMessage);
+}]]></code>
+        </properties>
+      </codeTemplate>
+    </codeTemplates>
+  </codeTemplateLibrary>
+</list>

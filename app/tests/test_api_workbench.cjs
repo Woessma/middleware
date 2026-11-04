@@ -104,3 +104,59 @@ test('VACD send report errors are not shown as success', () => {
   assert.match(context.fhirResponseError({send: {status: 'partial-error', bundle: {error: 'rejected'}}}), /rejected/);
   assert.equal(context.fhirResponseError({send: {status: 'sent'}}), '');
 });
+
+test('response metadata separates the browser URL from the configured processing path', () => {
+  const {context, cases} = workbench();
+  vm.runInContext(html.slice(html.indexOf('function processingPath('), html.indexOf('function populate(')), context);
+  for (const [id, path] of [
+    ['emed-qr-import', 'Middleware → BridgeLink → HAPI'],
+    ['cda-import', 'Middleware → BridgeLink → HAPI'],
+    ['emed-import', 'BridgeLink → Middleware → BridgeLink → HAPI'],
+    ['emed-qr-convert', 'Middleware (QR-Dekodierung und Konvertierung, kein HAPI-Write)'],
+    ['vacd-send', 'Middleware → konfiguriertes externes VACD-FHIR-Ziel'],
+    ['patient-everything', 'FHIR-Server direkt'],
+    ['cda-convert', 'BridgeLink → Middleware (kein HAPI-Write)']
+  ]) {
+    const item = cases.find(item => item.id === id);
+    const url = context.urlFor(item);
+    assert.equal(context.processingPath(item), path);
+    assert.equal(context.responseMetadata(item, url, {status: 200}, 42, 'application/json;charset=utf-8'),
+      `Request: ${item.method} ${item.target === 'same-origin' ? item.input === 'binary-file' ? 'Datei-Upload' : 'Middleware-Aufruf' : url} · HTTP 200 · 42 ms · application/json\nVerarbeitungsweg (konfigurierter Ablauf): ${path}`);
+  }
+  assert.match(html, /el\.responseMeta\.textContent=responseMetadata\(/);
+  assert.doesNotMatch(html, /Same-origin BridgeLink-Proxy/);
+});
+
+test('route field renders processing flow and direct request path on separate lines', () => {
+  const {context, elements, cases} = workbench();
+  const element = () => ({
+    children: [],
+    append(...children) { this.children.push(...children); },
+    replaceChildren(...children) { this.children = children; }
+  });
+  elements.route = element();
+  context.document.createElement = element;
+  vm.runInContext(html.slice(html.indexOf('function processingPath('), html.indexOf('function populate(')), context);
+  for (const id of ['emed-qr-import', 'cda-import', 'vacd-send', 'emed-import', 'patient-everything']) {
+    const item = cases.find(item => item.id === id);
+    context.renderRoute(item);
+    const [method, details] = elements.route.children;
+    assert.equal(method.textContent, item.method);
+    assert.equal(details.className, 'route-details');
+    const [flow, path] = details.children;
+    assert.equal(flow.className, 'route-flow');
+    assert.equal(flow.textContent, 'Verarbeitungsweg (konfiguriert): ' + context.processingPath(item));
+    assert.equal(path.className, 'route-path');
+    if (item.target === 'same-origin') {
+      assert.equal(path.textContent, item.input === 'binary-file' ? 'Request: Datei-Upload' : 'Request: Middleware-Aufruf');
+      assert.ok(!path.textContent.includes(item.path));
+      const metadata = context.responseMetadata(item, context.urlFor(item), {status: 200}, 42, 'application/json');
+      assert.ok(!metadata.includes(item.path));
+      assert.ok(!metadata.includes('https://middleware.example'));
+    } else {
+      assert.ok(path.textContent.endsWith(': ' + item.path));
+    }
+  }
+  assert.match(html, /function render\(\)\{const item=current\(\);renderRoute\(item\)/);
+  assert.match(html, /\.route-flow,\.route-path \{ white-space:normal; overflow-wrap:anywhere;/);
+});

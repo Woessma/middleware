@@ -32,10 +32,12 @@
     .workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; }
     .request,.response { min-width:0; overflow:hidden; }
     .panel-head { padding:18px 18px 14px; border-bottom:1px solid var(--line); } .panel-body { padding:18px; }
-    .usecase-line { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:end; }
+    .usecase-line { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; align-items:end; }
     .route { display:flex; align-items:center; gap:8px; min-height:40px; max-width:100%; padding:7px 10px; border:1px solid var(--line); border-radius:6px; background:#f7f9f9; font:12px "SFMono-Regular",Consolas,monospace; overflow:hidden; }
     .method { flex:none; border-radius:4px; padding:3px 6px; background:var(--brand); color:#fff; font-weight:800; }
-    .route-path { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .route-details { min-width:0; display:grid; gap:5px; }
+    .route-flow,.route-path { white-space:normal; overflow-wrap:anywhere; }
+    .route-path { color:var(--muted); font-size:11px; }
     .description { min-height:40px; margin:12px 0 14px; color:var(--muted); font-size:14px; line-height:1.45; }
     .params { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:14px; } .params:empty { display:none; } .wide { grid-column:1/-1; }
     .hint { margin-top:5px; color:var(--warning); font-size:11px; line-height:1.35; }
@@ -48,7 +50,7 @@
     .status { display:inline-flex; min-height:28px; align-items:center; border-radius:999px; padding:4px 9px; background:#edf1f2; color:var(--muted); font-size:12px; font-weight:800; }
     .status.success { background:#e4f5eb; color:var(--success); } .status.error { background:#fff0ee; color:var(--danger); } .status.running { background:#fff3dc; color:var(--warning); }
     pre { min-height:527px; max-height:720px; margin:0; overflow:auto; border-radius:6px; background:var(--code); color:#dce9e8; padding:14px; white-space:pre-wrap; word-break:break-word; font:13px/1.5 "SFMono-Regular",Consolas,monospace; }
-    .response-meta { min-height:20px; margin:10px 0; color:var(--muted); font-size:12px; }
+    .response-meta { min-height:20px; margin:10px 0; color:var(--muted); font-size:12px; white-space:pre-line; overflow-wrap:anywhere; }
     @media(max-width:1180px){.connection{grid-template-columns:1fr 1fr 1fr}.url-grid{grid-template-columns:1fr}}
     @media(max-width:860px){.workspace{grid-template-columns:1fr}.connection{grid-template-columns:1fr}.masthead{align-items:start;flex-direction:column;gap:6px}.usecase-line{grid-template-columns:1fr}}
     @media(max-width:520px){.shell{width:calc(100% - 20px);margin-top:14px}.params{grid-template-columns:1fr}.wide{grid-column:auto}textarea{min-height:310px}}
@@ -75,7 +77,7 @@
     <div class="workspace">
       <section class="panel request">
         <div class="panel-head">
-          <div class="usecase-line"><div><label for="useCase">Use Case</label><select id="useCase"></select></div><div id="route" class="route" title="Aktiver API-Pfad"></div></div>
+          <div class="usecase-line"><div><label for="useCase">Use Case</label><select id="useCase"></select></div><div id="route" class="route" title="Konfigurierter Verarbeitungsweg und direkter Request-Pfad"></div></div>
           <div id="description" class="description"></div><div id="params" class="params"></div>
         </div>
         <div class="panel-body">
@@ -140,8 +142,38 @@
     const approvedUseCaseIds=new Set(['cda-convert','cda-import','emed-convert','emed-import','bundle-import','emed-qr-convert','emed-qr-import','echosos-resolve','patient-everything','vacd-convert','vacd-import','vacd-send']);
     function visibleCases(){return cases.filter(item=>approvedUseCaseIds.has(item.id))}
     function current(){return visibleCases().find(item=>item.id===el.useCase.value)||visibleCases()[0]}
+    function processingPath(item){
+      if(['cda-import','emed-qr-import'].includes(item.id))return 'Middleware → BridgeLink → HAPI';
+      if(item.id==='emed-qr-convert')return 'Middleware (QR-Dekodierung und Konvertierung, kein HAPI-Write)';
+      if(item.id==='vacd-send')return 'Middleware → konfiguriertes externes VACD-FHIR-Ziel';
+      if(item.target==='fhir')return 'FHIR-Server direkt';
+      if(['bundle-import','emed-import','vacd-import','echosos-resolve'].includes(item.id))return 'BridgeLink → Middleware → BridgeLink → HAPI';
+      return 'BridgeLink → Middleware (kein HAPI-Write)';
+    }
+    function displayedRequestTarget(item,url){
+      if(item.target==='same-origin')return item.input==='binary-file'?'Datei-Upload':'Middleware-Aufruf';
+      return String(url);
+    }
+    function responseMetadata(item,url,response,elapsed,type){return `Request: ${item.method} ${displayedRequestTarget(item,url)} · HTTP ${response.status} · ${elapsed} ms · ${type.split(';')[0]}\nVerarbeitungsweg (konfigurierter Ablauf): ${processingPath(item)}`}
+    function renderRoute(item){
+      const method=document.createElement('span');
+      method.className='method';
+      method.textContent=item.method;
+      const details=document.createElement('div');
+      details.className='route-details';
+      const flow=document.createElement('span');
+      flow.className='route-flow';
+      flow.textContent='Verarbeitungsweg (konfiguriert): '+processingPath(item);
+      const path=document.createElement('span');
+      path.className='route-path';
+      path.textContent=item.target==='same-origin'
+        ?'Request: '+displayedRequestTarget(item)
+        :'Request an '+(item.target==='fhir'?'FHIR direkt':'BridgeLink')+': '+item.path;
+      details.append(flow,path);
+      el.route.replaceChildren(method,details);
+    }
     function populate(){const previous=el.useCase.value;el.useCase.replaceChildren();const groups=new Map();for(const item of visibleCases()){if(!groups.has(item.group)){const group=document.createElement('optgroup');group.label=item.group;groups.set(item.group,group);el.useCase.append(group)}const option=document.createElement('option');option.value=item.id;option.textContent=item.name;groups.get(item.group).append(option)}if(visibleCases().some(item=>item.id===previous))el.useCase.value=previous}
-    function render(){const item=current();el.route.replaceChildren();const method=document.createElement('span');method.className='method';method.textContent=item.method;const path=document.createElement('span');path.className='route-path';path.textContent=(item.target==='fhir'?'FHIR ':item.target==='same-origin'?'Same-origin BridgeLink-Proxy ':'')+item.path;el.route.append(method,path);el.description.textContent=item.description;el.params.replaceChildren();for(const spec of item.params){const box=document.createElement('div');if(spec.wide)box.className='wide';const label=document.createElement('label');label.htmlFor='param-'+spec.name;label.textContent=spec.label;let input;if(spec.type==='select'){input=document.createElement('select');for(const value of spec.options){const option=document.createElement('option');option.value=value;option.textContent=value;input.append(option)}}else{input=document.createElement('input');input.type=spec.type||'text';input.placeholder=spec.placeholder||''}input.id='param-'+spec.name;input.dataset.param=spec.name;if(spec.path)input.dataset.path='true';input.value=spec.value||'';box.append(label,input);if(spec.hint){const hint=document.createElement('div');hint.className='hint';hint.textContent=spec.hint;box.append(hint)}el.params.append(box)}const none=item.input==='none';const binaryFile=item.input==='binary-file';el.payload.disabled=none||binaryFile;el.fileInput.disabled=none;el.formatBtn.hidden=item.input!=='json';el.inputLabel.textContent=none?'Keine Request-Eingabe erforderlich':binaryFile?'PDF oder Bild mit QR-Code':item.input==='json'?'FHIR JSON / Parameters':item.input.startsWith('xml')?'CDA XML':item.input==='hl7'?'HL7v2 Nachricht':'Payload';el.fileInput.accept=binaryFile?'.pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg,text/plain':item.input==='json'?'.json,application/json':item.input.startsWith('xml')?'.xml,text/xml,application/xml':item.input==='hl7'?'.hl7,.txt,text/plain':'.txt,.json';el.payload.placeholder=none?'Dieser Use Case verwendet nur Query-Parameter.':binaryFile?'Datei auswählen – kein Text-Payload notwendig.':'Payload einfügen oder Datei auswählen …';el.payload.value=item.template===undefined?'':typeof item.template==='string'?item.template:JSON.stringify(item.template,null,2);el.fileInput.value=''}
+    function render(){const item=current();renderRoute(item);el.description.textContent=item.description;el.params.replaceChildren();for(const spec of item.params){const box=document.createElement('div');if(spec.wide)box.className='wide';const label=document.createElement('label');label.htmlFor='param-'+spec.name;label.textContent=spec.label;let input;if(spec.type==='select'){input=document.createElement('select');for(const value of spec.options){const option=document.createElement('option');option.value=value;option.textContent=value;input.append(option)}}else{input=document.createElement('input');input.type=spec.type||'text';input.placeholder=spec.placeholder||''}input.id='param-'+spec.name;input.dataset.param=spec.name;if(spec.path)input.dataset.path='true';input.value=spec.value||'';box.append(label,input);if(spec.hint){const hint=document.createElement('div');hint.className='hint';hint.textContent=spec.hint;box.append(hint)}el.params.append(box)}const none=item.input==='none';const binaryFile=item.input==='binary-file';el.payload.disabled=none||binaryFile;el.fileInput.disabled=none;el.formatBtn.hidden=item.input!=='json';el.inputLabel.textContent=none?'Keine Request-Eingabe erforderlich':binaryFile?'PDF oder Bild mit QR-Code':item.input==='json'?'FHIR JSON / Parameters':item.input.startsWith('xml')?'CDA XML':item.input==='hl7'?'HL7v2 Nachricht':'Payload';el.fileInput.accept=binaryFile?'.pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg,text/plain':item.input==='json'?'.json,application/json':item.input.startsWith('xml')?'.xml,text/xml,application/xml':item.input==='hl7'?'.hl7,.txt,text/plain':'.txt,.json';el.payload.placeholder=none?'Dieser Use Case verwendet nur Query-Parameter.':binaryFile?'Datei auswählen – kein Text-Payload notwendig.':'Payload einfügen oder Datei auswählen …';el.payload.value=item.template===undefined?'':typeof item.template==='string'?item.template:JSON.stringify(item.template,null,2);el.fileInput.value=''}
     function auth(){const headers=window.keycloakAuthHeaders();if(!headers.Authorization)throw Error('Bitte zuerst mit Keycloak anmelden.');return headers}
     function urlFor(item){const base=item.target==='same-origin'?window.location.origin:document.getElementById(item.target==='fhir'?'fhirUrl':'middlewareUrl').value.trim().replace(/\/+$/,'');if(!base)throw Error(`Bitte ${item.target==='fhir'?'FHIR-Server':'BridgeLink'} URL eingeben.`);let path=item.path;el.params.querySelectorAll('[data-path]').forEach(input=>{if(!input.value.trim())throw Error(`Bitte ${input.previousElementSibling.textContent} eingeben.`);path=path.replace(`{${input.dataset.param}}`,encodeURIComponent(input.value.trim()))});const url=new URL(base+path);el.params.querySelectorAll('[data-param]:not([data-path])').forEach(input=>{if(input.value.trim())url.searchParams.set(input.dataset.param,input.value.trim())});return url}
     function requestFor(item){
@@ -186,7 +218,7 @@
       if(value?.resourceType==='Bundle')return (value.entry||[]).map(entry=>{const outcome=fhirResponseError(entry.response?.outcome)||fhirResponseError(entry.resource);return outcome||(/^[45]\d\d\b/.test(entry.response?.status||'')?`FHIR-Eintrag: ${entry.response.status}`:'')}).filter(Boolean).join('; ');
       return '';
     }
-    async function run(){const item=current(),started=performance.now();el.runBtn.disabled=true;lastResponse=null;status('Request läuft …','running');try{const url=urlFor(item),response=await fetch(url,requestFor(item)),type=response.headers.get('Content-Type')||'text/plain',value=parse(await response.text(),type),elapsed=Math.round(performance.now()-started);lastResponse=value;lastContentType=type;display(value);el.responseMeta.textContent=`${item.method} ${url} · HTTP ${response.status} · ${elapsed} ms · ${type.split(';')[0]}`;el.reuseBtn.disabled=false;el.downloadBtn.disabled=false;const fhirError=fhirResponseError(value);if(fhirError)throw Error(`FHIR-Fehler (HTTP ${response.status}): ${fhirError}`);if(!response.ok)throw Error(`HTTP ${response.status}: ${responseError(response,value)}`);status(`HTTP ${response.status}`,'success')}catch(error){const message=errorText(error);if(lastResponse===null)display(message);status(message,'error')}finally{el.runBtn.disabled=false}}
+    async function run(){const item=current(),started=performance.now();el.runBtn.disabled=true;lastResponse=null;status('Request läuft …','running');try{const url=urlFor(item),response=await fetch(url,requestFor(item)),type=response.headers.get('Content-Type')||'text/plain',value=parse(await response.text(),type),elapsed=Math.round(performance.now()-started);lastResponse=value;lastContentType=type;display(value);el.responseMeta.textContent=responseMetadata(item,url,response,elapsed,type);el.reuseBtn.disabled=false;el.downloadBtn.disabled=false;const fhirError=fhirResponseError(value);if(fhirError)throw Error(`FHIR-Fehler (HTTP ${response.status}): ${fhirError}`);if(!response.ok)throw Error(`HTTP ${response.status}: ${responseError(response,value)}`);status(`HTTP ${response.status}`,'success')}catch(error){const message=errorText(error);if(lastResponse===null)display(message);status(message,'error')}finally{el.runBtn.disabled=false}}
     async function check(){const checks=[{endpoint:'Middleware / CDA-Proxy',url:window.location.origin+'/health',headers:{Accept:'application/json'}},{endpoint:'FHIR-Server',url:document.getElementById('fhirUrl').value.trim().replace(/\/+$/,'')+'/metadata',headers:auth()}];status('Verbindungen werden geprüft …','running');const results=await Promise.all(checks.map(async check=>{try{const response=await fetch(check.url,{method:'GET',headers:check.headers,mode:'cors',credentials:'same-origin'});return{endpoint:check.endpoint,url:check.url,http_status:response.status,reachable:true,status:response.ok?'ok':'http_error'}}catch(error){return{endpoint:check.endpoint,url:check.url,reachable:false,status:'network_or_cors_error',detail:errorText(error)}}}));lastResponse=results;lastContentType='application/json';display(results);el.responseMeta.textContent='Verbindungsprüfung abgeschlossen.';el.reuseBtn.disabled=false;el.downloadBtn.disabled=false;const failed=results.filter(result=>!result.reachable||result.status!=='ok');status(failed.length?`${failed.length} Verbindung(en) mit Fehler`:'Middleware und FHIR-Server erreichbar',failed.length?'error':'success')}
     el.useCase.addEventListener('change',render);el.runBtn.addEventListener('click',run);document.getElementById('checkBtn').addEventListener('click',check);document.getElementById('clearBtn').addEventListener('click',()=>{el.payload.value='';el.payload.focus()});
     el.formatBtn.addEventListener('click',()=>{try{el.payload.value=JSON.stringify(JSON.parse(el.payload.value),null,2);status('JSON formatiert','success')}catch(error){status(errorText(error),'error')}});

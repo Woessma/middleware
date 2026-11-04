@@ -34,7 +34,16 @@ Ausgewaehlte UTF-8-XML-Dateien werden ohne Multipart-Huelle als Raw-Body
 mit `Content-Type: application/xml; charset=UTF-8` gesendet. Fuer eingefuegten
 XML-Text gilt derselbe Header. FHIR-`OperationOutcome`-Fehler und fehlgeschlagene
 Bundle-Eintraege werden auch bei HTTP 200 als Fehler angezeigt.
-Die Routenanzeige kennzeichnet Same-Origin-Aufrufe ausdruecklich.
+Die Routenanzeige kennzeichnet Same-Origin-Aufrufe als Datei-Upload bzw.
+Middleware-Aufruf, ohne interne Middleware-Pfade oder URLs anzuzeigen.
+Das gilt auch fuer die Antwort-Metadaten. Browser-Netzwerkdetails enthalten
+weiterhin die technisch erforderliche Request-URL; dies ist keine Zugriffssperre.
+Das Routenfeld zeigt den konfigurierten Verarbeitungsweg in einer eigenen
+Zeile, darunter bei direkten BridgeLink-/FHIR-Aufrufen den Request-Pfad.
+Lange Angaben werden umgebrochen statt abgeschnitten. Auch die Antwort-Metadaten zeigen den
+Verarbeitungsweg, z. B. `Middleware -> BridgeLink -> HAPI` beim PDF-/QR-Import.
+Angezeigte externe Request-URLs entsprechen den vom Browser aufgerufenen Adressen;
+der Verarbeitungsweg ist keine Laufzeit-Tracing-Bestaetigung aller Stationen.
 
 ## eMediplan-Abnahme (2026-11-04)
 

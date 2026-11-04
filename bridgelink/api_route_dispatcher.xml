@@ -1,0 +1,1635 @@
+<channel version="26.3.1">
+  <id>2aaa5ae8-a6f6-49d1-a469-5a9b77a44b0a</id>
+  <nextMetaDataId>5</nextMetaDataId>
+  <name>api_route_dispatcher</name>
+  <description>Central OmniLink API Gateway</description>
+  <revision>108</revision>
+  <sourceConnector version="26.3.1">
+    <metaDataId>0</metaDataId>
+    <name>sourceConnector</name>
+    <properties class="com.mirth.connect.connectors.http.HttpReceiverProperties" version="26.3.1">
+      <pluginProperties>
+        <com.mirth.connect.plugins.httpauth.javascript.JavaScriptHttpAuthProperties version="26.3.1">
+  <authType>JAVASCRIPT</authType>
+          <script>return omniLinkJwtAuthenticate();</script>
+        </com.mirth.connect.plugins.httpauth.javascript.JavaScriptHttpAuthProperties>
+      </pluginProperties>
+      <listenerConnectorProperties version="26.3.1">
+        <host>0.0.0.0</host>
+        <port>8081</port>
+      </listenerConnectorProperties>
+      <sourceConnectorProperties version="26.3.1">
+        <responseVariable>d3</responseVariable>
+        <respondAfterProcessing>true</respondAfterProcessing>
+        <processBatch>false</processBatch>
+        <firstResponse>false</firstResponse>
+        <processingThreads>1</processingThreads>
+        <resourceIds class="linked-hash-map">
+          <entry>
+            <string>Default Resource</string>
+            <string>[Default Resource]</string>
+          </entry>
+        </resourceIds>
+        <queueBufferSize>1000</queueBufferSize>
+      </sourceConnectorProperties>
+      <xmlBody>false</xmlBody>
+      <parseMultipart>true</parseMultipart>
+      <includeMetadata>false</includeMetadata>
+      <binaryMimeTypes>application/.*(?&lt;!json|xml)$|image/.*|video/.*|audio/.*</binaryMimeTypes>
+      <binaryMimeTypesRegex>true</binaryMimeTypesRegex>
+      <responseContentType>application/json</responseContentType>
+      <responseDataTypeBinary>false</responseDataTypeBinary>
+      <responseStatusCode>${responseStatusCode}</responseStatusCode>
+      <responseHeaders class="linked-hash-map"/>
+      <responseHeadersVariable></responseHeadersVariable>
+      <useResponseHeadersVariable>false</useResponseHeadersVariable>
+      <charset>UTF-8</charset>
+      <contextPath>/v1</contextPath>
+      <timeout>30000</timeout>
+      <requestHeaderSize>8192</requestHeaderSize>
+      <staticResources/>
+    </properties>
+    <transformer version="26.3.1">
+      <elements>
+        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="26.3.1">
+          <name>Route Request</name>
+          <sequenceNumber>0</sequenceNumber>
+          <enabled>true</enabled>
+          <script>var request = olCoreReadHttpRequest(
+    sourceMap,
+    connectorMessage.getRawData()
+);
+
+olRouteApply(
+    request,
+    channelMap,
+    &apos;https://middleware.local.omnilink.ch&apos;,
+    logger
+);</script>
+        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+      </elements>
+      <inboundTemplate encoding="base64"></inboundTemplate>
+      <outboundTemplate encoding="base64"></outboundTemplate>
+      <inboundDataType>RAW</inboundDataType>
+      <outboundDataType>RAW</outboundDataType>
+      <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+          <splitType>JavaScript</splitType>
+          <batchScript></batchScript>
+        </batchProperties>
+      </inboundProperties>
+      <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+          <splitType>JavaScript</splitType>
+          <batchScript></batchScript>
+        </batchProperties>
+      </outboundProperties>
+    </transformer>
+    <filter version="26.3.1">
+      <elements/>
+    </filter>
+    <transportName>HTTP Listener</transportName>
+    <mode>SOURCE</mode>
+    <enabled>true</enabled>
+    <waitForPrevious>true</waitForPrevious>
+  </sourceConnector>
+  <destinationConnectors>
+    <connector version="26.3.1">
+      <metaDataId>1</metaDataId>
+      <name>01 Middleware</name>
+      <properties class="com.mirth.connect.connectors.http.HttpDispatcherProperties" version="26.3.1">
+        <pluginProperties/>
+        <destinationConnectorProperties version="26.3.1">
+          <queueEnabled>false</queueEnabled>
+          <sendFirst>false</sendFirst>
+          <retryIntervalMillis>10000</retryIntervalMillis>
+          <regenerateTemplate>false</regenerateTemplate>
+          <retryCount>0</retryCount>
+          <rotate>false</rotate>
+          <includeFilterTransformer>false</includeFilterTransformer>
+          <threadCount>1</threadCount>
+          <threadAssignmentVariable></threadAssignmentVariable>
+          <validateResponse>false</validateResponse>
+          <resourceIds class="linked-hash-map">
+            <entry>
+              <string>Default Resource</string>
+              <string>[Default Resource]</string>
+            </entry>
+          </resourceIds>
+          <queueBufferSize>1000</queueBufferSize>
+          <reattachAttachments>true</reattachAttachments>
+        </destinationConnectorProperties>
+        <host>${targetUrl}</host>
+        <useProxyServer>false</useProxyServer>
+        <proxyAddress></proxyAddress>
+        <proxyPort></proxyPort>
+        <method>post</method>
+        <headers class="linked-hash-map">
+          <entry>
+            <string>Accept</string>
+            <list>
+              <string>application/fhir+json</string>
+            </list>
+          </entry>
+          <entry>
+            <string>Authorization</string>
+            <list>
+              <string>${middlewareAuthorization}</string>
+            </list>
+          </entry>
+        </headers>
+        <parameters class="linked-hash-map"/>
+        <useHeadersVariable>false</useHeadersVariable>
+        <headersVariable></headersVariable>
+        <useParametersVariable>false</useParametersVariable>
+        <parametersVariable></parametersVariable>
+        <responseXmlBody>false</responseXmlBody>
+        <responseParseMultipart>true</responseParseMultipart>
+        <responseIncludeMetadata>false</responseIncludeMetadata>
+        <responseBinaryMimeTypes>application/.*(?&lt;!json|xml)$|image/.*|video/.*|audio/.*</responseBinaryMimeTypes>
+        <responseBinaryMimeTypesRegex>true</responseBinaryMimeTypesRegex>
+        <multipart>false</multipart>
+        <useAuthentication>false</useAuthentication>
+        <authenticationType>Basic</authenticationType>
+        <usePreemptiveAuthentication>false</usePreemptiveAuthentication>
+        <username></username>
+        <password></password>
+        <content>${requestBody}</content>
+        <contentType>${requestContentType}</contentType>
+        <dataTypeBinary>false</dataTypeBinary>
+        <charset>UTF-8</charset>
+        <socketTimeout>30000</socketTimeout>
+      </properties>
+      <transformer version="26.3.1">
+        <elements/>
+        <inboundTemplate encoding="base64"></inboundTemplate>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </outboundProperties>
+      </transformer>
+      <responseTransformer version="26.3.1">
+        <elements>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="26.3.1">
+            <name>Json to HAPI</name>
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script>channelMap.remove(&apos;fhirJson&apos;);
+
+var rawResponse = response.getMessage();
+var responseBody =
+    rawResponse == null ? &apos;&apos; : String(rawResponse);
+
+channelMap.put(&apos;middlewareResponse&apos;, responseBody);
+
+/*
+ * Status direkt aus der Connector Map dieses HTTP Senders lesen.
+ */
+var rawStatus = connectorMap.get(&apos;responseStatusCode&apos;);
+var statusText =
+    rawStatus == null ? &apos;&apos; : String(rawStatus);
+
+channelMap.put(&apos;middlewareStatusCode&apos;, statusText);
+
+var statusCode = Number(statusText);
+
+if (
+    !/^[0-9]{3}$/.test(statusText) ||
+    statusCode &lt; 200 ||
+    statusCode &gt;= 300
+) {
+    channelMap.put(
+        &apos;gatewayErrorStatusCode&apos;,
+        /^[45][0-9]{2}$/.test(statusText) ? statusText : &apos;502&apos;
+    );
+
+    channelMap.put(
+        &apos;gatewayError&apos;,
+        responseBody.trim() !== &apos;&apos;
+            ? responseBody
+            : JSON.stringify({
+                resourceType: &apos;OperationOutcome&apos;,
+                issue: [{
+                    severity: &apos;error&apos;,
+                    code: &apos;exception&apos;,
+                    diagnostics:
+                        &apos;Middleware lieferte keinen Response-Body&apos;
+                }]
+            })
+    );
+
+    logger.warn(
+        &apos;Middleware HTTP-Status=&apos; + statusText +
+        &apos; - kein HAPI-Write&apos;
+    );
+
+    return;
+}
+
+if (responseBody.trim() === &apos;&apos;) {
+    throw &apos;Middleware lieferte keinen Response-Body&apos;;
+}
+
+var responseTarget =
+    String(channelMap.get(&apos;responseTarget&apos;) || &apos;none&apos;);
+
+if (responseTarget !== &apos;hapi&apos;) {
+    logger.info(
+        &apos;responseTarget=&apos; + responseTarget +
+        &apos; - kein HAPI-Write&apos;
+    );
+
+    return;
+}
+
+var parsed;
+
+try {
+    parsed = JSON.parse(responseBody);
+} catch (e) {
+    throw &apos;Middleware-Antwort ist kein gueltiges JSON: &apos; + e;
+}
+
+if (
+    parsed == null ||
+    typeof parsed !== &apos;object&apos; ||
+    Array.isArray(parsed)
+) {
+    throw &apos;Middleware-Antwort ist keine FHIR-Ressource&apos;;
+}
+
+var resourceType = String(parsed.resourceType || &apos;&apos;);
+
+if (resourceType === &apos;OperationOutcome&apos;) {
+    channelMap.put(&apos;gatewayError&apos;, responseBody);
+    channelMap.put(&apos;gatewayErrorStatusCode&apos;, &apos;502&apos;);
+
+    logger.warn(
+        &apos;Middleware lieferte OperationOutcome - kein HAPI-Write&apos;
+    );
+
+    return;
+}
+
+if (resourceType !== &apos;Bundle&apos;) {
+    throw &apos;Unerwarteter resourceType: &apos; + resourceType;
+}
+
+if (
+    parsed.type !== &apos;transaction&apos; &amp;&amp;
+    parsed.type !== &apos;batch&apos;
+) {
+    throw &apos;Bundle ist nicht schreibbar: type=&apos; + parsed.type;
+}
+
+channelMap.put(&apos;fhirJson&apos;, responseBody);
+
+logger.info(&apos;FHIR JSON Laenge: &apos; + responseBody.length);</script>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        </elements>
+        <inboundTemplate encoding="base64"></inboundTemplate>
+        <outboundTemplate encoding="base64"></outboundTemplate>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </outboundProperties>
+      </responseTransformer>
+      <filter version="26.3.1">
+        <elements>
+          <com.mirth.connect.plugins.javascriptrule.JavaScriptRule version="26.3.1">
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script>var method =
+    String(sourceMap.get(&apos;method&apos;) || &apos;&apos;)
+    .toUpperCase();
+
+return method == &apos;POST&apos;
+    &amp;&amp; String($(&apos;targetUrl&apos;) || &apos;&apos;) !== &apos;&apos;
+    &amp;&amp; String($(&apos;gatewayError&apos;) || &apos;&apos;) === &apos;&apos;;</script>
+          </com.mirth.connect.plugins.javascriptrule.JavaScriptRule>
+        </elements>
+      </filter>
+      <transportName>HTTP Sender</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>true</enabled>
+      <waitForPrevious>true</waitForPrevious>
+    </connector>
+    <connector version="26.3.1">
+      <metaDataId>2</metaDataId>
+      <name>02 HAPI Import</name>
+      <properties class="com.mirth.connect.connectors.http.HttpDispatcherProperties" version="26.3.1">
+        <pluginProperties/>
+        <destinationConnectorProperties version="26.3.1">
+          <queueEnabled>false</queueEnabled>
+          <sendFirst>false</sendFirst>
+          <retryIntervalMillis>10000</retryIntervalMillis>
+          <regenerateTemplate>false</regenerateTemplate>
+          <retryCount>0</retryCount>
+          <rotate>false</rotate>
+          <includeFilterTransformer>false</includeFilterTransformer>
+          <threadCount>1</threadCount>
+          <threadAssignmentVariable></threadAssignmentVariable>
+          <validateResponse>false</validateResponse>
+          <resourceIds class="linked-hash-map">
+            <entry>
+              <string>Default Resource</string>
+              <string>[Default Resource]</string>
+            </entry>
+          </resourceIds>
+          <queueBufferSize>1000</queueBufferSize>
+          <reattachAttachments>true</reattachAttachments>
+        </destinationConnectorProperties>
+        <host>https://fhir.local.omnilink.ch/fhir</host>
+        <useProxyServer>false</useProxyServer>
+        <proxyAddress></proxyAddress>
+        <proxyPort></proxyPort>
+        <method>post</method>
+        <headers class="linked-hash-map">
+          <entry>
+            <string>Accept</string>
+            <list>
+              <string></string>
+            </list>
+          </entry>
+        </headers>
+        <parameters class="linked-hash-map"/>
+        <useHeadersVariable>false</useHeadersVariable>
+        <headersVariable></headersVariable>
+        <useParametersVariable>false</useParametersVariable>
+        <parametersVariable></parametersVariable>
+        <responseXmlBody>false</responseXmlBody>
+        <responseParseMultipart>true</responseParseMultipart>
+        <responseIncludeMetadata>false</responseIncludeMetadata>
+        <responseBinaryMimeTypes>application/.*(?&lt;!json|xml)$|image/.*|video/.*|audio/.*</responseBinaryMimeTypes>
+        <responseBinaryMimeTypesRegex>true</responseBinaryMimeTypesRegex>
+        <multipart>false</multipart>
+        <useAuthentication>false</useAuthentication>
+        <authenticationType>Basic</authenticationType>
+        <usePreemptiveAuthentication>false</usePreemptiveAuthentication>
+        <username></username>
+        <password></password>
+        <content>${fhirJson}</content>
+        <contentType>application/fhir+json</contentType>
+        <dataTypeBinary>false</dataTypeBinary>
+        <charset>UTF-8</charset>
+        <socketTimeout>30000</socketTimeout>
+      </properties>
+      <transformer version="26.3.1">
+        <elements/>
+        <inboundTemplate encoding="base64"></inboundTemplate>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </outboundProperties>
+      </transformer>
+      <responseTransformer version="26.3.1">
+        <elements>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="26.3.1">
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script>channelMap.remove(&apos;finalResponse&apos;);
+channelMap.remove(&apos;hapiStatusCode&apos;);
+
+var rawResponse = response.getMessage();
+var responseBody =
+    rawResponse == null ? &apos;&apos; : String(rawResponse);
+
+var rawStatus = connectorMap.get(&apos;responseStatusCode&apos;);
+var statusText =
+    rawStatus == null ? &apos;&apos; : String(rawStatus);
+
+/*
+ * HAPI-Status und Body fuer Destination 99 bereitstellen.
+ * Auch Fehlerantworten unveraendert weitergeben.
+ */
+channelMap.put(&apos;hapiStatusCode&apos;, statusText);
+channelMap.put(&apos;finalResponse&apos;, responseBody);
+
+if (!/^[2-5][0-9]{2}$/.test(statusText)) {
+    logger.error(
+        &apos;HAPI: fehlender oder ungueltiger HTTP-Status&apos;
+    );
+    return;
+}
+
+if (responseBody.trim() === &apos;&apos;) {
+    logger.error(&apos;HAPI lieferte keinen Response-Body&apos;);
+    return;
+}
+
+logger.info(
+    &apos;HAPI HTTP-Status=&apos; + statusText +
+    &apos;, Response Laenge=&apos; + responseBody.length
+);</script>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        </elements>
+        <inboundTemplate encoding="base64"></inboundTemplate>
+        <outboundTemplate encoding="base64"></outboundTemplate>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </outboundProperties>
+      </responseTransformer>
+      <filter version="26.3.1">
+        <elements>
+          <com.mirth.connect.plugins.javascriptrule.JavaScriptRule version="26.3.1">
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script>var method =
+    String(sourceMap.get(&apos;method&apos;) || &apos;&apos;)
+    .toUpperCase();
+
+var responseTarget =
+    String(channelMap.get(&apos;responseTarget&apos;) || &apos;none&apos;);
+
+var gatewayError =
+    String(channelMap.get(&apos;gatewayError&apos;) || &apos;&apos;);
+
+var fhirJson =
+    String(channelMap.get(&apos;fhirJson&apos;) || &apos;&apos;);
+
+return (
+    method === &apos;POST&apos; &amp;&amp;
+    responseTarget === &apos;hapi&apos; &amp;&amp;
+    gatewayError === &apos;&apos; &amp;&amp;
+    fhirJson.trim() !== &apos;&apos;
+);</script>
+          </com.mirth.connect.plugins.javascriptrule.JavaScriptRule>
+        </elements>
+      </filter>
+      <transportName>HTTP Sender</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>true</enabled>
+      <waitForPrevious>true</waitForPrevious>
+    </connector>
+    <connector version="26.3.1">
+      <metaDataId>4</metaDataId>
+      <name>10 Epic JWKS</name>
+      <properties class="com.mirth.connect.connectors.http.HttpDispatcherProperties" version="26.3.1">
+        <pluginProperties/>
+        <destinationConnectorProperties version="26.3.1">
+          <queueEnabled>false</queueEnabled>
+          <sendFirst>false</sendFirst>
+          <retryIntervalMillis>10000</retryIntervalMillis>
+          <regenerateTemplate>false</regenerateTemplate>
+          <retryCount>0</retryCount>
+          <rotate>false</rotate>
+          <includeFilterTransformer>false</includeFilterTransformer>
+          <threadCount>1</threadCount>
+          <threadAssignmentVariable></threadAssignmentVariable>
+          <validateResponse>false</validateResponse>
+          <resourceIds class="linked-hash-map">
+            <entry>
+              <string>Default Resource</string>
+              <string>[Default Resource]</string>
+            </entry>
+          </resourceIds>
+          <queueBufferSize>1000</queueBufferSize>
+          <reattachAttachments>true</reattachAttachments>
+        </destinationConnectorProperties>
+        <host>https://middleware.local.omnilink.ch/.well-known/jwks.json</host>
+        <useProxyServer>false</useProxyServer>
+        <proxyAddress></proxyAddress>
+        <proxyPort></proxyPort>
+        <method>get</method>
+        <headers class="linked-hash-map">
+          <entry>
+            <string>Accept-Header</string>
+            <list>
+              <string></string>
+            </list>
+          </entry>
+        </headers>
+        <parameters class="linked-hash-map"/>
+        <useHeadersVariable>false</useHeadersVariable>
+        <headersVariable></headersVariable>
+        <useParametersVariable>false</useParametersVariable>
+        <parametersVariable></parametersVariable>
+        <responseXmlBody>false</responseXmlBody>
+        <responseParseMultipart>true</responseParseMultipart>
+        <responseIncludeMetadata>false</responseIncludeMetadata>
+        <responseBinaryMimeTypes>application/.*(?&lt;!json|xml)$|image/.*|video/.*|audio/.*</responseBinaryMimeTypes>
+        <responseBinaryMimeTypesRegex>true</responseBinaryMimeTypesRegex>
+        <multipart>false</multipart>
+        <useAuthentication>false</useAuthentication>
+        <authenticationType>Basic</authenticationType>
+        <usePreemptiveAuthentication>false</usePreemptiveAuthentication>
+        <username></username>
+        <password></password>
+        <content></content>
+        <contentType>text/plain</contentType>
+        <dataTypeBinary>false</dataTypeBinary>
+        <charset>UTF-8</charset>
+        <socketTimeout>30000</socketTimeout>
+      </properties>
+      <transformer version="26.3.1">
+        <elements/>
+        <inboundTemplate encoding="base64"></inboundTemplate>
+        <outboundTemplate encoding="base64"></outboundTemplate>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </outboundProperties>
+      </transformer>
+      <responseTransformer version="26.3.1">
+        <elements>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="26.3.1">
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script>var body = response.getMessage();
+var statusLine = connectorMap.get(&apos;responseStatusLine&apos;);
+
+if (body == null) {
+    throw new Error(&apos;Epic JWKS: response body is missing&apos;);
+}
+
+var match = /^HTTP\/\S+\s+([0-9]{3})\b/.exec(
+    String(statusLine || &apos;&apos;)
+);
+
+if (match == null) {
+    throw new Error(
+        &apos;Epic JWKS: cannot read HTTP status; responseStatusLine=&apos; +
+        statusLine
+    );
+}
+
+channelMap.put(&apos;epicJwksResponse&apos;, String(body));
+channelMap.put(&apos;epicJwksStatusCode&apos;, match[1]);</script>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        </elements>
+        <inboundTemplate encoding="base64"></inboundTemplate>
+        <outboundTemplate encoding="base64"></outboundTemplate>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </outboundProperties>
+      </responseTransformer>
+      <filter version="26.3.1">
+        <elements>
+          <com.mirth.connect.plugins.javascriptrule.JavaScriptRule version="26.3.1">
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script>var path =
+    String(sourceMap.get(&apos;uri&apos;) || &apos;&apos;)
+    .split(&apos;?&apos;)[0]
+    .toLowerCase();
+
+var method =
+    String(sourceMap.get(&apos;method&apos;) || &apos;&apos;)
+    .toUpperCase();
+
+return (
+    method === &apos;GET&apos; &amp;&amp;
+    path === &apos;/v1/.well-known/jwks.json&apos; &amp;&amp;
+    String(channelMap.get(&apos;gatewayError&apos;) || &apos;&apos;) === &apos;&apos;
+);</script>
+          </com.mirth.connect.plugins.javascriptrule.JavaScriptRule>
+        </elements>
+      </filter>
+      <transportName>HTTP Sender</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>true</enabled>
+      <waitForPrevious>true</waitForPrevious>
+    </connector>
+    <connector version="26.3.1">
+      <metaDataId>3</metaDataId>
+      <name>99 Response</name>
+      <properties class="com.mirth.connect.connectors.js.JavaScriptDispatcherProperties" version="26.3.1">
+        <pluginProperties/>
+        <destinationConnectorProperties version="26.3.1">
+          <queueEnabled>false</queueEnabled>
+          <sendFirst>false</sendFirst>
+          <retryIntervalMillis>10000</retryIntervalMillis>
+          <regenerateTemplate>false</regenerateTemplate>
+          <retryCount>0</retryCount>
+          <rotate>false</rotate>
+          <includeFilterTransformer>false</includeFilterTransformer>
+          <threadCount>1</threadCount>
+          <threadAssignmentVariable></threadAssignmentVariable>
+          <validateResponse>false</validateResponse>
+          <resourceIds class="linked-hash-map">
+            <entry>
+              <string>Default Resource</string>
+              <string>[Default Resource]</string>
+            </entry>
+          </resourceIds>
+          <queueBufferSize>1000</queueBufferSize>
+          <reattachAttachments>true</reattachAttachments>
+        </destinationConnectorProperties>
+        <script>logger.info(
+    &apos;gatewayError=&apos; +
+    channelMap.get(&apos;gatewayError&apos;)
+);
+
+logger.info(
+    &apos;responseStatusCode=&apos; +
+    responseMap.get(&apos;responseStatusCode&apos;)
+);</script>
+      </properties>
+      <transformer version="26.3.1">
+        <elements/>
+        <inboundTemplate encoding="base64"></inboundTemplate>
+        <outboundTemplate encoding="base64"></outboundTemplate>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </outboundProperties>
+      </transformer>
+      <responseTransformer version="26.3.1">
+        <elements>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="26.3.1">
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script>function setClientResponse(body, status) {
+    responseMap.put(&apos;responseStatusCode&apos;, String(status));
+    msg = String(body);
+}
+
+function setGatewayFailure(diagnostics) {
+    logger.error(diagnostics);
+
+    setClientResponse(
+        JSON.stringify({
+            resourceType: &apos;OperationOutcome&apos;,
+            issue: [{
+                severity: &apos;error&apos;,
+                code: &apos;exception&apos;,
+                diagnostics: diagnostics
+            }]
+        }),
+        &apos;502&apos;
+    );
+}
+
+function forwardResponse(body, status, source) {
+    var statusText = status == null ? &apos;&apos; : String(status);
+
+    if (!/^[2-5][0-9]{2}$/.test(statusText)) {
+        setGatewayFailure(
+            source + &apos;: missing or invalid HTTP status&apos;
+        );
+        return;
+    }
+
+    setClientResponse(body, statusText);
+}
+
+var epicJwksResponse = channelMap.get(&apos;epicJwksResponse&apos;);
+var gatewayError = channelMap.get(&apos;gatewayError&apos;);
+var finalResponse = channelMap.get(&apos;finalResponse&apos;);
+var middlewareResponse = channelMap.get(&apos;middlewareResponse&apos;);
+
+var responseTarget =
+    String(channelMap.get(&apos;responseTarget&apos;) || &apos;none&apos;);
+
+if (gatewayError != null) {
+
+    var errorStatus =
+        String(channelMap.get(&apos;gatewayErrorStatusCode&apos;) || &apos;&apos;);
+
+    if (!/^[45][0-9]{2}$/.test(errorStatus)) {
+        errorStatus = &apos;400&apos;;
+
+        try {
+            var errorObj = JSON.parse(String(gatewayError));
+
+            if (
+                errorObj &amp;&amp;
+                errorObj.issue &amp;&amp;
+                errorObj.issue.length &gt; 0 &amp;&amp;
+                errorObj.issue[0].code === &apos;not-found&apos;
+            ) {
+                errorStatus = &apos;404&apos;;
+            }
+        } catch (e) {
+            logger.warn(
+                &apos;Could not parse gatewayError: &apos; + String(e)
+            );
+
+            errorStatus = &apos;502&apos;;
+        }
+    }
+
+    setClientResponse(gatewayError, errorStatus);
+
+} else if (epicJwksResponse != null) {
+
+    forwardResponse(
+        epicJwksResponse,
+        channelMap.get(&apos;epicJwksStatusCode&apos;),
+        &apos;Epic JWKS&apos;
+    );
+
+} else if (responseTarget === &apos;hapi&apos;) {
+
+    if (
+        finalResponse == null ||
+        String(finalResponse).trim() === &apos;&apos;
+    ) {
+        setGatewayFailure(
+            &apos;HAPI import: no response available&apos;
+        );
+    } else {
+        forwardResponse(
+            finalResponse,
+            channelMap.get(&apos;hapiStatusCode&apos;),
+            &apos;HAPI&apos;
+        );
+    }
+
+} else if (middlewareResponse != null) {
+
+    forwardResponse(
+        middlewareResponse,
+        channelMap.get(&apos;middlewareStatusCode&apos;),
+        &apos;Middleware&apos;
+    );
+
+} else {
+
+    setGatewayFailure(&apos;No response available&apos;);
+
+}</script>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        </elements>
+        <inboundTemplate encoding="base64"></inboundTemplate>
+        <outboundTemplate encoding="base64"></outboundTemplate>
+        <inboundDataType>RAW</inboundDataType>
+        <outboundDataType>RAW</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.raw.RawDataTypeProperties" version="26.3.1">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.raw.RawBatchProperties" version="26.3.1">
+            <splitType>JavaScript</splitType>
+            <batchScript></batchScript>
+          </batchProperties>
+        </outboundProperties>
+      </responseTransformer>
+      <filter version="26.3.1">
+        <elements>
+          <com.mirth.connect.plugins.javascriptrule.JavaScriptRule version="26.3.1">
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script>return true;</script>
+          </com.mirth.connect.plugins.javascriptrule.JavaScriptRule>
+        </elements>
+      </filter>
+      <transportName>JavaScript Writer</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>true</enabled>
+      <waitForPrevious>true</waitForPrevious>
+    </connector>
+  </destinationConnectors>
+  <preprocessingScript>// Modify the message variable below to pre process data
+return message;</preprocessingScript>
+  <postprocessingScript>// This script executes once after a message has been processed
+// Responses returned from here will be stored as &quot;Postprocessor&quot; in the response map
+return;</postprocessingScript>
+  <deployScript>// This script executes once when the channel is deployed
+// You only have access to the globalMap and globalChannelMap here to persist data
+return;</deployScript>
+  <undeployScript>// This script executes once when the channel is undeployed
+// You only have access to the globalMap and globalChannelMap here to persist data
+return;</undeployScript>
+  <properties version="26.3.1">
+    <clearGlobalChannelMap>true</clearGlobalChannelMap>
+    <messageStorageMode>DEVELOPMENT</messageStorageMode>
+    <encryptData>false</encryptData>
+    <encryptAttachments>false</encryptAttachments>
+    <encryptCustomMetaData>false</encryptCustomMetaData>
+    <removeContentOnCompletion>false</removeContentOnCompletion>
+    <removeOnlyFilteredOnCompletion>false</removeOnlyFilteredOnCompletion>
+    <removeAttachmentsOnCompletion>false</removeAttachmentsOnCompletion>
+    <initialState>STARTED</initialState>
+    <storeAttachments>true</storeAttachments>
+    <metaDataColumns>
+      <metaDataColumn>
+        <name>SOURCE</name>
+        <type>STRING</type>
+        <mappingName>message_source</mappingName>
+      </metaDataColumn>
+      <metaDataColumn>
+        <name>TYPE</name>
+        <type>STRING</type>
+        <mappingName>message_type</mappingName>
+      </metaDataColumn>
+      <metaDataColumn>
+        <name>VERSION</name>
+        <type>STRING</type>
+        <mappingName>mirth_version</mappingName>
+      </metaDataColumn>
+    </metaDataColumns>
+    <attachmentProperties version="26.3.1">
+      <type>None</type>
+      <properties/>
+    </attachmentProperties>
+    <resourceIds class="linked-hash-map">
+      <entry>
+        <string>Default Resource</string>
+        <string>[Default Resource]</string>
+      </entry>
+    </resourceIds>
+  </properties>
+  <exportData>
+    <metadata>
+      <enabled>true</enabled>
+      <lastModified>
+        <time>1793787419723</time>
+        <timezone>Europe/Zurich</timezone>
+      </lastModified>
+      <pruningSettings>
+        <archiveEnabled>true</archiveEnabled>
+        <pruneErroredMessages>false</pruneErroredMessages>
+      </pruningSettings>
+      <userId>3</userId>
+    </metadata>
+    <codeTemplateLibraries>
+      <codeTemplateLibrary version="26.3.1">
+        <id>9f793691-429e-4e16-b25e-eaa4de70841d</id>
+        <name>OL_CORE</name>
+        <revision>2</revision>
+        <lastModified>
+          <time>1793787161578</time>
+          <timezone>UTC</timezone>
+        </lastModified>
+        <description>OmniLink HTTP helpers, version 1. No JWT validation, routing or clinical processing. Explicit arguments; no globalMap or payload logging.</description>
+        <includeNewChannels>false</includeNewChannels>
+        <enabledChannelIds class="sorted-set">
+          <string>2aaa5ae8-a6f6-49d1-a469-5a9b77a44b0a</string>
+        </enabledChannelIds>
+        <disabledChannelIds class="sorted-set"/>
+        <codeTemplates>
+          <codeTemplate version="26.3.1">
+            <id>d1c21cfb-fd71-46b4-a881-13baa05875d8</id>
+            <name>olCoreGetHeader</name>
+            <revision>1</revision>
+            <lastModified>
+              <time>1793786306341</time>
+              <timezone>UTC</timezone>
+            </lastModified>
+            <contextSet>
+              <delegate class="sorted-set">
+                <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+                <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+                <contextType>DESTINATION_DISPATCHER</contextType>
+                <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+              </delegate>
+            </contextSet>
+            <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+              <type>FUNCTION</type>
+              <code>function olCoreGetHeader(headers, name) {
+    if (headers == null) {
+        return &apos;&apos;;
+    }
+
+    var value = headers.getHeader(name);
+    return value == null ? &apos;&apos; : String(value);
+}</code>
+            </properties>
+          </codeTemplate>
+          <codeTemplate version="26.3.1">
+            <id>b1e08378-0a6f-4f90-bd7d-154dc644a3c4</id>
+            <name>olCoreReadHttpRequest</name>
+            <revision>1</revision>
+            <lastModified>
+              <time>1793786306370</time>
+              <timezone>UTC</timezone>
+            </lastModified>
+            <contextSet>
+              <delegate class="sorted-set">
+                <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+              </delegate>
+            </contextSet>
+            <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+              <type>FUNCTION</type>
+              <code>function olCoreReadHttpRequest(source, rawBody) {
+    var uri = String(source.get(&apos;uri&apos;) || &apos;&apos;);
+    var queryIndex = uri.indexOf(&apos;?&apos;);
+
+    return {
+        method: String(source.get(&apos;method&apos;) || &apos;&apos;).toUpperCase(),
+        path: (
+            queryIndex &gt;= 0 ? uri.substring(0, queryIndex) : uri
+        ).toLowerCase(),
+        query: queryIndex &gt;= 0 ? uri.substring(queryIndex) : &apos;&apos;,
+        body: String(rawBody),
+        authorization: olCoreGetHeader(
+            source.get(&apos;headers&apos;),
+            &apos;Authorization&apos;
+        )
+    };
+}</code>
+            </properties>
+          </codeTemplate>
+          <codeTemplate version="26.3.1">
+            <id>c6549e1d-02db-4217-9e1c-03286f88f79c</id>
+            <name>olCoreSetGatewayError</name>
+            <revision>1</revision>
+            <lastModified>
+              <time>1793786306362</time>
+              <timezone>UTC</timezone>
+            </lastModified>
+            <contextSet>
+              <delegate class="sorted-set">
+                <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+                <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+                <contextType>DESTINATION_DISPATCHER</contextType>
+                <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+              </delegate>
+            </contextSet>
+            <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+              <type>FUNCTION</type>
+              <code>function olCoreSetGatewayError(target, status, code, diagnostics) {
+    var statusText = String(status);
+
+    if (!/^[45][0-9][0-9]$/.test(statusText)) {
+        throw new Error(&apos;olCoreSetGatewayError: HTTP status must be 400-599&apos;);
+    }
+    if (code == null || String(code) === &apos;&apos; ||
+        diagnostics == null || String(diagnostics) === &apos;&apos;) {
+        throw new Error(&apos;olCoreSetGatewayError: code and diagnostics are required&apos;);
+    }
+
+    target.put(&apos;gatewayError&apos;, JSON.stringify({
+        resourceType: &apos;OperationOutcome&apos;,
+        issue: [{
+            severity: &apos;error&apos;,
+            code: String(code),
+            diagnostics: String(diagnostics)
+        }]
+    }));
+    target.put(&apos;gatewayErrorStatusCode&apos;, statusText);
+}</code>
+            </properties>
+          </codeTemplate>
+        </codeTemplates>
+      </codeTemplateLibrary>
+      <codeTemplateLibrary version="26.3.1">
+        <id>6863fe91-ea93-41d4-8e15-01dba70ccf39</id>
+        <name>OL_ROUTING</name>
+        <revision>1</revision>
+        <lastModified>
+          <time>1793787161582</time>
+          <timezone>UTC</timezone>
+        </lastModified>
+        <description>OmniLink dispatcher routing, version 1. Requires OL_CORE. Preserves existing destinations, query rules and CDA encoding heuristic. No HTTP calls or JWT validation.</description>
+        <includeNewChannels>false</includeNewChannels>
+        <enabledChannelIds class="sorted-set">
+          <string>2aaa5ae8-a6f6-49d1-a469-5a9b77a44b0a</string>
+        </enabledChannelIds>
+        <disabledChannelIds class="sorted-set"/>
+        <codeTemplates>
+          <codeTemplate version="26.3.1">
+            <id>371588fc-7b6e-470f-9778-bb08afebf38b</id>
+            <name>olRouteApply</name>
+            <revision>1</revision>
+            <lastModified>
+              <time>1793787161598</time>
+              <timezone>UTC</timezone>
+            </lastModified>
+            <contextSet>
+              <delegate class="sorted-set">
+                <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+              </delegate>
+            </contextSet>
+            <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+              <type>FUNCTION</type>
+              <code>function olRouteApply(request, target, middlewareBaseUrl, log) {
+    target.put(&apos;middlewareAuthorization&apos;, request.authorization);
+    target.put(&apos;requestBody&apos;, request.body);
+    target.put(&apos;targetMethod&apos;, request.method);
+    target.put(&apos;responseTarget&apos;, &apos;none&apos;);
+
+    log.info(&apos;PATH=&apos; + request.path);
+    log.info(&apos;METHOD=&apos; + request.method);
+
+    var route = olRouteResolve(request.method, request.path);
+
+    if (route == null) {
+        olCoreSetGatewayError(
+            target, 404, &apos;not-found&apos;,
+            &apos;Unknown endpoint: &apos; + request.path
+        );
+        log.warn(
+            &apos;Unknown endpoint: method=&apos; + request.method +
+            &apos;, path=&apos; + request.path
+        );
+        return;
+    }
+
+    if (middlewareBaseUrl == null || String(middlewareBaseUrl) === &apos;&apos;) {
+        throw new Error(&apos;olRouteApply: middlewareBaseUrl is required&apos;);
+    }
+
+    if (route.checkCdaEncoding) {
+        var corrupted =
+               request.body.indexOf(&apos;\u00c3&apos;) &gt;= 0
+            || request.body.indexOf(&apos;\u00c2&apos;) &gt;= 0
+            || request.body.indexOf(&apos;\ufffd&apos;) &gt;= 0;
+
+        log.info(
+            &apos;CDA encoding check: corrupted=&apos; + corrupted +
+            &apos;, length=&apos; + request.body.length
+        );
+
+        if (corrupted) {
+            olCoreSetGatewayError(
+                target, 400, &apos;invalid&apos;,
+                &apos;CDA enth\u00e4lt fehlerhafte Zeichenkodierung. Bitte den Request mit Content-Type: application/xml; charset=UTF-8 senden.&apos;
+            );
+            log.warn(&apos;CDA encoding problem detected - request rejected&apos;);
+            return;
+        }
+    }
+
+    target.put(
+        &apos;targetUrl&apos;,
+        String(middlewareBaseUrl) + route.middlewarePath +
+        (route.forwardQuery ? request.query : &apos;&apos;)
+    );
+    target.put(&apos;responseTarget&apos;, route.responseTarget);
+
+    if (route.emptyBody) {
+        target.put(&apos;requestBody&apos;, &apos;&apos;);
+    }
+
+    log.info(&apos;Routing -&gt; &apos; + route.logMessage);
+}</code>
+            </properties>
+          </codeTemplate>
+          <codeTemplate version="26.3.1">
+            <id>2988effe-c16e-4e0a-877d-ae2c1190638e</id>
+            <name>olRouteResolve</name>
+            <revision>1</revision>
+            <lastModified>
+              <time>1793787161588</time>
+              <timezone>UTC</timezone>
+            </lastModified>
+            <contextSet>
+              <delegate class="sorted-set">
+                <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+              </delegate>
+            </contextSet>
+            <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+              <type>FUNCTION</type>
+              <code>function olRouteResolve(method, path) {
+    var routes = [
+        {
+            id: &apos;vacd.convert&apos;, method: &apos;POST&apos;,
+            path: &apos;/v1/cda/vacd/convert&apos;,
+            middlewarePath: &apos;/cda/vacd/convert&apos;,
+            responseTarget: &apos;none&apos;, forwardQuery: true,
+            logMessage: &apos;VACD (&apos; + path + &apos;), responseTarget=none&apos;
+        },
+        {
+            id: &apos;vacd.import&apos;, method: &apos;POST&apos;,
+            path: &apos;/v1/cda/vacd/import&apos;,
+            middlewarePath: &apos;/cda/vacd/prepare&apos;,
+            responseTarget: &apos;hapi&apos;, forwardQuery: true,
+            logMessage: &apos;VACD (&apos; + path + &apos;), responseTarget=hapi&apos;
+        },
+        {
+            id: &apos;cda.convert&apos;, method: &apos;POST&apos;,
+            path: &apos;/v1/cda/convert&apos;,
+            middlewarePath: &apos;/cda/convert&apos;,
+            responseTarget: &apos;none&apos;, forwardQuery: true,
+            checkCdaEncoding: true,
+            logMessage: &apos;CDA (&apos; + path + &apos;), responseTarget=none&apos;
+        },
+        {
+            id: &apos;cda.import&apos;, method: &apos;POST&apos;,
+            path: &apos;/v1/cda/import&apos;,
+            middlewarePath: &apos;/cda/convert&apos;,
+            responseTarget: &apos;hapi&apos;, forwardQuery: true,
+            checkCdaEncoding: true,
+            logMessage: &apos;CDA (&apos; + path + &apos;), responseTarget=hapi&apos;
+        },
+        {
+            id: &apos;emediplan.import&apos;, method: &apos;POST&apos;,
+            path: &apos;/v1/emediplan/import&apos;,
+            middlewarePath: &apos;/emediplan/prepare&apos;,
+            responseTarget: &apos;hapi&apos;,
+            logMessage: &apos;eMediplan preparation, responseTarget=hapi&apos;
+        },
+        {
+            id: &apos;emediplan.convert&apos;, method: &apos;POST&apos;,
+            path: &apos;/v1/emediplan/convert&apos;,
+            middlewarePath: &apos;/emediplan/convert&apos;,
+            responseTarget: &apos;none&apos;,
+            logMessage: &apos;eMediplan conversion, responseTarget=none&apos;
+        },
+        {
+            id: &apos;echosos.resolve&apos;, method: &apos;POST&apos;,
+            path: &apos;/v1/echosos/resolve&apos;,
+            middlewarePath: &apos;/echosos/qr&apos;,
+            responseTarget: &apos;hapi&apos;,
+            logMessage: &apos;EchoSOS&apos;
+        },
+        {
+            id: &apos;epic.jwks&apos;, method: &apos;GET&apos;,
+            path: &apos;/v1/.well-known/jwks.json&apos;,
+            middlewarePath: &apos;/.well-known/jwks.json&apos;,
+            responseTarget: &apos;none&apos;, emptyBody: true,
+            logMessage: &apos;Epic JWKS&apos;
+        }
+    ];
+
+    for (var i = 0; i &lt; routes.length; i++) {
+        if (routes[i].method === method &amp;&amp; routes[i].path === path) {
+            return routes[i];
+        }
+    }
+
+    return null;
+}</code>
+            </properties>
+          </codeTemplate>
+        </codeTemplates>
+      </codeTemplateLibrary>
+      <codeTemplateLibrary version="26.3.1">
+        <id>086028ba-0172-47a6-81fe-ce80e5d75cbd</id>
+        <name>OmniLink JWT Authentication</name>
+        <revision>6</revision>
+        <lastModified>
+          <time>1793343969025</time>
+          <timezone>UTC</timezone>
+        </lastModified>
+        <description>Check JWT</description>
+        <includeNewChannels>true</includeNewChannels>
+        <enabledChannelIds class="sorted-set">
+          <string>09c9a321-e5b3-4007-8882-4a43d5525ad2</string>
+          <string>2aaa5ae8-a6f6-49d1-a469-5a9b77a44b0a</string>
+          <string>7f504049-ae1e-4586-ae43-359fa7878099</string>
+          <string>7f602d62-3a53-4155-9a6e-5f9d13e5f6f2</string>
+          <string>88a64cf9-7773-4858-8629-4f9432830212</string>
+          <string>a4e0b6a3-4584-4c3d-ab07-8d4c469999ff</string>
+          <string>b239f817-6f13-4171-a4c8-03103e6f5bde</string>
+        </enabledChannelIds>
+        <disabledChannelIds class="sorted-set"/>
+        <codeTemplates>
+          <codeTemplate version="26.3.1">
+            <id>35dbfaac-0c58-44f0-8223-159c702a5f2f</id>
+            <name>OmniLink_Validate_JWT</name>
+            <revision>10</revision>
+            <lastModified>
+              <time>1793351819444</time>
+              <timezone>UTC</timezone>
+            </lastModified>
+            <contextSet>
+              <delegate class="sorted-set">
+                <contextType>SOURCE_RECEIVER</contextType>
+                <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+                <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+                <contextType>DESTINATION_DISPATCHER</contextType>
+                <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+              </delegate>
+            </contextSet>
+            <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+              <type>FUNCTION</type>
+              <code>function omniLinkJwtAuthenticate() {
+
+    var Base64 = Packages.java.util.Base64;
+    var StandardCharsets = Packages.java.nio.charset.StandardCharsets;
+    var Signature = Packages.java.security.Signature;
+    var CertificateFactory = Packages.java.security.cert.CertificateFactory;
+    var ByteArrayInputStream = Packages.java.io.ByteArrayInputStream;
+    var KeyFactory = Packages.java.security.KeyFactory;
+    var RSAPublicKeySpec = Packages.java.security.spec.RSAPublicKeySpec;
+    var BigInteger = Packages.java.math.BigInteger;
+
+
+    function reject(reason) {
+        logger.warn(&apos;JWT Auth abgelehnt: &apos; + reason);
+        return AuthenticationResult.Failure();
+    }
+
+    function decodeJson(part) {
+        var bytes = Base64.getUrlDecoder().decode(String(part));
+        var text = new java.lang.String(bytes, StandardCharsets.UTF_8);
+        return JSON.parse(String(text));
+    }
+
+    function readUrl(url) {
+
+        var HttpClients =
+            Packages.org.apache.http.impl.client.HttpClients;
+
+        var HttpGet =
+            Packages.org.apache.http.client.methods.HttpGet;
+
+        var RequestConfig =
+            Packages.org.apache.http.client.config.RequestConfig;
+
+        var EntityUtils =
+            Packages.org.apache.http.util.EntityUtils;
+
+        var config = RequestConfig
+            .custom()
+            .setConnectTimeout(3000)
+            .setSocketTimeout(3000)
+            .setConnectionRequestTimeout(3000)
+            .build();
+
+        var client = HttpClients
+            .custom()
+            .setDefaultRequestConfig(config)
+            .build();
+
+        var request = new HttpGet(String(url));
+        request.setHeader(&apos;Accept&apos;, &apos;application/json&apos;);
+
+        var response = null;
+
+        try {
+            response = client.execute(request);
+
+            var status =
+                response.getStatusLine().getStatusCode();
+
+            if (status &lt; 200 || status &gt;= 300) {
+                throw &apos;JWKS HTTP Fehler: &apos; + status;
+            }
+
+            return String(
+                EntityUtils.toString(
+                    response.getEntity(),
+                    StandardCharsets.UTF_8
+                )
+            );
+
+        } finally {
+
+            if (response != null) {
+                response.close();
+            }
+
+            client.close();
+        }
+    }
+
+    function getJwks(forceRefresh) {
+        var cacheKey = &apos;omnilink.jwt.jwks&apos;;
+        var cacheTimeKey = &apos;omnilink.jwt.jwks.time&apos;;
+        var maxAge = 600000;
+        var now = new Date().getTime();
+
+        if (!forceRefresh) {
+            var cached = globalMap.get(cacheKey);
+            var cachedAt = globalMap.get(cacheTimeKey);
+
+            if (cached != null &amp;&amp; cachedAt != null) {
+                if ((now - Number(String(cachedAt))) &lt; maxAge) {
+                    return JSON.parse(String(cached));
+                }
+            }
+        }
+
+        var json = readUrl(String($cfg(&apos;jwt.jwksUrl&apos;)));
+
+        globalMap.put(cacheKey, json);
+        globalMap.put(cacheTimeKey, String(now));
+
+        return JSON.parse(json);
+    }
+
+    function findKey(kid) {
+        var jwks = getJwks(false);
+
+        for (var i = 0; i &lt; jwks.keys.length; i++) {
+            if (String(jwks.keys[i].kid) === String(kid)) {
+                return jwks.keys[i];
+            }
+        }
+
+        // Falls Keycloak gerade den Signing Key gewechselt hat
+        jwks = getJwks(true);
+
+        for (var j = 0; j &lt; jwks.keys.length; j++) {
+            if (String(jwks.keys[j].kid) === String(kid)) {
+                return jwks.keys[j];
+            }
+        }
+
+        return null;
+    }
+
+    function createPublicKey(jwk) {
+
+        if (jwk.x5c != null &amp;&amp; jwk.x5c.length &gt; 0) {
+
+            var certBytes =
+                Base64.getDecoder().decode(String(jwk.x5c[0]));
+
+            var cert =
+                CertificateFactory
+                    .getInstance(&apos;X.509&apos;)
+                    .generateCertificate(
+                        new ByteArrayInputStream(certBytes)
+                    );
+
+            return cert.getPublicKey();
+        }
+
+        if (jwk.n != null &amp;&amp; jwk.e != null) {
+
+            var modulus = new BigInteger(
+                1,
+                Base64.getUrlDecoder().decode(String(jwk.n))
+            );
+
+            var exponent = new BigInteger(
+                1,
+                Base64.getUrlDecoder().decode(String(jwk.e))
+            );
+
+            var spec = new RSAPublicKeySpec(modulus, exponent);
+
+            return KeyFactory
+                .getInstance(&apos;RSA&apos;)
+                .generatePublic(spec);
+        }
+
+        throw &apos;Kein verwendbarer RSA Public Key im JWKS&apos;;
+    }
+
+    function hasRealmRole(claims, requiredRole) {
+
+        if (requiredRole == null || requiredRole === &apos;&apos;) {
+            return true;
+        }
+
+        if (claims.realm_access == null ||
+            claims.realm_access.roles == null) {
+            return false;
+        }
+
+        var roles = claims.realm_access.roles;
+
+        for (var i = 0; i &lt; roles.length; i++) {
+            if (String(roles[i]) === String(requiredRole)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function isAllowedClient(clientId) {
+
+        var cfg = String($cfg(&apos;jwt.allowedClients&apos;) || &apos;&apos;);
+
+        var clients = cfg.split(&apos;,&apos;);
+
+        for (var i = 0; i &lt; clients.length; i++) {
+
+            if (String(clients[i]).trim() === String(clientId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    try {
+
+        var headers = sourceMap.get(&apos;headers&apos;);
+
+        if (headers == null) {
+            return reject(&apos;HTTP Header fehlen&apos;);
+        }
+
+        /*
+         * Bei Mirth/BridgeLink ist der Header-Container das Objekt
+         * unter sourceMap[&quot;headers&quot;].
+         */
+       var authorization = headers.getHeader(&apos;Authorization&apos;);
+
+       if (authorization == null) {
+            authorization = headers.getHeader(&apos;authorization&apos;);
+       }
+        logger.info(
+              &apos;Authorization Header vorhanden=&apos; +
+              (authorization != null)
+       );
+        if (authorization == null ||
+            String(authorization).trim() === &apos;&apos;) {
+            return reject(&apos;Authorization Header fehlt&apos;);
+        }
+
+        /*
+         * Mirth kann Header-Werte als Liste liefern.
+         * Beispiel:
+         * [Bearer eyJ...]
+         */
+        var auth = String(authorization).trim();
+
+        if (auth.charAt(0) === &apos;[&apos; &amp;&amp;
+            auth.charAt(auth.length - 1) === &apos;]&apos;) {
+            auth = auth.substring(1, auth.length - 1);
+        }
+
+        if (auth.indexOf(&apos;Bearer &apos;) !== 0) {
+            return reject(&apos;Kein Bearer Token&apos;);
+        }
+
+        var token = auth.substring(7).trim();
+        var parts = token.split(&apos;.&apos;);
+
+        if (parts.length !== 3) {
+            return reject(&apos;JWT Format ungültig&apos;);
+        }
+
+        var jwtHeader = decodeJson(parts[0]);
+        var claims = decodeJson(parts[1]);
+
+        if (String(jwtHeader.alg) !== &apos;RS256&apos;) {
+            return reject(
+                &apos;Nicht erlaubter JWT Algorithmus: &apos; +
+                String(jwtHeader.alg)
+            );
+        }
+
+        if (jwtHeader.kid == null) {
+            return reject(&apos;JWT kid fehlt&apos;);
+        }
+
+        var jwk = findKey(jwtHeader.kid);
+
+        if (jwk == null) {
+            return reject(&apos;Signing Key nicht gefunden&apos;);
+        }
+
+        var publicKey = createPublicKey(jwk);
+
+        var verifier = Signature.getInstance(&apos;SHA256withRSA&apos;);
+        verifier.initVerify(publicKey);
+
+        var signedData = parts[0] + &apos;.&apos; + parts[1];
+
+        verifier.update(
+            new java.lang.String(signedData)
+                .getBytes(StandardCharsets.US_ASCII)
+        );
+
+        var signatureBytes =
+            Base64.getUrlDecoder().decode(String(parts[2]));
+
+        if (!verifier.verify(signatureBytes)) {
+            return reject(&apos;JWT Signatur ungültig&apos;);
+        }
+
+        var issuer = String($cfg(&apos;jwt.issuer&apos;));
+
+        if (String(claims.iss) !== issuer) {
+            return reject(
+                &apos;Issuer ungültig: &apos; + String(claims.iss)
+            );
+        }
+
+        var now = Math.floor(new Date().getTime() / 1000);
+
+        if (claims.exp == null || Number(claims.exp) &lt;= now) {
+            return reject(&apos;JWT abgelaufen&apos;);
+        }
+
+        if (claims.nbf != null &amp;&amp;
+            Number(claims.nbf) &gt; now + 30) {
+            return reject(&apos;JWT noch nicht gültig&apos;);
+        }
+
+        if (claims.iat != null &amp;&amp;
+            Number(claims.iat) &gt; now + 60) {
+            return reject(&apos;JWT iat liegt in der Zukunft&apos;);
+        }
+
+        var clientId = &apos;&apos;;
+
+        if (claims.azp != null) {
+            clientId = String(claims.azp);
+        } else if (claims.client_id != null) {
+            clientId = String(claims.client_id);
+        }
+
+        if (clientId === &apos;&apos;) {
+            return reject(&apos;client_id / azp fehlt&apos;);
+        }
+
+        if (!isAllowedClient(clientId)) {
+            return reject(
+                &apos;Client nicht erlaubt: &apos; + clientId
+            );
+        }
+
+        var requiredRole =
+            String($cfg(&apos;jwt.requiredRole&apos;) || &apos;&apos;);
+
+        if (!hasRealmRole(claims, requiredRole)) {
+            return reject(
+                &apos;Realm-Rolle fehlt: &apos; + requiredRole
+            );
+        }
+
+        /*
+         * Kein komplettes Token loggen.
+         */
+        logger.info(
+            &apos;JWT Auth erfolgreich: client=&apos; +
+            clientId +
+            &apos;, sub=&apos; +
+            String(claims.sub)
+        );
+
+        return AuthenticationResult.Success();
+
+    } catch (e) {
+
+        logger.error(
+            &apos;JWT Auth Fehler: &apos; + String(e)
+        );
+
+        return AuthenticationResult.Failure();
+    }
+}
+</code>
+            </properties>
+          </codeTemplate>
+        </codeTemplates>
+      </codeTemplateLibrary>
+    </codeTemplateLibraries>
+  </exportData>
+</channel>
