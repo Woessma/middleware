@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: 2026-11-03
+Stand: 2026-11-04
 
 ## Zielarchitektur
 
@@ -20,7 +20,7 @@ Quellsystem
 Zusatzpfad fuer EPIC Medikation:
 
 EPIC CDA
-→ BridgeLink `POST https://api.omnilink.ch/v1/cda/convert` (CDA-Import)
+→ BridgeLink `POST https://api.omnilink.ch/v1/cda/import` (CDA-Import)
 → FHIR MedicationStatement/Medication in HAPI
 → BridgeLink `GET /middleware/fhir/medications/epic-cda/from-server?patient_id=<id>&count=100`
 → EPIC CDA Export
@@ -46,11 +46,12 @@ EPIC CDA
 ## Schnittstellen
 
 - CDA-API intern: `/cda/debug`, `/cda/convert` (nur Konvertierung, kein HAPI-Write), `/cda/import` (Proxy zu BridgeLink, BridgeLink schreibt nach HAPI), `/cda/umzh/convert`, `/cda/umzh/send`
-- Externer CDA-Import ueber BridgeLink: `POST https://api.omnilink.ch/v1/cda/convert` (geplant: Alias `POST /v1/cda/import`, Umschaltung in der Middleware per `BRIDGELINK_CDA_IMPORT_URL`)
+- Externe CDA-API ueber BridgeLink: `/v1/cda/convert` konvertiert ohne Write; `/v1/cda/import` konvertiert und schreibt nach HAPI (`BRIDGELINK_CDA_IMPORT_URL`).
 - Interner Browser-Relay: `POST /_proxy/bridge/cda` (aelterer Alias von `/cda/import`) leitet CDA-Requests mit Bearer-Token an den festen BridgeLink-Endpunkt weiter; dies ist kein zusaetzlicher externer CDA-Endpunkt.
 - Weitere CDA-Funktionen intern: `/cda/debug`, `/cda/convert`, `/cda/etoc/convert`, `/cda/umzh/convert`, `/cda/umzh/send`, `/cda/vacd/convert`, `/cda/vacd/send` (in Konstruktion)
 - CH-VACD-API: `/cda/vacd/convert` fuer CH-VACD Immunization Administration Documents
 - eMediplan-API: `/emediplan/convert` und `/emediplan/qr/convert` liefern FHIR-Bundles ohne Write; Importpfade gleichen Patient, Medication, MedicationStatement und Practitioner gegen FHIR ab, stabilisieren Duplikate, reichern GLNs sowie Pharmacode/GTIN an und schreiben ueber BridgeLink (`BRIDGELINK_EMEDIPLAN_IMPORT_URL`)
+- Externer eMediplan-Import: BridgeLink `/v1/emediplan/import` ruft Middleware `/emediplan/prepare` auf. Dieser Endpunkt nimmt eMediplan-Rohdaten oder FHIR-JSON entgegen und liefert nach Importpruefungen ein Transaction-Bundle ohne Write und ohne BridgeLink-Rueckaufruf. Destination 02 schreibt nach HAPI. `/emediplan/import` darf hier nicht als Rueckrufziel verwendet werden (Schleife).
 - EPIC-CDA-API: `/fhir/medications/epic-cda`, `/fhir/medications/epic-cda/from-server` (Default `count=100`)
 - Medication-Lookup fuer angereicherte Produktdaten: `_include=MedicationStatement:medication`
 - UMZH Convert: `workflow_stage=initial|updated|completed`, optional `target=default|sandbox-placer`
@@ -98,6 +99,14 @@ EPIC CDA
 	Antwort ist das Transaction-Bundle, kein HAPI-Write (seit 2026-10-30).
 - BridgeLink `https://api.omnilink.ch/v1/cda/import`: CDA-Import ist aktiv und schreibt
 	über BridgeLink nach HAPI (Antwort: transaction-response).
+- Am 2026-11-04 wurden CDA-Convert/-Import, EchoSOS-Import sowie eMediplan-
+  JSON- und PDF-/QR-Convert/-Import im Testlab erfolgreich ausgefuehrt.
+  Wiederimporte der eMediplan-Testplaene zeigten unveraenderte Ressourcen
+  in Version 1; Pharmacode-/GTIN-Mapping und lokale Refdata-Anreicherung
+  wurden anhand gespeicherter Ressourcen geprueft.
+- Die API-Werkbank ist mit den freigegebenen Use-Cases deployt.
+  Routing, Authentifizierung und Abnahmeschritte stehen in
+  [ENDPOINTS.md](../ENDPOINTS.md) und [TEST-CLIENT.md](../TEST-CLIENT.md).
 
 ## eMediplan-Verordner und GLN
 

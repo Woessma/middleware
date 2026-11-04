@@ -1,8 +1,24 @@
 # FHIR Middleware Test Client
 
-`test-client.html` ist eine Browser-Werkbank für die fachlichen Middleware-
-Use-Cases. Sie verarbeitet FHIR JSON, CDA XML, HL7v2 und eMediplan-Payloads und
-stellt auch EPIC-CDA-, UMZH-, Terminologie- und Smoke-Test-Pfade bereit.
+`test-client.html` ist die BridgeLink API Werkbank. Freigeschaltet sind:
+
+| Use Case | Request-Ziel | HAPI-Write |
+|---|---|---|
+| CDA Convert | BridgeLink `/v1/cda/convert` | Nein |
+| CDA Import | Same-Origin `/cda/import` -> BridgeLink | Ja |
+| eMediplan JSON / CHMED16A Convert | BridgeLink `/v1/emediplan/convert` | Nein |
+| eMediplan JSON / CHMED16A Import | BridgeLink `/v1/emediplan/import` | Ja |
+| eMediplan FHIR-JSON Import | BridgeLink `/v1/emediplan/import` | Ja |
+| eMediplan PDF/QR Convert | Same-Origin `/emediplan/qr/convert` | Nein |
+| eMediplan PDF/QR Import | Same-Origin `/emediplan/qr/import` -> BridgeLink | Ja |
+| EchoSOS-URL Import | BridgeLink `/v1/echosos/resolve` | Ja |
+| Patient `$everything` | FHIR `Patient/{id}/$everything` | Nein |
+
+Weitere im Quellcode enthaltene Use-Cases bleiben ausgeblendet, solange ihre
+Gateway-Routen nicht freigegeben sind. eMediplan-JSON wird als
+`application/json`, CHMED16A als `text/plain; charset=utf-8` und FHIR-JSON als
+`application/fhir+json` gesendet. PDF-/QR-Dateien gehen als Multipart-Upload
+an die Middleware, nicht direkt an den BridgeLink HTTP Listener.
 Der freigegebene CDA-Import verwendet Keycloak Authorization Code mit PKCE
 und leitet authentifizierte Requests ueber `POST /cda/import` an
 `https://api.omnilink.ch/v1/cda/import` weiter. Die Client-ID
@@ -11,8 +27,33 @@ Ausgewaehlte UTF-8-XML-Dateien werden ohne Multipart-Huelle als Raw-Body
 mit `Content-Type: application/xml; charset=UTF-8` gesendet. Fuer eingefuegten
 XML-Text gilt derselbe Header. FHIR-`OperationOutcome`-Fehler und fehlgeschlagene
 Bundle-Eintraege werden auch bei HTTP 200 als Fehler angezeigt.
-Die POST-Anzeige nennt den oeffentlichen CDA-Endpunkt; der Request verwendet
-weiterhin den internen Same-Origin-Proxy.
+Die Routenanzeige kennzeichnet Same-Origin-Aufrufe ausdruecklich.
+
+## eMediplan-Abnahme (2026-11-04)
+
+- JSON-/CHMED16A-Konvertierung und PDF-/QR-Konvertierung liefern ein
+  FHIR-`collection`-Bundle ohne HAPI-Write.
+- JSON- und PDF-/QR-Import wurden bis HAPI getestet; die Antwort ist ein
+  `transaction-response`-Bundle.
+- Wiederimporte der beiden Testplaene verwenden die bestehenden Patienten
+  und Ressourcen wieder. Die anschliessenden `$everything`-Abfragen zeigten
+  weiterhin Version 1 fuer alle zurueckgegebenen Ressourcen.
+- Pharmacode-/GTIN-Anreicherung wurde anhand gespeicherter Medications
+  bestaetigt. Nicht aufgeloeste Codes bleiben als Quellcode erhalten;
+  Freitextmedikamente koennen ohne strukturierte Codings vorliegen.
+- Name und Adresse eines gespeicherten Practitioners wurden mit dem lokalen
+  Refdata-NAT-Datensatz verglichen und stimmten ueberein. Das bestaetigt
+  die Anreicherung, nicht die Aktualitaet des Live-Registers oder eine
+  Verordnungsberechtigung.
+
+Zur eigenen Pruefung erst importieren, dann dieselbe Eingabe erneut senden
+und `entry[].response.status` sowie IDs/Versionen per `$everything` vergleichen.
+Ein vorhandener Patient wird beim Wiederimport aus dem Schreib-Bundle entfernt
+und erscheint deshalb nicht erneut in der Transaction-Antwort.
+
+Practitioner lassen sich per ID oder Identifier suchen. In Bruno den
+Query-Parameter `identifier` unkodiert als `urn:oid:2.51.1.3|<GLN>` eingeben;
+ein bereits kodiertes `%7C` wird sonst eventuell zu `%257C` doppelt kodiert.
 
 ## Auf der Testlab-VM öffnen
 

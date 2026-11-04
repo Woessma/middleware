@@ -273,6 +273,39 @@ Der HTTP Sender muss den zum Eingang passenden Content-Type weitergeben
 `/fhir/convert` ist fuer eMediplan-Rohdaten ungeeignet; `/emediplan/import`
 als Rueckrufziel wuerde eine Schleife erzeugen.
 
+#### BridgeLink-Konfiguration
+
+- Source Transformer: `/v1/emediplan/convert` -> `/emediplan/convert` mit
+  `responseTarget=none`; `/v1/emediplan/import` -> `/emediplan/prepare` mit
+  `responseTarget=hapi`.
+- Der Header-Container im Source ist ein `MessageHeaders`-Objekt.
+  Authorization mit `sourceMap.get('headers').getHeader('Authorization')`
+  auslesen, nicht mit `keySet()` oder einer Java-Map-Iteration.
+- Den Originalwert in `channelMap` als `middlewareAuthorization` ablegen.
+  Destination 01 HTTP Sender: Header-Tabelle `Authorization` =
+  `${middlewareAuthorization}`. Der Wert enthaelt bereits `Bearer`.
+  Die erfolgreiche JWT-Pruefung am HTTP Listener allein leitet keinen
+  Header weiter. Tokens weder fest hinterlegen noch loggen.
+- Destination 01 laeuft nur fuer POST. Sie speichert `middlewareResponse`
+  und den HTTP-Sender-Status aus `connectorMap.get('responseStatusCode')`
+  als `middlewareStatusCode`. Nur erfolgreiche, schreibbare Bundles werden
+  als `fhirJson` freigegeben; Fehler setzen `gatewayError` und
+  `gatewayErrorStatusCode`.
+- Destination 02 schreibt nur bei POST, `responseTarget=hapi`, ohne
+  `gatewayError` und mit nicht leerem `fhirJson`. Die Antwort wird als
+  `finalResponse`, der Connector-HTTP-Status als `hapiStatusCode` gespeichert.
+- Destination 10 verarbeitet JWKS-GET separat. Destination 99 wartet auf
+  die vorherigen Destinations und gibt Body und Status des jeweiligen
+  Upstreams zurueck. Bei erwartetem HAPI-Write darf sie nicht auf das
+  vorbereitete Middleware-Bundle als Erfolg zurueckfallen. Fehlende
+  HAPI-Antwort oder fehlender HTTP-Status fuehren zu `502`.
+- HTTP Listener: Response = `99 Response`, Response Code =
+  `${responseStatusCode}`. Nach Channel-Aenderungen speichern und redeployen.
+
+JSON- und PDF-/QR-Import inklusive Wiederimport wurden am 2026-11-04 im
+Testlab geprueft. Details und Grenzen der Abnahme:
+[TEST-CLIENT.md](TEST-CLIENT.md#emediplan-abnahme-2026-11-04).
+
 `POST /emediplan/import` konvertiert Text/PDF-eMediplan-Daten in der Middleware,
 validiert das FHIR-Transaction-Bundle und sendet das FHIR-JSON mit dem
 Keycloak-Bearer-Token an BridgeLink. `POST /emediplan/qr/import` liest
