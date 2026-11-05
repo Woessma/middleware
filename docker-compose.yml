@@ -22,6 +22,7 @@ services:
       - PMLC_KEYCLOAK_ALLOWED_CLIENTS=${PMLC_KEYCLOAK_ALLOWED_CLIENTS-app-omnilink-cardtest}
       - PMLC_KEYCLOAK_REQUIRED_ROLE=${PMLC_KEYCLOAK_REQUIRED_ROLE:-}
     volumes:
+      - vacd-import-state:/var/lib/omnilink/vacd
       - type: bind
         source: ${EPIC_PUBLIC_KEY_HOST_PATH:-/home/ansibleadmin/.local/share/omnilink/epic/epic-public.pem}
         target: /run/epic/epic-public.pem
@@ -54,7 +55,10 @@ services:
     mem_limit: 2g
     pids_limit: 64
     restart: unless-stopped
- 
+
+volumes:
+  vacd-import-state:
+
 networks:
   validation:
     internal: true

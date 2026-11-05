@@ -73,6 +73,151 @@ Die Validierung liefert das interne HAPI-OperationOutcome mit allen
 Warnungen, nicht das Bundle. HTTP 200 ist allein kein Konformitaetsnachweis;
 `issue.severity=error|fatal` ist ausschlaggebend.
 
+## Patientenabgleich und inkrementeller Versand (2026-11-05)
+
+`POST /cda/vacd/send` verwendet weiterhin die FHIR-Fassade des externen
+openEHR-Referenzservers, keinen direkten openEHR-REST-Import:
+
+1. Internes Dokument validieren. Fehler oder Validator-Ausfall verhindern
+   jeden Zielkontakt.
+2. Patienten-Identifier mit System und Wert am Ziel suchen. Alle
+   Identifier-Treffer muessen auf denselben Patienten verweisen.
+   Explizit nicht unterstuetzte Identifier-Suche erlaubt den Fallback auf
+   Familiennamensuche mit lokalem exaktem Vergleich von Familienname,
+   erstem Vornamen und Geburtsdatum (Namen ohne Beachtung der Grossschreibung).
+   Kein Treffer: Patient anlegen. Ein eindeutiger Treffer: wiederverwenden.
+   Mehrdeutigkeit oder widerspruechliche Identifier: HTTP 409, kein Versand.
+   Ohne ausreichend pruefbare Identitaet wird kein Patient angelegt.
+3. Fuer bestehende Patienten `Immunization?patient=Patient/<id>` am Ziel lesen.
+   Fehlerhafte, unvollstaendige oder paginierte Suchantworten blockieren;
+   sie werden niemals als leere Trefferliste interpretiert. Auch als ignoriert
+   erkennbare Suchfilter blockieren. Eine vollstaendige Pagination ist in
+   diesem Pfad noch nicht implementiert.
+4. Vorhandene Impfungen anhand gleicher Identifier erkennen. Ohne gemeinsame
+   Identifier erfordert die automatische Erkennung gemeinsamen Impfcode
+   (System und Code), identischen `occurrenceDateTime`-Wert und gleiche,
+   nicht leere Charge. Klinische Felder muessen uebereinstimmen;
+   aufloesbare Bundle-/Zielreferenzen werden vor dem Vergleich normalisiert.
+   Gleicher Impfcode und Zeitpunkt ohne eindeutige Charge oder abweichende
+   klinische Daten erfordern manuelle Klaerung (HTTP 409). Es gibt kein
+   Fuzzy-Matching und keine automatische Korrektur vorhandener Impfungen.
+   Dieselben Regeln gelten fuer doppelte Impfungen im Eingangsdokument.
+5. Nur neue Impfungen behalten. Bei Teilimport erhalten Bundle und
+   Composition eine neue Dokumentkennung; `Composition.relatesTo` verweist,
+   soweit vorhanden, mit `transforms` auf die urspruengliche
+   Composition-Kennung. Entfernte Impfreferenzen werden aus Sections
+   entfernt und die Impfnarrative aus den verbleibenden Impfungen neu
+   erzeugt. Das Quellbundle bleibt unveraendert. Kein stilles Loeschen
+   von Impfungen im Ziel.
+6. Exakten finalen Payload nach Umbau und Referenzumschreibung erneut intern
+   validieren. Nur bei erfolgreicher Pruefung `POST /Bundle`.
+
+Der Bericht enthaelt `send.immunizations.new` und `.skipped`.
+Ohne neue Impfungen ist `send.status=skipped` mit
+`reason=no-new-immunizations` ein erfolgreicher No-op, kein Dokumentversand.
+Bereits verarbeitete identische Quelldokumente liefern
+`reason=document-already-processed`. Die Werkbank zeigt diese Faelle
+ausdruecklich als **kein Versand**, nicht als gesendetes Dokument.
+
+Die Werkbank zeigt oberhalb der internen Validierungen eine eigene
+Uebersicht **Externer FHIR-Server: Ergebnis**: Patientenanlage oder
+Wiederverwendung, Zielpatient-ID, neue/ausgelassene Impfungen, externer
+Dokument-HTTP-Status sowie Kennung, Zeitstempel und Ressourcentyp-Zaehler
+der Zielantwort. Die unveraenderte externe Antwort ist separat aufklappbar.
+Die Uebersicht verwendet ausschliesslich den vorhandenen Sendereport;
+kein weiterer externer Request und keine zusaetzliche Speicherung.
+Ressourcen im zurueckgegebenen Document-Bundle belegen nicht einzeln deren
+Neuanlage oder Aenderung. Es wird weder eine unabhaengige Lesepruefung noch
+eine nicht bestaetigte openEHR-Composition-/EHR-Anlage behauptet.
+
+### Persistenz, Parallelitaet und Wiederaufnahme
+
+`VACD_IMPORT_DB` bezeichnet das SQLite-Versandregister; Standard:
+`/var/lib/omnilink/vacd/imports.sqlite3`. Compose bindet dafuer das Named
+Volume `vacd-import-state` ein. Ohne Compose muss dieses Verzeichnis
+schreibbar und dauerhaft gemountet sein. Die Persistenz gehoert zum
+Betriebskonzept und darf bei Redeployments nicht verworfen werden.
+
+Pro normalisierter Ziel-URL wird der gesamte Abgleich/Versand mit einem
+Dateilock serialisiert. Alle beteiligten Middleware-Worker muessen dasselbe
+Register samt Lock-Verzeichnis mit funktionierenden POSIX-Locks verwenden.
+Das Register enthaelt nur Hashes fuer Ziel, Dokumentkennung und CDA-Inhalt
+sowie den Verarbeitungszustand, keine CDA-/FHIR-Payloads oder Patientennamen.
+Eine wiederverwendete Dokumentkennung mit veraendertem Quellinhalt wird
+als Konflikt abgewiesen; neue CDA-Versionen benoetigen eine neue Kennung.
+Ohne Composition-Identifier dient der SHA-256 des Quell-CDA als Schluessel.
+
+Vor Patientenanlage bzw. Dokument-POST wird ein ausstehender Schreibvorgang
+persistiert. Ein Timeout, Abbruch oder nicht bestaetigter Write blockiert
+weitere Aufrufe fuer dieses Ziel mit HTTP 409, auch nach Prozessneustart.
+Es erfolgt kein automatischer Retry eines moeglicherweise ausgefuehrten
+Writes. Betreiber muessen den Zielzustand pruefen und danach gezielt den
+betroffenen Registereintrag abgleichen/freigeben; nicht pauschal das Register
+leeren. Profilfehler vor dem Dokument-POST setzen keinen ausstehenden
+Dokument-Write. Ein zuvor angelegter Patient kann trotzdem bestehen bleiben.
+
+Diese Absicherung gilt fuer diese Middleware mit gemeinsamem Register.
+Andere Sender oder getrennte Register benoetigen weiterhin zielseitige
+atomare Identitaets-/Dublettenregeln. Der Zielserver weist eine solche
+Garantie im CapabilityStatement nicht aus. Eine FHIR-Patient-ID wird hier
+gemaess bestehendem Referenzserververtrag als VACD-EHR-Identifier verwendet;
+dies ist kein allgemeiner Nachweis einer openEHR-`ehr_id`-Zuordnung.
+
+Abnahme mit einem offiziellen synthetischen CH-VACD-6.0.0-Beispiel:
+eine vorhandene und eine neue Impfung wurden zu einem Dokument mit genau
+einer neuen Impfung umgebaut. Die echte interne HAPI-Pruefung des finalen
+Payloads lieferte 0 Fehler/fatal, 8 Warnungen und 20 Hinweise. Externe
+Patientenanlage und Dokument-POST waren dabei gemockt; es erfolgten keine
+externen Writes und keine klinische Speicherung. Dies ist keine
+Live-Abnahme des Referenzservers.
+
+### Testdeployment und externer Antwortnachweis
+
+Am 2026-11-05 wurden Patientenabgleich, inkrementeller Versand,
+persistentes Register und Ergebnisansicht auf dem Testsystem deployt.
+46 VACD-Python- und 22 Werkbank-Node-Tests bestanden. Dienststatus und
+Ergebnisansicht wurden geprueft; das Register blieb beim Redeployment erhalten.
+
+Die vom Benutzer bereitgestellte Antwort eines Testaufrufs weist
+`send.status=sent`, `patient.matched_existing=false`, drei neue und keine
+ausgelassenen Impfungen sowie Dokument-HTTP-Status 201 aus. Die externe
+Antwort ist ein Document-Bundle mit einer Composition, einem Device,
+einem Patienten und drei Immunizations. Das belegt einen erfolgreichen
+Dokumentaufruf nach Rueckmeldung des Zielservers. Eine unabhaengige
+Lesepruefung und die direkte openEHR-Speicherung sind damit nicht belegt.
+Patientendaten und konkrete Patientenkennungen werden nicht in Git abgelegt.
+
+### Anlage mit Bruno lesend pruefen
+
+In Bruno eine Umgebungsvariable `vacd_base` mit
+`https://vaccination-demo.raly.ch/api/fhir` und `patient_id` mit dem Wert
+aus `send.patient.assigned_id` setzen. Fuer beide Requests:
+
+```text
+Accept: application/fhir+json
+```
+
+Patient lesen, Methode **GET**, kein Body:
+
+```text
+{{vacd_base}}/Patient/{{patient_id}}
+```
+
+Erwartung: HTTP 200, `resourceType=Patient` und die angefragte ID.
+
+Impfungen lesen, Methode **GET**, kein Body:
+
+```text
+{{vacd_base}}/Immunization?patient=Patient/{{patient_id}}
+```
+
+Das Suchbundle nach `entry[].resource` auswerten: Patientreferenz,
+Impfcode, `occurrenceDateTime`, Charge und Quell-Identifier vergleichen.
+Bei `link.relation=next` auch Folgeseiten lesen. Die Anzahl kann durch
+spaetere Importe hoeher sein als im einzelnen Versandreport.
+Keinen erneuten POST zur Lesepruefung ausfuehren. Auf dem oeffentlichen
+Demo-System ausschliesslich synthetische Patientendaten verwenden.
+
 ## Zusaetzliche Husky-Pruefung (2026-11-05)
 
 Korrektur nach einem Bericht mit zwei Fehlern fuer `COVID-19-PFIZER`:
@@ -175,6 +320,7 @@ Der hier dokumentierte Implementierungsstand bestaetigt noch keinen
 erfolgreichen Live-Versand oder eine vollstaendige CH-VACD-Profilvalidierung.
 Die Werkbank zeigt einen fehlerhaften `send`-Report auch bei HTTP 200 als
 Fehler an; nur `send.status=sent` meldet erfolgreichen Versand.
+`send.status=skipped` ist ein erfolgreicher No-op ohne Dokumentversand.
 
 Beispiel mit cURL:
 

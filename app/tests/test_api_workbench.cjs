@@ -103,6 +103,91 @@ test('VACD send report errors are not shown as success', () => {
   vm.runInContext(html.slice(html.indexOf('function fhirResponseError('), html.indexOf('async function run()')), context);
   assert.match(context.fhirResponseError({send: {status: 'partial-error', bundle: {error: 'rejected'}}}), /rejected/);
   assert.equal(context.fhirResponseError({send: {status: 'sent'}}), '');
+  assert.equal(context.fhirResponseError({send: {status: 'skipped', reason: 'no-new-immunizations'}}), '');
+});
+
+function externalSummary() {
+  const {context} = workbench();
+  vm.runInContext(html.slice(html.indexOf('function externalSendSummary('), html.indexOf('function display(')), context);
+  return context;
+}
+
+test('external summary distinguishes actual destination response from internal validation', () => {
+  const context = externalSummary();
+  const report = context.externalSendSummary({
+    send: {
+      status: 'sent', destination_base_url: 'https://target.invalid/fhir',
+      patient: {ok: true, matched_existing: false, assigned_id: 'synthetic-patient'},
+      immunizations: {new: 3, skipped: 0},
+      bundle: {http_status: 201, ok: true, response: {
+        resourceType: 'Bundle', type: 'document', id: 'synthetic-document',
+        identifier: {system: 'urn:ietf:rfc:3986', value: 'urn:uuid:synthetic'},
+        entry: [
+          {resource: {resourceType: 'Composition'}},
+          {resource: {resourceType: 'Immunization'}},
+          {resource: {resourceType: 'Immunization'}}
+        ]
+      }}
+    }
+  });
+  const rows = Object.fromEntries(Array.from(report.rows, row => [row.label, row.value]));
+  assert.equal(rows.Patient, 'Patient am Ziel neu angelegt');
+  assert.equal(rows['Zielpatient-ID'], 'synthetic-patient');
+  assert.equal(rows['Dokument-HTTP-Status'], '201');
+  assert.equal(rows['Neue Impfungen im Versanddokument'], '3');
+  assert.equal(rows['Ausgelassene Impfdubletten'], '0');
+  assert.equal(rows['Antwort-ID'], 'synthetic-document');
+  assert.equal(rows['Ressourcen in der Zielantwort'], 'Composition: 1 · Immunization: 2');
+  assert.match(report.note, /kein Einzelbeleg/);
+  assert.match(rows.Dokumentversand, /keine unabhängige Leseprüfung/);
+});
+
+test('skipped import never claims a new external write', () => {
+  const context = externalSummary();
+  for (const reason of ['document-already-processed', 'no-new-immunizations']) {
+    const report = context.externalSendSummary({send: {status: 'skipped', reason}});
+    const row = report.rows.find(row => row.label === 'Dokumentversand');
+    assert.match(row.value, /Nicht (erneut )?gesendet/);
+    assert.equal(report.response, undefined);
+  }
+  assert.equal(context.externalSendSummary({resourceType: 'OperationOutcome'}), null);
+});
+
+test('external errors and missing patient evidence are explicit', () => {
+  const context = externalSummary();
+  const report = context.externalSendSummary({send: {
+    status: 'partial-error', patient: {ok: true},
+    bundle: {http_status: 500, error: 'synthetic error', response: {
+      resourceType: 'OperationOutcome', issue: [{severity: 'error', diagnostics: 'Synthetic rejection'}]
+    }}
+  }});
+  const rows = Object.fromEntries(Array.from(report.rows, row => [row.label, row.value]));
+  assert.match(rows.Dokumentversand, /Nicht als erfolgreich bestätigt/);
+  assert.equal(rows.Patient, 'Aktion nicht ausgewiesen');
+  assert.equal(rows.Versandfehler, 'synthetic error');
+  assert.equal(rows['Dokument-HTTP-Status'], '500');
+  assert.equal(report.response.resourceType, 'OperationOutcome');
+});
+
+test('external response renders as text and resets on the next request', () => {
+  const context = externalSummary();
+  const element = () => ({
+    children: [],
+    append(...children) { this.children.push(...children); },
+    replaceChildren(...children) { this.children = children; }
+  });
+  context.el.externalSummary = element();
+  context.document.createElement = element;
+  context.renderExternalSummary({send: {
+    status: 'sent', bundle: {http_status: 201, response: '<script>untrusted</script>'}
+  }});
+  assert.equal(context.el.externalSummary.hidden, false);
+  const details = context.el.externalSummary.children.at(-1);
+  assert.equal(details.children[1].textContent, '<script>untrusted</script>');
+  context.renderExternalSummary('Request läuft');
+  assert.equal(context.el.externalSummary.hidden, true);
+  assert.equal(context.el.externalSummary.children.length, 0);
+  assert.match(html, /renderExternalSummary\(value\);renderValidationSummary\(value\)/);
 });
 
 test('response metadata separates the browser URL from the configured processing path', () => {

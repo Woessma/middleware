@@ -97,7 +97,9 @@
       </section>
       <section class="panel response">
         <div class="panel-head response-head"><h2>Antwort</h2><span id="status" class="status">Bereit</span></div>
-        <div class="panel-body"><div id="responseMeta" class="response-meta">Noch kein Request ausgeführt.</div>        <div id="validationSummary" class="validation-summary" hidden></div>
+        <div class="panel-body"><div id="responseMeta" class="response-meta">Noch kein Request ausgeführt.</div>
+        <div id="externalSummary" class="validation-summary" hidden></div>
+        <div id="validationSummary" class="validation-summary" hidden></div>
         <pre id="output">{}</pre><div class="response-tools"><button id="reuseBtn" class="secondary" type="button" disabled>Als Eingabe verwenden</button><button id="downloadBtn" class="quiet" type="button" disabled>Antwort herunterladen</button><button id="documentDownloadBtn" class="quiet" type="button" hidden disabled>FHIR-Vorschau herunterladen</button></div></div>
       </section>
     </div>
@@ -149,10 +151,10 @@
       ['Smoke Tests','test-patient','Testpatient anlegen/finden','GET','/test/patient','none','Ruft den serverseitigen Patient-Smoke-Test auf.'],
       ['Smoke Tests','test-organization','Testorganisation anlegen/finden','GET','/test/organization','none','Ruft den serverseitigen Organization-Smoke-Test auf.']
     ].map(([group,id,name,method,path,input,description,template,params=[],target='middleware'])=>({group,id,name,method,path,input,description,template,params,target}));
-    const el=Object.fromEntries(['useCase','route','description','params','payload','inputLabel','fileInput','status','output','responseMeta','reuseBtn','downloadBtn','documentDownloadBtn','runBtn','formatBtn','validationSummary'].map(id=>[id,document.getElementById(id)]));
+    const el=Object.fromEntries(['useCase','route','description','params','payload','inputLabel','fileInput','status','output','responseMeta','reuseBtn','downloadBtn','documentDownloadBtn','runBtn','formatBtn','validationSummary','externalSummary'].map(id=>[id,document.getElementById(id)]));
     let lastResponse=null,lastContentType='application/json';
     const vacdSendCase=cases.find(item=>item.id==='vacd-send');
-    vacdSendCase.description='Validiert CH VACD intern vor jedem Zielkontakt und erneut vor dem Dokumentversand. Fehler oder Validator-Ausfall blockieren den nächsten Schritt; Warnungen bleiben im Bericht. Die zweite Prüfung erfolgt nach dem Patientenabgleich; gegebenenfalls wurde dann bereits ein Zielpatient angelegt.';
+    vacdSendCase.description='Gleicht Patienten eindeutig ab und legt sie nur bei keinem Treffer an. Bereits vorhandene Impfungen werden ausgelassen; nur neue werden in einem neu aufgebauten, erneut validierten Dokument gesendet. Mehrdeutigkeit oder widersprüchliche Impfdaten stoppen den Versand. Wiederholte Dokumente werden ohne erneuten Versand ausgewiesen.';
     vacdSendCase.target='same-origin';
     vacdSendCase.params=vacdSendCase.params.filter(param=>param.name!=='outbound_authorization');
     vacdSendCase.params[0].value='https://vaccination-demo.raly.ch/api/fhir';
@@ -304,8 +306,89 @@
         table.append(body);el.validationSummary.append(table);
       }
     }
+    function externalSendSummary(value){
+      const send=value?.send;
+      if(!send)return null;
+      const rows=[];
+      const add=(label,value)=>{if(value!==undefined&&value!==null&&value!=='')rows.push({label,value:String(value)})};
+      add('Zielserver',send.destination_base_url||send.bundle?.url||send.patient?.url);
+      if(send.status==='skipped'){
+        add('Dokumentversand',send.reason==='document-already-processed'
+          ?'Nicht erneut gesendet: Quelldokument laut lokalem Versandregister bereits verarbeitet. Kein neuer externer Beleg.'
+          :send.reason==='no-new-immunizations'
+            ?'Nicht gesendet: keine neuen Impfungen nach Abgleich.'
+            :'Nicht gesendet: '+(send.reason||'Grund nicht angegeben'));
+      }else if(send.status==='sent'){
+        add('Dokumentversand','Vom Zielserver als erfolgreich gemeldet; keine unabhängige Leseprüfung.');
+      }else{
+        add('Dokumentversand','Nicht als erfolgreich bestätigt; Zielzustand gegebenenfalls unklar.');
+      }
+      const patient=send.patient;
+      if(patient){
+        add('Patient',patient.ok===false?'Patientenschritt fehlgeschlagen'
+          :patient.matched_existing===true?'Bestehenden Zielpatienten wiederverwendet'
+          :patient.matched_existing===false?'Patient am Ziel neu angelegt'
+          :'Aktion nicht ausgewiesen');
+        add('Zielpatient-ID',patient.assigned_id);
+        add('Patienten-HTTP-Status',patient.http_status);
+        add('Patientenfehler',patient.error);
+      }
+      if(send.immunizations){
+        add('Neue Impfungen im Versanddokument',send.immunizations.new);
+        add('Ausgelassene Impfdubletten',send.immunizations.skipped);
+      }
+      const bundle=send.bundle;
+      if(bundle){
+        add('Dokument-HTTP-Status',bundle.http_status);
+        add('Dokument-Endpunkt',bundle.url);
+        add('Versandfehler',bundle.error);
+        const response=bundle.response;
+        if(response&&typeof response==='object'){
+          add('Antwortformat',response.resourceType+(response.type?' / '+response.type:''));
+          add('Antwort-ID',response.id);
+          if(response.identifier)add('Dokumentkennung der Antwort',[response.identifier.system,response.identifier.value].filter(Boolean).join(' | '));
+          add('Zeitstempel der Antwort',response.timestamp);
+          if(response.resourceType==='Bundle'){
+            const counts=new Map();
+            for(const entry of response.entry||[]){
+              const type=entry.resource?.resourceType;
+              if(type)counts.set(type,(counts.get(type)||0)+1);
+            }
+            add('Ressourcen in der Zielantwort',Array.from(counts,([type,count])=>`${type}: ${count}`).join(' · '));
+          }
+        }else if(response!==undefined){
+          add('Antwortformat','Kein strukturierter FHIR-Antwortbody');
+        }
+      }
+      return {
+        rows,
+        response:bundle?.response,
+        note:'Beleg: zurückgegebene Zielantwort und Middleware-Abgleich. Ressourcen in einem Document-Bundle sind kein Einzelbeleg für Neuanlage oder Änderung jeder Ressource. Eine openEHR-Composition-/EHR-Anlage wird ohne explizite Zielbestätigung nicht behauptet.'
+      };
+    }
+    function renderExternalSummary(value){
+      el.externalSummary.replaceChildren();
+      const report=externalSendSummary(value);
+      el.externalSummary.hidden=!report;
+      if(!report)return;
+      function node(tag,text){const element=document.createElement(tag);if(text!==undefined)element.textContent=text;return element}
+      el.externalSummary.append(node('h3','Externer FHIR-Server: Ergebnis'));
+      const table=node('table'),body=node('tbody');
+      table.append(node('caption','Bestätigte Rückmeldung und ausgeführte Schritte'));
+      for(const row of report.rows){
+        const tr=node('tr'),label=node('th',row.label);label.scope='row';
+        tr.append(label,node('td',row.value));body.append(tr);
+      }
+      table.append(body);
+      el.externalSummary.append(table,node('p',report.note));
+      if(report.response!==undefined){
+        const details=node('details');
+        details.append(node('summary','Originalantwort des externen FHIR-Servers'),node('pre',typeof report.response==='string'?report.response:JSON.stringify(report.response,null,2)));
+        el.externalSummary.append(details);
+      }
+    }
     function display(value){
-      el.output.textContent=typeof value==='string'?value:JSON.stringify(value,null,2);renderValidationSummary(value);
+      el.output.textContent=typeof value==='string'?value:JSON.stringify(value,null,2);renderExternalSummary(value);renderValidationSummary(value);
       if(el.documentDownloadBtn){
         const document=!!(value?.bundle?.resourceType==='Bundle'&&value?.validation?.resourceType==='OperationOutcome');
         el.documentDownloadBtn.hidden=!document;el.documentDownloadBtn.disabled=!document;
@@ -315,7 +398,7 @@
     function errorText(error){if(error instanceof SyntaxError)return `Ungültiges JSON: ${error.message}`;if(error instanceof TypeError&&error.message.toLowerCase().includes('fetch'))return `Netzwerk- oder CORS-Fehler. Browser-Origin: ${window.location.origin}. Prüfe URL, OPTIONS-Request und Auth-Konfiguration.`;return error.message||'Unbekannter Fehler'}
     function responseError(response,value){if(response.status===401&&value&&typeof value==='object'&&value.url==='/cda')return 'BridgeLink lehnt den Bearer-Token ab. Audience, Rolle oder API-Berechtigung prüfen.';if(response.status===401&&value&&typeof value==='object'&&value.detail==='A Keycloak Bearer token is required')return 'Keycloak-Token fehlt oder ist abgelaufen. Bitte neu anmelden.';if(typeof value==='object'&&value?.detail)return value.detail;return response.status===401?'Authentifizierung fehlgeschlagen.':'Der Server hat den Request abgelehnt.'}
     function fhirResponseError(value){
-      if(value?.send&&value.send.status!=='sent')return value.send.bundle?.error||value.send.patient?.error||`VACD-Versand fehlgeschlagen: ${value.send.status}`;
+      if(value?.send&&!['sent','skipped'].includes(value.send.status))return value.send.bundle?.error||value.send.patient?.error||`VACD-Versand fehlgeschlagen: ${value.send.status}`;
       if(value?.resourceType==='OperationOutcome')return (value.issue||[]).filter(issue=>['error','fatal'].includes(issue.severity)).map(issue=>issue.diagnostics||issue.details?.text||issue.code||'FHIR-Verarbeitungsfehler').join('; ');
       if(value?.resourceType==='Bundle')return (value.entry||[]).map(entry=>{const outcome=fhirResponseError(entry.response?.outcome)||fhirResponseError(entry.resource);return outcome||(/^[45]\d\d\b/.test(entry.response?.status||'')?`FHIR-Eintrag: ${entry.response.status}`:'')}).filter(Boolean).join('; ');
       return '';
@@ -334,7 +417,8 @@
         lastResponse=value;lastContentType=type;display(value);
         el.responseMeta.textContent=responseMetadata(item,url,response,elapsed,type);
         el.reuseBtn.disabled=false;el.downloadBtn.disabled=false;
-        if(value?.send&&value.send.status!=='sent')throw Error(`FHIR-Fehler (HTTP ${response.status}): ${fhirResponseError(value)}`);
+        if(value?.send&&!['sent','skipped'].includes(value.send.status))throw Error(`FHIR-Fehler (HTTP ${response.status}): ${fhirResponseError(value)}`);
+        if(response.ok&&value?.send?.status==='skipped'){status('Kein Versand: Dokument bereits verarbeitet oder keine neuen Impfungen.','success');return}
         const reports=validationReports(value);
         if(reports.length){
           const counts=reports.map(report=>validationProfileSummary(report.outcome).counts);

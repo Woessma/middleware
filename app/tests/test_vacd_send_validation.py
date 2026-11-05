@@ -1,4 +1,5 @@
 import copy
+import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
@@ -50,6 +51,19 @@ def document():
 
 
 class VacdSendValidationTests(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        patcher = patch("services.vacd_send_service.VACD_IMPORT_DB", directory.name + "/imports.db")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        search = patch("services.vacd_send_service.requests.get", return_value=Mock(
+            status_code=200,
+            json=lambda: {"resourceType": "Bundle", "type": "searchset", "total": 0},
+        ))
+        search.start()
+        self.addCleanup(search.stop)
+
     def test_preflight_error_fatal_or_input_rejection_never_contacts_destination(self):
         for status, severity in ((200, "error"), (200, "fatal"), (400, "error"), (422, "error")):
             with (

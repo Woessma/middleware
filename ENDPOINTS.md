@@ -779,7 +779,10 @@ Ablauf:
    {ziel}/Patient?identifier=<system>|<value>` je Identifier der Ressource; lehnt der
    Zielserver diesen Suchparameter ab (z. B. der raly.ch-Demoserver, der nur `name`
    unterstuetzt), erfolgt ein Fallback per `GET {ziel}/Patient?name=<Nachname>`,
-   bestaetigt durch exakten Abgleich von `birthDate`. Nur wenn kein Treffer gefunden
+   bestaetigt durch exakten Abgleich von Familienname, erstem Vornamen und
+   `birthDate`. Mehrdeutige oder widerspruechliche Treffer blockieren mit HTTP 409.
+   Fehlerhafte, unvollstaendige oder paginierte Suchantworten blockieren ebenfalls.
+   Nur wenn kein Treffer gefunden
    wird, erfolgt ein `POST {ziel}/Patient` (mit `active: true`, falls nicht gesetzt, da
    der Zielserver dieses Feld verlangt). In allen Faellen wird die (gefundene oder neu
    zugewiesene) `id` verwendet.
@@ -792,7 +795,13 @@ Ablauf:
    (`subject.reference`, `patient.reference`, `performer.actor.reference`, Section-
    Entries usw.) werden zur relativen Form `<ResourceType>/<id>` aufgeloest statt
    `urn:uuid:`-Referenzen zu verwenden.
-4. Das aktualisierte Bundle wird erneut intern validiert. Nur ohne
+4. Bei einem bestehenden Patienten werden dessen Impfungen ueber
+   `GET {ziel}/Immunization?patient=Patient/<id>` abgeglichen. Vorhandene
+   Impfungen werden ausgelassen; widerspruechliche klinische Daten stoppen
+   den Versand mit HTTP 409. Ein Teilimport erhaelt neue Dokumentkennungen,
+   bereinigte Section-Referenzen und neu erzeugte Impfnarrative.
+   Ohne neue Impfungen erfolgt kein Dokument-POST (`send.status=skipped`).
+5. Das aktualisierte Bundle wird erneut intern validiert. Nur ohne
    `error`/`fatal` wird genau dieser Payload per `POST {ziel}/Bundle`
    gesendet. Auch ein Ausfall dieser zweiten Pruefung verhindert den
    Dokumentversand. Der Patientenabgleich ist dann bereits erfolgt:
@@ -806,6 +815,21 @@ beide vollstaendigen OperationOutcomes unter
 Eine vorherige manuelle Validierung ist kein Freigabetoken: jeder
 Sendeaufruf wird erneut geprueft. CH-VACD-Dokumenttyp und Profildeklaration
 sind auch bei direktem Aufruf des Sendeservice zwingend.
+
+`send.bundle.http_status` und `.response` enthalten den externen
+Dokumentstatus und Antwortbody. `send.patient` weist Ziel-ID und
+Wiederverwendung aus; `send.immunizations` zaehlt neue und ausgelassene
+Impfungen. Die Werkbank zeigt diese Angaben vor den internen Validierungen.
+Ein HTTP 201 mit Document-Bundle bestaetigt den Dokumentaufruf, nicht
+separat eine Neuanlage jeder enthaltenen Ressource oder einer openEHR-Composition.
+
+`VACD_IMPORT_DB` (Default `/var/lib/omnilink/vacd/imports.sqlite3`) wird
+im Compose-Volume `vacd-import-state` persistiert. Gemeinsames Register
+und Dateilocks serialisieren Aufrufe je Ziel. Bereits verarbeitete Quellen
+werden ohne neuen Versand ausgewiesen; unklare Schreibausgaenge blockieren
+weitere Aufrufe dieses Ziels bis zur manuellen Klaerung.
+Details und Bruno-Lesepruefung:
+[CH-VACD-Ablauf](docs/ch-vacd-immunization-administration.md).
 
 `outbound_authorization` (Query-Parameter) wird unveraendert als `Authorization`-
 Header an beide Aufrufe (Patient und Bundle) weitergereicht.

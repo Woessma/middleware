@@ -20,6 +20,7 @@ TERMINOLOGY_VALIDATION_MODE = os.getenv("TERMINOLOGY_VALIDATION_MODE", "report")
 # CH-VACD reference server (openEHR-based, e.g. Impfdossier CH demo) for the "VACD senden" use case.
 VACD_SEND_BASE_URL = os.getenv("VACD_SEND_BASE_URL", "https://vaccination-demo.raly.ch/api/fhir")
 VACD_SEND_TIMEOUT = int(os.getenv("VACD_SEND_TIMEOUT", "60"))
+VACD_IMPORT_DB = os.getenv("VACD_IMPORT_DB", "/var/lib/omnilink/vacd/imports.sqlite3")
 
 # Refdata.ch Partner (GLN) lookup - optional enrichment, disabled unless a key is configured.
 REFDATA_BASE_URL = os.getenv(

@@ -25,7 +25,10 @@
 
 Der VACD-HAPI-Import ist aus der Werkbank entfernt und serverseitig
 deaktiviert (HTTP 410 auch ueber die bisherige Importvorbereitung).
-Der externe VACD-Sendeweg bleibt davon getrennt und nicht live abgenommen.
+Der externe VACD-Sendeweg bleibt davon getrennt. Am 2026-11-05 wurde ein
+erfolgreicher Testaufruf anhand der bereitgestellten Antwort belegt:
+Patient neu angelegt, drei neue Impfungen, Dokumentantwort HTTP 201.
+Das ist keine unabhaengige Lesepruefung oder vollstaendige fachliche Abnahme.
 Er validiert jetzt verpflichtend intern vor dem ersten Zielkontakt und
 erneut vor dem Dokumentversand. Fehler/fatal oder Validator-Ausfall
 blockieren den naechsten Schritt. Warnungen bleiben im Sendebericht
@@ -113,6 +116,23 @@ bleiben Fehler; Warnungen erhalten einen gelben Status statt einer rein
 gruenen Erfolgsmeldung. JSON-Download und Antwortwiederverwendung enthalten
 weiterhin den originalen Body. Neue Requests loeschen alte Zusammenfassungen
 und Antwortmetadaten, damit Netzwerkfehler keinen alten HTTP-200-Stand zeigen.
+
+### Externes VACD-Ergebnis
+
+Vor den internen Validierungen steht **Externer FHIR-Server: Ergebnis**:
+Patientenanlage oder Wiederverwendung, Zielpatient-ID, neue/ausgelassene
+Impfungen, Dokument-HTTP-Status und Kennungen der Zielantwort.
+Ressourcentyp-Zaehler beschreiben den Antwortinhalt, nicht einzeln
+bestaetigte Neuanlagen. Die Originalantwort ist separat aufklappbar.
+`sent` bedeutet erfolgreich gemeldeter Versand; `skipped` bedeutet
+ausdruecklich kein neuer Dokumentversand. Es wird keine automatische
+Lesepruefung oder direkte openEHR-Composition-Anlage behauptet.
+
+Die Erweiterung ist auf dem Testsystem deployt. 46 VACD-Python- und
+22 Werkbank-Node-Tests bestanden; die neue Ergebnisansicht wurde im Browser
+mit synthetischer Antwort ohne externen Write geprueft.
+Bruno-GETs fuer die unabhaengige Lesepruefung:
+[VACD-Dokumentation](docs/ch-vacd-immunization-administration.md).
 
 ### Validierungsstichprobe vom 2026-11-04
 

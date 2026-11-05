@@ -2216,6 +2216,7 @@ async def cda_vacd_send(
             destination_base_url=resolved_destination,
             outbound_authorization=outbound_authorization,
             timeout_seconds=VACD_SEND_TIMEOUT,
+            source_document_hash=hashlib.sha256(xml_content).hexdigest(),
         )
 
         return {
@@ -2225,6 +2226,12 @@ async def cda_vacd_send(
             "send": send_report,
         }
 
+    except PatientMatchConflictError as ex:
+        logger.warning("VACD send blocked: %s", ex)
+        return _validation_outcome_response(409, "conflict", str(ex))
+    except (PatientLookupError, requests.RequestException) as ex:
+        logger.error("VACD destination lookup or write failed: %s", type(ex).__name__)
+        return _validation_outcome_response(502, "exception", "VACD destination lookup or write failed; send blocked")
     except VacdValidationRejected as ex:
         logger.warning("VACD external send blocked by validation: phase=%s", ex.phase)
         outcome = copy.deepcopy(ex.outcome)
