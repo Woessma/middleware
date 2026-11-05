@@ -2208,6 +2208,7 @@ async def cda_vacd_send(
             _embed_precreated_resource(bundle, author.get("reference"))
         _embed_precreated_resource(bundle, (composition.get("custodian") or {}).get("reference"))
 
+        source_document_identifier = copy.deepcopy(composition.get("identifier"))
         bundle = _validate_bundle(_mark_vacd_bundle(bundle))
 
         send_report = await run_in_threadpool(
@@ -2217,6 +2218,7 @@ async def cda_vacd_send(
             outbound_authorization=outbound_authorization,
             timeout_seconds=VACD_SEND_TIMEOUT,
             source_document_hash=hashlib.sha256(xml_content).hexdigest(),
+            source_document_identifier=source_document_identifier,
         )
 
         return {

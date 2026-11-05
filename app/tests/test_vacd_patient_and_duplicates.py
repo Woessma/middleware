@@ -273,6 +273,43 @@ class VacdDuplicateTests(unittest.TestCase):
             with VacdImportGuard(self.path, BASE, "key", "changed"):
                 self.fail("Changed source must not enter")
 
+    def test_completed_source_hash_matches_legacy_generated_document_key(self):
+        with VacdImportGuard(self.path, BASE, "generated-old-uuid", "same-source") as guard:
+            guard.record("completed")
+        with VacdImportGuard(self.path, BASE, "generated-new-uuid", "same-source") as guard:
+            self.assertTrue(guard.completed)
+        with VacdImportGuard(self.path, BASE + "/other", "generated-new-uuid", "same-source") as guard:
+            self.assertFalse(guard.completed)
+
+    def test_source_identifier_and_hash_survive_generated_vacd_identity(self):
+        source_id = {"system": "urn:synthetic:cda", "value": "source"}
+        first = mixed_document()
+        second = copy.deepcopy(first)
+        second["entry"][0]["resource"]["identifier"]["value"] = "regenerated"
+        with (
+            patch("services.vacd_send_service.validate_fhir_bundle", return_value=(200, outcome("information"))),
+            patch("services.vacd_send_service.create_or_find_vacd_patient", return_value=(patient(), True)) as find,
+            patch("services.vacd_send_service.requests.get", return_value=response()),
+            patch("services.vacd_send_service.requests.post", return_value=Mock(
+                status_code=201, json=lambda: {"resourceType": "Bundle"},
+            )) as post,
+        ):
+            self.assertEqual(send_vacd_bundle(
+                first, BASE, source_document_hash="same-source",
+                source_document_identifier=source_id,
+            )["status"], "sent")
+            self.assertEqual(send_vacd_bundle(
+                second, BASE, source_document_hash="same-source",
+                source_document_identifier=source_id,
+            )["reason"], "document-already-processed")
+            with self.assertRaises(PatientMatchConflictError):
+                send_vacd_bundle(
+                    second, BASE, source_document_hash="changed-source",
+                    source_document_identifier=source_id,
+                )
+        find.assert_called_once()
+        post.assert_called_once()
+
     def test_uncertain_write_survives_reopen(self):
         with VacdImportGuard(self.path, BASE, "key", "hash") as guard:
             guard.record("pending-bundle")
@@ -400,7 +437,7 @@ class VacdDuplicateTests(unittest.TestCase):
     def test_same_identifier_changed_dose_blocks(self):
         changed = vaccination()
         changed["doseQuantity"] = {"value": 2, "unit": "mL"}
-        with self.assertRaises(PatientMatchConflictError):
+        with self.assertRaisesRegex(PatientMatchConflictError, "field: doseQuantity"):
             _same_immunization(changed, vaccination())
 
     def test_clinical_match_requires_date_code_and_lot(self):

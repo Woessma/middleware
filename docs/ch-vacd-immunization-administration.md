@@ -146,6 +146,13 @@ sowie den Verarbeitungszustand, keine CDA-/FHIR-Payloads oder Patientennamen.
 Eine wiederverwendete Dokumentkennung mit veraendertem Quellinhalt wird
 als Konflikt abgewiesen; neue CDA-Versionen benoetigen eine neue Kennung.
 Ohne Composition-Identifier dient der SHA-256 des Quell-CDA als Schluessel.
+Die urspruengliche CDA-Composition-Kennung wird vor der VACD-Aufbereitung
+fuer das Register gesichert; neu erzeugte VACD-UUIDs sind keine Quellidentitaet.
+Zusaetzlich erkennt der Inhaltshash erfolgreich verarbeitete identische
+CDA-Bytes am selben Ziel, auch bei aelteren Registereintraegen unter
+generierten UUIDs. Unklare Writes und geaenderte Inhalte unter derselben
+bekannten Quellkennung bleiben gesperrt. Klinische Konfliktmeldungen nennen
+das abweichende Feld, ohne dessen Patientenwerte zu protokollieren.
 
 Vor Patientenanlage bzw. Dokument-POST wird ein ausstehender Schreibvorgang
 persistiert. Ein Timeout, Abbruch oder nicht bestaetigter Write blockiert
@@ -175,8 +182,17 @@ Live-Abnahme des Referenzservers.
 
 Am 2026-11-05 wurden Patientenabgleich, inkrementeller Versand,
 persistentes Register und Ergebnisansicht auf dem Testsystem deployt.
-46 VACD-Python- und 22 Werkbank-Node-Tests bestanden. Dienststatus und
+48 VACD-Python- und 22 Werkbank-Node-Tests bestanden. Dienststatus und
 Ergebnisansicht wurden geprueft; das Register blieb beim Redeployment erhalten.
+
+Der nachfolgende Wiederholungs-Fix wurde ebenfalls auf das Testsystem
+deployt: zufaellig erzeugte VACD-Kennungen verhindern nicht mehr die
+Wiedererkennung identischer CDA-Bytes. Der vorhandene erfolgreiche
+Registereintrag wurde mit geaendertem generiertem Schluessel erfolgreich
+erkannt, ohne Registeraenderung oder externen Request. Die Regression
+prueft auch, dass geaenderte Inhalte unter derselben Quellkennung weiterhin
+einen Konflikt ausloesen. Ein erneuter End-to-End-Aufruf durch den Benutzer
+ist nach diesem Fix noch nicht bestaetigt.
 
 Die vom Benutzer bereitgestellte Antwort eines Testaufrufs weist
 `send.status=sent`, `patient.matched_existing=false`, drei neue und keine

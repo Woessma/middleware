@@ -128,9 +128,15 @@ bestaetigte Neuanlagen. Die Originalantwort ist separat aufklappbar.
 ausdruecklich kein neuer Dokumentversand. Es wird keine automatische
 Lesepruefung oder direkte openEHR-Composition-Anlage behauptet.
 
-Die Erweiterung ist auf dem Testsystem deployt. 46 VACD-Python- und
+Die Erweiterung ist auf dem Testsystem deployt. 48 VACD-Python- und
 22 Werkbank-Node-Tests bestanden; die neue Ergebnisansicht wurde im Browser
 mit synthetischer Antwort ohne externen Write geprueft.
+Der anschliessende Wiederholungs-Fix erhaelt die Quellkennung vor der
+VACD-Aufbereitung und erkennt identische CDA-Bytes auch bei aelteren
+Registereintraegen mit generierten UUIDs. Der deployte Fix wurde gegen
+den vorhandenen erfolgreichen Registereintrag ohne neuen Zielkontakt
+geprueft. Klinische Konflikte bleiben gesperrt und nennen das betroffene
+Feld; ein erneuter Benutzer-End-to-End-Test ist noch nicht bestaetigt.
 Bruno-GETs fuer die unabhaengige Lesepruefung:
 [VACD-Dokumentation](docs/ch-vacd-immunization-administration.md).
 

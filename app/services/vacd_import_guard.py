@@ -45,6 +45,13 @@ class VacdImportGuard:
                         "CDA document identity was reused with different content; manual review required"
                     )
                 self.completed = True
+            elif self.db.execute(
+                "SELECT 1 FROM vacd_imports WHERE destination=? "
+                "AND content_hash=? AND state='completed' LIMIT 1",
+                (self.destination, self.content_hash),
+            ).fetchone():
+                # Older imports used generated VACD document UUIDs as keys.
+                self.completed = True
             return self
         except (OSError, sqlite3.Error) as ex:
             self.__exit__(None, None, None)

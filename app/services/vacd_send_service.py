@@ -353,7 +353,9 @@ def _same_immunization(incoming, existing):
         "subpotentReason", "extension", "note",
     ):
         if incoming.get(field) != existing.get(field):
-            raise PatientMatchConflictError("Matching immunization has different clinical data")
+            raise PatientMatchConflictError(
+                f"Matching immunization has different clinical data (field: {field})"
+            )
     if _vaccine_codes(incoming) != _vaccine_codes(existing) or (
         not _vaccine_codes(incoming)
         and incoming.get("vaccineCode") != existing.get("vaccineCode")
@@ -454,6 +456,7 @@ def send_vacd_bundle(
     outbound_authorization: Optional[str] = None,
     timeout_seconds: int = 60,
     source_document_hash: Optional[str] = None,
+    source_document_identifier: Optional[dict] = None,
 ) -> dict:
     if not destination_base_url:
         raise ValueError("destination_base_url is required")
@@ -462,7 +465,9 @@ def send_vacd_bundle(
         json.dumps(bundle, sort_keys=True).encode()
     ).hexdigest()
     composition = _first_entry_of_type(bundle.get("entry", []), "Composition")
-    identifier = (composition or {}).get("resource", {}).get("identifier") or {}
+    identifier = source_document_identifier or (
+        (composition or {}).get("resource", {}).get("identifier") or {}
+    )
     document_key = (
         json.dumps([identifier["system"], identifier["value"]])
         if identifier.get("system") and identifier.get("value") else content_hash

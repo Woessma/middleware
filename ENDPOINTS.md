@@ -828,6 +828,10 @@ im Compose-Volume `vacd-import-state` persistiert. Gemeinsames Register
 und Dateilocks serialisieren Aufrufe je Ziel. Bereits verarbeitete Quellen
 werden ohne neuen Versand ausgewiesen; unklare Schreibausgaenge blockieren
 weitere Aufrufe dieses Ziels bis zur manuellen Klaerung.
+Der Registerschluessel nutzt die urspruengliche Quellkennung vor der
+VACD-UUID-Erzeugung. Ein zusaetzlicher CDA-Inhaltshash-Abgleich erkennt
+identische erfolgreich verarbeitete Quellen aus aelteren Registereintraegen.
+Klinische Konfliktmeldungen nennen das abweichende Feld, ohne Werte offenzulegen.
 Details und Bruno-Lesepruefung:
 [CH-VACD-Ablauf](docs/ch-vacd-immunization-administration.md).
 
