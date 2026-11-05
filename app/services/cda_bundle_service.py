@@ -592,6 +592,7 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
 
     mapping_context = {
         "practitioner_id": practitioner_id,
+        "practitioner_identifiers": (practitioner_resource or {}).get("identifier", []),
         "organization_id": organization_id,
     }
     section_resource_references = []

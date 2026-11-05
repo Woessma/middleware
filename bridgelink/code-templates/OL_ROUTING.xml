@@ -69,7 +69,7 @@
         {
             id: 'cda.import', method: 'POST',
             path: '/v1/cda/import',
-            middlewarePath: '/cda/convert',
+            middlewarePath: '/cda/prepare',
             responseTarget: 'hapi', forwardQuery: true,
             checkCdaEncoding: true,
             logMessage: 'CDA (' + path + '), responseTarget=hapi'

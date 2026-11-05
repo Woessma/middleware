@@ -1,6 +1,52 @@
 # BridgeLink - Project Memory
 
-Stand: 2026-11-02
+Stand: 2026-11-05
+
+## Tagesabschluss 2026-11-05: Husky, Medikation und Importpruefung
+
+- Interner Husky-3.5.0-Dienst fuer CDA-XSD/Schematron sowie gemeinsame
+  Offline-PMLC-/VACD-Profilpruefung deployt. CH-VACD/CH Core 6.0.0,
+  keine automatische Uebernahme der Husky-Ballotdefaults.
+- PMLC-Vorschau liest nur aktive MedicationStatements, speichert nicht und
+  prueft den signierten Werkbank-Client vor dem ersten Patientendatenabruf.
+  PDF/A, QR und klinische Reconciliation bleiben offen.
+- Import- und Ausgabemapping getrennt: Import behaelt Dupletten-Identifier
+  und vorhandene Autoren-/Zeitangaben; EPR-Ausgabe normalisiert enthaltene
+  Medication, UUID-Identifier, Provenance und PractitionerRole nur in Kopien.
+  Replay des gelieferten Quellbestands: 29 Fehler / 9 Warnungen statt 52 / 10;
+  fehlende medizinische Pflichtangaben und PDF/A bleiben echte Fehler.
+- Verpflichtende Medikationspruefung am finalen Transaction-Bundle deployt:
+  CH-Core-/deklarierte Profile, 422 bei error/fatal, 502 bei Pruefausfall.
+  Keine automatische Aenderung bestehender HAPI-Daten.
+- **Offen: CDA-Gateway-Redeploy.** Lokale OL_ROUTING-/Channel-Dateien
+  verwenden `/cda/prepare` und 180 Sekunden Sender-Timeout. Erst
+  Import/Save/Redeploy aktiviert diesen Gateweg im laufenden BridgeLink.
+  Die lokal bearbeitete Kopie unter `bridgelink/aktuell/` ist kein
+  unveraenderter Liveexport und wird nicht zusaetzlich versioniert.
+- Impfstoffmapper erzeugt keine kuenstlichen Swissmedic-Codes und leitet
+  aus COVID-Markennamen keine konkrete CVX-Formulierung mehr ab.
+  Originalcodes bleiben erhalten. Eindeutige Produktzuordnungen bleiben
+  fachlich zu belegen; Warnungen werden nicht pauschal unterdrueckt.
+- Werkbank unterscheidet explizite Profilangaben, Ressourcenprofil-Kontext
+  und angeforderten Prueflauf, ohne kausale Einzelprofilzuordnung zu erfinden.
+  Browserdarstellung mit synthetischer Antwort geprueft.
+- Validierung: Import-/Ausgabestand mit 109 Python-, 20 Java- und 54 Node-
+  Tests geprueft; anschliessende Impfcode-/Profilkontextkorrektur mit
+  36 Python-, 21 Java- und 28 Node-Tests. Synthetischer Live-VACD-Test
+  0 Fehler / 6 Warnungen; erfundener Code wird weiterhin mit 422 blockiert.
+  Die zuletzt geteilte Original-CDA ist damit nicht erneut abgenommen.
+- Middleware und Husky neu gebaut, Health erfolgreich. Beim frueheren
+  gleichzeitigen Java-Build/Validatorbetrieb trat Host-OOM mit einem
+  HAPI-Neustart auf; HAPI danach gesund, keine weiteren Neustarts.
+  Husky vor weiteren Java-Builds stoppen; Maven-Heap auf 256 MiB begrenzt.
+- Keine klinischen Writes oder externen VACD-Sends fuer diese Tests.
+  Backups, persoenliche Testdateien, Refdata-ZIP, lokale PDF-Deliverables
+  und unabhaengige Mapping-Excel-Aenderungen bleiben ausserhalb dieses Commits.
+
+Details: [PMLC](ch-emed-epr-pmlc.md),
+[VACD](ch-vacd-immunization-administration.md),
+[Husky](../husky-validator/README.md),
+[Gateway-Redeploy](../bridgelink/README.md).
 
 ## Tagesabschluss 2026-11-02: Reader, Neuaufbau und Refdata
 

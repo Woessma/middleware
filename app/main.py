@@ -178,6 +178,15 @@ from config import (
 )
 from services.jwks_service import JwksConfigurationError, build_jwks
 from services.fhir_validation_service import FhirValidationError, validate_fhir_bundle
+from services.cda_validation_service import (
+    CdaValidationError,
+    MAX_CDA_BYTES,
+    validate_cda_source,
+)
+from services.pmlc_service import PmlcServiceError, PmlcSourceError, generate_pmlc
+from services.pmlc_auth_service import PmlcAuthError, authorize_pmlc
+from services.vacd_validation_service import VacdValidationError, validate_vacd_husky
+from services.medication_import_validation_service import MedicationImportRejected, validate_medication_import
 
 
 UMZH_SEND_BASE_URL = os.getenv("UMZH_SEND_BASE_URL", "")
@@ -450,7 +459,7 @@ def _prepare_emediplan_import_bundle(bundle):
     bundle = enrich_emediplan_bundle(bundle)
     bundle = _reconcile_emediplan_patients(bundle)
     bundle = _reconcile_existing_emediplan_resources(bundle)
-    return _validate_bundle(_stabilize_bundle(bundle))
+    return validate_medication_import(_validate_bundle(_stabilize_bundle(bundle)))
 
 
 app = FastAPI(
@@ -459,6 +468,12 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None
 )
+
+
+@app.exception_handler(MedicationImportRejected)
+async def medication_import_rejected(request: Request, error: MedicationImportRejected):
+    return JSONResponse(status_code=error.status_code, content=error.outcome,
+                        media_type="application/fhir+json", headers={"Cache-Control": "no-store"})
 
 
 @app.get("/health")
@@ -1183,7 +1198,9 @@ async def fhir_convert(request: Request):
     try:
         payload = await request.json()
         stabilized = _validate_bundle(_stabilize_bundle(payload))
-        return stabilized
+        return await run_in_threadpool(validate_medication_import, stabilized)
+    except MedicationImportRejected:
+        raise
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except requests.RequestException as exc:
@@ -2005,6 +2022,35 @@ async def fhir_validate(bundle: dict):
     return await _validate_converted_bundle(bundle)
 
 
+@app.post("/fhir/medications/pmlc/from-server")
+async def pmlc_from_server(
+    request: Request,
+    patient_id: str = Query(..., pattern=r"^[A-Za-z0-9.-]{1,64}$"),
+    language: str = Query("de-CH", pattern=r"^(de-CH|fr-CH|it-CH)$"),
+    confidentiality: str = Query("restricted", pattern=r"^(normal|restricted|secret)$"),
+):
+    try:
+        await run_in_threadpool(authorize_pmlc, request.headers.get("authorization", ""))
+        result = await run_in_threadpool(generate_pmlc, patient_id, language, confidentiality)
+    except PmlcAuthError as ex:
+        logger.warning("PMLC authorization rejected: %s", ex)
+        response = _validation_outcome_response(ex.status_code, "forbidden", str(ex))
+        response.headers["Cache-Control"] = "no-store"
+        if ex.status_code == 401:
+            response.headers["WWW-Authenticate"] = "Bearer"
+        return response
+    except PmlcSourceError as ex:
+        logger.warning("PMLC source rejected: %s", ex)
+        return _validation_outcome_response(422, "invalid", str(ex))
+    except PmlcServiceError as ex:
+        logger.error("PMLC service failed: %s", ex)
+        return _validation_outcome_response(502, "exception", str(ex))
+    return JSONResponse(
+        status_code=422 if result["status"] == "invalid" else 200,
+        content=result, headers={"Cache-Control": "no-store"},
+    )
+
+
 @app.post("/cda/validate")
 async def cda_validate(
     request: Request,
@@ -2014,6 +2060,40 @@ async def cda_validate(
 ):
     bundle = await cda_convert(request, bundle_type=bundle_type, file=file, raw_xml=raw_xml)
     return await _validate_converted_bundle(bundle)
+
+
+@app.post("/cda/source/validate")
+async def cda_source_validate(
+    request: Request,
+    level: str = Query("full", pattern="^(xsd|full)$"),
+    file: Optional[UploadFile] = File(None),
+    raw_xml: Optional[str] = Form(None),
+):
+    if file is not None:
+        xml_content = await file.read(MAX_CDA_BYTES + 1)
+    elif raw_xml is not None:
+        xml_content = raw_xml.encode("utf-8")
+    else:
+        chunks = bytearray()
+        async for chunk in request.stream():
+            chunks.extend(chunk)
+            if len(chunks) > MAX_CDA_BYTES:
+                break
+        xml_content = bytes(chunks)
+    if len(xml_content) > MAX_CDA_BYTES:
+        logger.warning("CDA source validation rejected oversized input")
+        return _validation_outcome_response(413, "too-costly", "CDA exceeds 5 MiB")
+    try:
+        status_code, outcome = await run_in_threadpool(validate_cda_source, xml_content, level)
+    except ValueError as ex:
+        logger.warning("CDA source validation rejected input: %s", ex)
+        return _validation_outcome_response(400, "invalid", str(ex))
+    except CdaValidationError as ex:
+        logger.error("CDA source validation failed: %s", ex)
+        return _validation_outcome_response(502, "exception", str(ex))
+    return JSONResponse(
+        status_code=status_code, content=outcome, media_type="application/fhir+json"
+    )
 
 
 @app.post("/cda/vacd/validate")
@@ -2026,6 +2106,42 @@ async def cda_vacd_validate(
         request, bundle_type="document", file=file, raw_xml=raw_xml
     )
     return await _validate_converted_bundle(bundle)
+
+
+async def _validate_vacd_with_husky(bundle: dict):
+    try:
+        status_code, outcome = await run_in_threadpool(validate_vacd_husky, bundle)
+    except ValueError as ex:
+        logger.warning("Husky VACD validation rejected input: %s", ex)
+        response = _validation_outcome_response(400, "invalid", str(ex))
+        response.headers["Cache-Control"] = "no-store"
+        return response
+    except VacdValidationError as ex:
+        logger.error("Husky VACD validation failed: %s", ex)
+        response = _validation_outcome_response(502, "exception", str(ex))
+        response.headers["Cache-Control"] = "no-store"
+        return response
+    return JSONResponse(
+        status_code=status_code, content=outcome, media_type="application/fhir+json",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.post("/fhir/vacd/husky/validate")
+async def fhir_vacd_husky_validate(bundle: dict):
+    return await _validate_vacd_with_husky(bundle)
+
+
+@app.post("/cda/vacd/husky/validate")
+async def cda_vacd_husky_validate(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    raw_xml: Optional[str] = Form(None),
+):
+    bundle = await cda_vacd_convert(
+        request, bundle_type="document", file=file, raw_xml=raw_xml
+    )
+    return await _validate_vacd_with_husky(bundle)
 
 
 @app.post("/cda/vacd/import")
@@ -2173,6 +2289,17 @@ def _warn_duplicate_observation_identifiers(bundle):
 async def cda_import_proxy(request: Request):
     """Importiert CDA ueber BridgeLink; BridgeLink schreibt das Bundle nach HAPI FHIR."""
     return await _bridge_link_post(request, BRIDGELINK_CDA_IMPORT_URL)
+
+
+@app.post("/cda/prepare")
+async def cda_prepare(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    raw_xml: Optional[str] = Form(None),
+):
+    _bridge_link_authorization(request)
+    bundle = await cda_convert(request, bundle_type="transaction", file=file, raw_xml=raw_xml)
+    return await run_in_threadpool(validate_medication_import, bundle)
 
 
 @app.post("/emediplan/convert")

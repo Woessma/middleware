@@ -2,6 +2,13 @@ import os
 
 
 FHIR_BASE = os.getenv("FHIR_BASE", "http://fhir-server:8080/fhir")
+HUSKY_VALIDATOR_URL = os.getenv("HUSKY_VALIDATOR_URL", "http://husky-validator:8091")
+PMLC_KEYCLOAK_ISSUER = os.getenv(
+    "PMLC_KEYCLOAK_ISSUER", "https://idp.omnilink.ch/realms/omnilink"
+)
+PMLC_KEYCLOAK_AUDIENCE = os.getenv("PMLC_KEYCLOAK_AUDIENCE", "")
+PMLC_KEYCLOAK_ALLOWED_CLIENTS = os.getenv("PMLC_KEYCLOAK_ALLOWED_CLIENTS", "app-omnilink-cardtest")
+PMLC_KEYCLOAK_REQUIRED_ROLE = os.getenv("PMLC_KEYCLOAK_REQUIRED_ROLE", "")
 FHIR_EXTERNAL_BASE_URL = os.getenv("FHIR_EXTERNAL_BASE_URL", "")
 FHIR_EXTERNAL_USERNAME = os.getenv("FHIR_EXTERNAL_USERNAME", "")
 FHIR_EXTERNAL_PASSWORD = os.getenv("FHIR_EXTERNAL_PASSWORD", "")

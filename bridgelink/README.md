@@ -1,5 +1,25 @@
 # BridgeLink Code Templates
 
+## Medication import gate update (2026-11-05, channel redeploy required)
+
+The local OL_ROUTING template and both channel XML copies now route
+`POST /v1/cda/import` to **`/cda/prepare`**, not `/cda/convert`.
+Convert remains read-only and ungated. The new prepare endpoint checks
+the final medication transaction against the internal HAPI profiles.
+The middleware HTTP Sender timeout is 180 seconds to cover validation.
+eMediplan already routes through `/emediplan/prepare`; its medication
+validation gate takes effect with the middleware deployment.
+
+**These file edits do not update the running channel.** Import/update
+OL_ROUTING and the existing dispatcher channel (or change the CDA import
+target and sender timeout in its editor), save and redeploy. Until then,
+the direct gateway CDA import still uses the old unvalidated convert route.
+Do not treat the CDA gate as live before verifying this routing change.
+Existing non-2xx handling must remain: 422 validation outcomes and 502
+validator failures must not set `fhirJson` or call Destination 02.
+The exported live snapshot under `aktuell/` has been edited locally and
+must no longer be mistaken for an unchanged export.
+
 ## Current status (2026-11-04)
 
 - Deployed CORS correction, verified live on 2026-11-04:
@@ -198,7 +218,7 @@ It contains two functions:
 | POST | `/v1/cda/validate` | `/cda/validate` | none | yes |
 | POST | `/v1/fhir/validate` | `/fhir/validate` | none | no |
 | POST | `/v1/cda/convert` | `/cda/convert` | none | yes |
-| POST | `/v1/cda/import` | `/cda/convert` | hapi | yes |
+| POST | `/v1/cda/import` | `/cda/prepare` | hapi | yes |
 | POST | `/v1/emediplan/import` | `/emediplan/prepare` | hapi | no |
 | POST | `/v1/emediplan/convert` | `/emediplan/convert` | none | no |
 | POST | `/v1/echosos/resolve` | `/echosos/qr` | hapi | no |

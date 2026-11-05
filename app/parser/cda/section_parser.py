@@ -139,6 +139,27 @@ def _extract_author_times(node):
     return author_times
 
 
+def _extract_medication_authors(node):
+    authors = []
+    for author in node.findall("hl7:author", NS):
+        assigned = author.find("hl7:assignedAuthor", NS)
+        if assigned is None:
+            continue
+        identifiers = [
+            {"root": item.get("root"), "extension": item.get("extension")}
+            for item in assigned.findall("hl7:id", NS)
+            if not item.get("nullFlavor") and item.get("root")
+        ]
+        time = author.find("hl7:time", NS)
+        name = assigned.find("hl7:assignedPerson/hl7:name", NS)
+        authors.append({
+            "identifiers": identifiers,
+            "time": time.get("value") if time is not None and not time.get("nullFlavor") else None,
+            "display": " ".join(" ".join(name.itertext()).split()) if name is not None else None,
+        })
+    return authors
+
+
 def _extract_author_display(node, author_displays=None):
     displays = []
 
@@ -751,6 +772,8 @@ def extract_entry_summary(
         author_times = _extract_author_times(node)
         if author_times:
             entry_info["authorTimes"] = author_times
+        if node.tag.endswith("substanceAdministration"):
+            entry_info["medicationAuthors"] = _extract_medication_authors(node)
 
         author_display = _extract_author_display(node, author_displays)
         if not author_display and author_displays:

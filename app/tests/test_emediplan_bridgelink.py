@@ -39,6 +39,9 @@ class EmediplanBridgeLinkImportTests(unittest.TestCase):
             patcher = patch(target, return_value=None)
             patcher.start()
             self.addCleanup(patcher.stop)
+        gate = patch("main.validate_medication_import", side_effect=lambda bundle: bundle)
+        gate.start()
+        self.addCleanup(gate.stop)
 
     def upstream_response(self):
         upstream = Mock()

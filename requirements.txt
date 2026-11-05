@@ -1,5 +1,6 @@
 fastapi
 cryptography
+PyJWT[crypto]>=2.10.1,<3
 httpx2
 uvicorn
 requests

@@ -53,7 +53,7 @@ const routes = [
   ['POST', '/v1/cda/validate', '/cda/validate', 'none', true, 'cda.validate'],
   ['POST', '/v1/fhir/validate', '/fhir/validate', 'none', false, 'fhir.validate'],
   ['POST', '/v1/cda/convert', '/cda/convert', 'none', true, 'cda.convert'],
-  ['POST', '/v1/cda/import', '/cda/convert', 'hapi', true, 'cda.import'],
+  ['POST', '/v1/cda/import', '/cda/prepare', 'hapi', true, 'cda.import'],
   ['POST', '/v1/emediplan/import', '/emediplan/prepare', 'hapi', false, 'emediplan.import'],
   ['POST', '/v1/emediplan/convert', '/emediplan/convert', 'none', false, 'emediplan.convert'],
   ['POST', '/v1/echosos/resolve', '/echosos/qr', 'hapi', false, 'echosos.resolve'],
@@ -136,7 +136,7 @@ test('encoding heuristic is not newly applied to VACD, eMediplan or EchoSOS', ()
 test('routing has no shared mutable table or clinical processing', () => {
   const {context} = dispatch('POST', '/v1/cda/convert');
   context.olRouteResolve('POST', '/v1/cda/import').middlewarePath = '/unexpected';
-  assert.equal(context.olRouteResolve('POST', '/v1/cda/import').middlewarePath, '/cda/convert');
+  assert.equal(context.olRouteResolve('POST', '/v1/cda/import').middlewarePath, '/cda/prepare');
   assert.equal(context.OL_ROUTES, undefined);
   assert.equal(context.globalMap, undefined);
 });

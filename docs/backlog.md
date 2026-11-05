@@ -1,6 +1,22 @@
 # Backlog
 
-Stand: 2026-11-02
+Stand: 2026-11-05
+
+## Medikation und Validierung: aktueller Abschluss
+
+- [x] Interner Husky-Dienst fuer CDA sowie separate PMLC-/VACD-Profilpruefung
+- [x] PMLC-Vorschau aus aktiven HAPI-Statements mit lokaler Keycloak-Pruefung
+- [x] Import- und EPR-Ausgabemapping getrennt korrigiert, Altbestand unveraendert
+- [x] Verpflichtendes finales Medikations-Importgate in der Middleware deployt
+- [x] Erfundene Swissmedic-Codes und pauschale COVID-Marken-/CVX-Zuordnung entfernt
+- [x] Fehler-/Warnungsanzeige mit expliziter Profilangabe oder gekennzeichnetem Kontext
+- [ ] CDA-BridgeLink-Route auf `/cda/prepare` aktivieren: Templates/Channel speichern,
+      redeployen und Gate einschliesslich Fehlerfall Ende-zu-Ende pruefen
+- [ ] Original-CDA nach Impfcodekorrektur erneut in der Werkbank pruefen
+- [ ] PMLC-PDF/A und QR sowie fehlende medizinische Pflichtangaben ergaenzen,
+      bevor eine profilkonforme EPR-Ausgabe freigegeben wird
+- [ ] Passende CDA-Erweiterungsschemas/Schematrons fuer die untersuchten
+      EPIC-/AT-Templateversionen installieren; Basis-XSD ist keine Profilfreigabe
 
 ## Aktueller Stand
 
@@ -38,9 +54,9 @@ UMZH-Sendemodell, API-Struktur, Terminologiepflege und Testabdeckung.
 - [x] Composition als erstes Bundle-Entry und UUID-Identifier umgesetzt
 - [x] Bundle-Referenzen auf `fullUrl` normalisiert
 - [x] generische, nicht referenzierte CDA-Ressourcen aus dem VACD-Pfad entfernt
-- [x] Impf-Codings für bekannte Produkte als CVX/SNOMED CT/Swissmedic ausgegeben
+- [x] Quell-Impf-Codings erhalten; keine kuenstlichen Swissmedic-Produktcodes erzeugen
 - [x] VACD-Regressionstests für Profilierung, Filterung und Referenzauflösung ergänzt
-- [ ] CH-VACD-Package im produktiven Validator standardmäßig laden
+- [x] CH-VACD 6.0.0 im internen HAPI vorhanden und im Husky-Dienst lokal gebuendelt
 - [ ] zusätzliche Swissmedic-Produktmappings für FSME und weitere Impfstoffe fachlich verifizieren
 
 Neu seit 2026-07-30:

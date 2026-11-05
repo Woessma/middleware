@@ -1,6 +1,14 @@
 # Roadmap
 
-Stand: 2026-09-10
+Stand: 2026-11-05
+
+## Aktuelle Ergaenzung: Validierung und Medikationsvorschau
+
+- Interner Husky-Dienst und zusaetzliche VACD-Pruefung mit stabilen 6.0.0-Profilen deployt
+- PMLC-FHIR-Vorschau ohne Speicherung umgesetzt; PDF/A/QR und finale EPR-Konformitaet offen
+- Importmapping getrennt von EPR-Ausgabetransformation und verpflichtender finaler Importpruefung
+- Werkbank zeigt Fehler/Warnungen mit expliziter Profilangabe oder gekennzeichnetem Kontext
+- Noch erforderlich: CDA-Gateway-Redeploy auf `/cda/prepare` und erneute Original-CDA-Abnahme
 
 ## Phase 0 (aktuell)
 
@@ -55,6 +63,7 @@ Stand: 2026-09-10
 
 ## CH VACD Folgearbeiten
 
-- Validator-Setup um `ch.fhir.ig.ch-vacd#7.0.0-ballot` erweitern
+- Stabile CH-VACD-/CH-Core-Version 6.0.0 beibehalten; Versionswechsel separat pruefen,
+  keine automatische Umstellung auf `7.0.0-ballot`
 - Swissmedic-Codings produktbezogen aus der offiziellen CH-VACD-ValueSet übernehmen
 - Vollständige CDA-Beispieldokumente gegen den CH-VACD-Validator prüfen

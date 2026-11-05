@@ -1,6 +1,6 @@
 # CH VACD Immunization Administration
 
-Stand: 2026-11-04
+Stand: 2026-11-05
 
 ## Zweck
 
@@ -56,6 +56,8 @@ Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt n
 
 - Konvertierung: `POST /cda/vacd/convert`
 - Validierung ohne Speicherung: `POST /cda/vacd/validate`
+- Zusaetzliche Husky-Pruefung aus CDA: `POST /cda/vacd/husky/validate`
+- Bestehendes FHIR-Document mit Husky pruefen: `POST /fhir/vacd/husky/validate`
 - HAPI-Import deaktiviert: `POST /cda/vacd/prepare` und
   `POST /cda/vacd/import` liefern HTTP 410 mit OperationOutcome.
 - Separater externer Versand: `POST /cda/vacd/send` erfordert jetzt bei
@@ -70,6 +72,69 @@ Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt n
 Die Validierung liefert das interne HAPI-OperationOutcome mit allen
 Warnungen, nicht das Bundle. HTTP 200 ist allein kein Konformitaetsnachweis;
 `issue.severity=error|fatal` ist ausschlaggebend.
+
+## Zusaetzliche Husky-Pruefung (2026-11-05)
+
+Korrektur nach einem Bericht mit zwei Fehlern fuer `COVID-19-PFIZER`:
+Der Impfstoffmapper erzeugt keine kuenstlichen Swissmedic-Codes wie
+`COVID-19-PFIZER`, `COVID-19-MODERNA` oder `INFLUENZA` mehr. Aus einem
+COVID-Markennamen wird auch nicht mehr pauschal CVX 207 abgeleitet;
+Hersteller allein belegt keine konkrete Formulierung. Vorhandene
+Quellcodes inklusive CodeSystem, Identifier, Datum und Charge bleiben
+erhalten. Ungueltige Quellcodes werden nicht still entfernt, sondern
+weiterhin validiert. Eine konkrete Swissmedic-Zuordnung benoetigt eine
+belegte Produktidentitaet. HAPI-Altdaten werden nicht automatisch geaendert.
+
+Der Husky-Outcome nennt das angeforderte Dokumentprofil in der Top-Level-
+Extension `urn:omnilink:validation:profile`. Meldungen mit eindeutigem
+`Bundle.entry[n].resource`-Pfad erhalten die deklarierten Ressourcenprofile
+als `urn:omnilink:validation:context-profile`. Das ist **Kontext**, keine
+Behauptung, welches einzelne Profil den Befund ausgeloest hat. Fuer
+Contained-Pfade wird kein Elternprofil zugeordnet. Die Werkbank zeigt
+explizite Profilangaben vorrangig, danach Ressourcenprofil-Kontext oder
+den Prueflauf mit dem Hinweis auf fehlende Einzelprofilzuordnung.
+Fehler und Warnungen werden weiterhin genau einmal gezaehlt.
+
+Regression: 36 Python-, 21 Java- und 28 Node-Tests bestanden. Im deployten
+System liefert ein offizielles synthetisches VACD-Beispiel mit erhaltener
+CVX-Quellcodierung und korrigiertem Mapping 0 Fehler / 6 Warnungen. Wird
+der erfundene Swissmedic-Code wieder hinzugefuegt, wird es mit 422
+abgewiesen; der Befund enthaelt den Immunization-Profilkontext.
+Dies ist kein erneuter Test der urspruenglichen CDA-Datei: der geteilte
+Bericht enthaelt nur das OperationOutcome, nicht das Quelldokument.
+Keine Speicherung, kein externer Versand.
+
+Die beiden neuen Endpunkte sind eigenstaendige Prueflaeufe, kein neuer
+Konverter und kein Ersatz fuer die HAPI-Sendesperren. Der XML-Weg benutzt
+die bestehende VACD-Konvertierung; der JSON-Weg prueft das eingereichte
+Document unveraendert. Beide liefern ein OperationOutcome, kein Bundle.
+HTTP 200 ohne Fehler/fatal, 422 bei Profilfehlern, 400 bei unpassender Eingabe,
+502 bei Engine-Ausfall. Die Werkbank zeigt Fehler und Warnungen nach Profil.
+
+Der interne Husky-3.5.0-Dienst verwendet dieselbe Husky/HAPI-Instance-Engine
+wie Huskys `ChVacdValidator`, aber explizit **CH-VACD 6.0.0** passend zum
+installierten HAPI-Profilbestand. Huskys Defaultpakete mit CH-VACD /
+CH Core `7.0.0-ballot` werden nicht uebernommen. Fuer VACD und PMLC wird eine
+gemeinsame serialisierte Engine verwendet, kein zweiter grosser Validator
+im begrenzten Container. Bestehende PMLC- und CDA-Pruefungen bleiben aktiv.
+
+Lokal gebuendelt: CH-VACD 6.0.0, CH Core 6.0.0, CH Term 3.3.0,
+HL7 Terminology R4 7.0.1 und Extensions R4 5.2.0. Kein txServer, keine
+Paketdownloads im Request. Maximal 5 MiB FHIR-JSON. Es wird immer das
+versionierte Immunization-Administration-Dokumentprofil geprueft;
+zusaetzliche deklarierte Profile bleiben erhalten und werden ebenfalls
+geprueft. Unbekannte deklarierte Profile werden explizit als Fehler gemeldet.
+
+Dies ist eine technische Instance-/Profilpruefung, keine klinische
+Impfempfehlung, Dublettenentscheidung oder vollstaendige Terminologiefreigabe.
+Kein HAPI-Write oder externer Versand. Der Husky-Validator ruft keine
+Patienten ab; der CDA-Weg behaelt die vorhandenen read-only
+Patienten-/Referenzabgleiche der Konvertierung bei.
+
+Offizielles CH-VACD-Paket (CC0-1.0):
+https://packages.fhir.org/ch.fhir.ig.ch-vacd/6.0.0
+SHA-256:
+`f44f958d44603a0d3b0e73e8503d76317338c03ea8965886364f795cc515777d`.
 
 ## Historische Endpunkte und weiterhin deploytes Gateway-Routing
 

@@ -5,8 +5,10 @@
 | Use Case | Request-Ziel | HAPI-Write |
 |---|---|---|
 | CDA Convert | BridgeLink `/v1/cda/convert` | Nein |
+| CDA XML pruefen (Husky) | Same-Origin `/cda/source/validate?level=full|xsd` | Nein |
 | CDA Validate (Transaction/Document) | Same-Origin `/cda/validate` | Nein |
 | CDA FHIR-Bundle separat validieren | Same-Origin `/fhir/validate` | Nein |
+| CH-EMED-EPR Medikationsliste: FHIR-Vorschau | Same-Origin `/fhir/medications/pmlc/from-server` | Nein |
 | CDA Import | Same-Origin `/cda/import` -> BridgeLink | Ja |
 | eMediplan JSON / CHMED16A Convert | BridgeLink `/v1/emediplan/convert` | Nein |
 | eMediplan JSON / CHMED16A Import | BridgeLink `/v1/emediplan/import` | Ja |
@@ -17,6 +19,8 @@
 | Patient `$everything` | FHIR `Patient/{id}/$everything` | Nein |
 | VACD Convert | BridgeLink `/v1/cda/vacd/convert` (Routing eingerichtet, Live-Abnahme offen) | Nein |
 | VACD Validate | Same-Origin `/cda/vacd/validate` | Nein |
+| CDA -> VACD zusaetzlich mit Husky pruefen | Same-Origin `/cda/vacd/husky/validate` | Nein |
+| VACD FHIR-Bundle mit Husky pruefen | Same-Origin `/fhir/vacd/husky/validate` | Nein |
 | VACD openEHR-Send | Same-Origin `/cda/vacd/send` | Externer Demo-FHIR-Server |
 
 Der VACD-HAPI-Import ist aus der Werkbank entfernt und serverseitig
@@ -29,13 +33,88 @@ unter `send.validation` sichtbar. Nach dem Patientenabgleich kann bei
 einem Fehler der zweiten Pruefung bereits ein Zielpatient existieren.
 Die Validierung liefert ein OperationOutcome mit allen Fehlern und Warnungen;
 auch bei HTTP 200 wird `error`/`fatal` als Fehler angezeigt.
+Husky-Befunde ohne explizite Einzelprofilangabe werden nun als
+`Ressourcenprofil (Kontext)` anhand des betroffenen Bundle-Eintrags
+gruppiert. Ohne eindeutige Ressourcenzuordnung wird das Dokumentprofil
+als `Prueflauf (Einzelprofil nicht angegeben)` angezeigt. Das behauptet
+keine kausale Zuordnung zum Ressourcenprofil und zaehlt keine Befunde doppelt.
+Medikationsimporte aus eMediplan werden vor der BridgeLink-Freigabe
+verpflichtend intern profilvalidiert (422 bei Fehlern, 502 bei Ausfall).
+CDA-Importe benoetigen dafuer das neue Gateway-Ziel `/cda/prepare`;
+OL_ROUTING und Channel-XML sind lokal aktualisiert, der Live-Channel muss
+noch gespeichert und neu deployt werden. Der Convert-Usecase bleibt ohne
+Importsperre. HAPI-Altdaten werden nicht automatisch korrigiert.
 Fuer bereits konvertierte CDA-Bundles (einschliesslich eTOC/UMZH) steht die
 separate JSON-Bundle-Validierung zur Verfuegung. Kein automatischer Import
 nach einer erfolgreichen Validierung.
 Routing und Grenzen:
 [CH-VACD](docs/ch-vacd-immunization-administration.md).
 
-### Abnahme der separaten Validierung (2026-11-04)
+Die beiden zusaetzlichen Husky-Aktionen pruefen gegen das stabile
+CH-VACD-6.0.0-Immunization-Administration-Profil und deklarierte Profile,
+vollstaendig intern mit lokalen Paketen. Fehler und Warnungen erscheinen
+in der vorhandenen Profiluebersicht. Fuer das bestehende FHIR-Bundle die
+JSON-Aktion verwenden: keine erneute Konvertierung oder Aenderung.
+HTTP 422 bedeutet Profilfehler, 502 einen nicht abgeschlossenen Prueflauf.
+HAPI-Pruefung und Versand werden dadurch weder ersetzt noch automatisch
+ausgeloest; die neue Pruefung ist ein eigener, bewusst auszuwaehlender Lauf.
+Keine klinische Impfempfehlung oder Speicherung. Die Husky-Pruefung bleibt
+offline; die bestehende CDA-Konvertierung behaelt ihre Lese-/Abgleichschritte.
+
+### CDA-XML-Eingangspruefung
+
+Die neue Husky-Aktion prueft das Original-XML, nicht das FHIR-Bundle.
+Die Auswahl `full` verlangt XSD und passende Profil-Schematrons;
+fehlende Profilregeln erscheinen ausdruecklich als Fehler.
+Aktuell ist die CDA-R2-XSD aktiv, passende offizielle EPIC-/AT-Schematrons
+sind noch nicht installiert. `xsd` ist nur eine Strukturpruefung.
+Keine Konvertierung, kein Import, kein externer klinischer Request.
+[Abdeckung und Betrieb](husky-validator/README.md).
+
+### CH-EMED-EPR-FHIR-Vorschau
+
+Patient-ID explizit angeben. Es werden nur aktive MedicationStatements
+aus dem internen HAPI verwendet, keine Rezepte. Sprache und
+Vertraulichkeit sind waehlbar (Defaults de-CH/restricted).
+Die Middleware prueft den Keycloak-Access-Token vor jedem Datenabruf.
+Der vorhandene Werkbank-Token wird unveraendert mitgesendet.
+Die Middleware erlaubt den signierten Client `azp=app-omnilink-cardtest`,
+ohne zusaetzliche Realm-Rolle. Fremde Clients werden abgewiesen;
+Signatur, Issuer und Ablauf werden weiterhin zwingend geprueft.
+Das Ergebnis enthaelt Dokument und echten internen Pruefbericht.
+Fehler im HTTP-422-Bericht bleiben nach Profil sichtbar.
+Ein separater Button laedt nur das FHIR-Dokument als Vorschau herunter;
+der normale Antwortdownload bleibt der unveraenderte Gesamtbericht.
+
+Die vorgeschriebene PDF/A-Originaldarstellung fehlt bewusst bis zum
+naechsten Ausbau. Daher ist dies **keine freigegebene, profilkonforme
+Medikationskarte**. Keine Speicherung und kein automatischer Import.
+[Details](docs/ch-emed-epr-pmlc.md).
+
+### Profiluebersicht der Validierungsantwort (2026-11-05)
+
+Die Werkbank zeigt ueber dem unveraenderten JSON eine Gesamtzahl der Fehler
+(einschliesslich fatal), Warnungen und Informationen sowie eine Tabelle
+der Fehler/Warnungen nach Profilangabe. Aufklappbare Zeilen enthalten
+Diagnostik und betroffene Felder. Informationen werden nur in der Gesamtzahl
+beruecksichtigt, nicht als Fehler einer nicht passenden Slice gezaehlt.
+
+Die Profilzuordnung stammt aus StructureDefinition-URLs in `diagnostics`
+oder `details.text` des OperationOutcome. Versionen bleiben erhalten.
+Explizite CDA-Pruefgruppen des Husky-Dienstes werden aus der Extension
+`urn:omnilink:validation:profile` uebernommen und haben Vorrang vor Textsuche.
+Mehrere genannte Profile bilden eine gemeinsame Gruppe; eine Meldung wird
+nicht mehrfach gezaehlt. Ohne Profilangabe steht die Meldung unter
+„Profil nicht eindeutig angegeben“. Die Tabelle ist keine Liste aller
+geprueften Profile und kein separater Konformitaetsnachweis pro Profil.
+
+Beide VACD-Sendepruefungen werden separat angezeigt. Validator-/Importfehler
+bleiben Fehler; Warnungen erhalten einen gelben Status statt einer rein
+gruenen Erfolgsmeldung. JSON-Download und Antwortwiederverwendung enthalten
+weiterhin den originalen Body. Neue Requests loeschen alte Zusammenfassungen
+und Antwortmetadaten, damit Netzwerkfehler keinen alten HTTP-200-Stand zeigen.
+
+### Validierungsstichprobe vom 2026-11-04
 
 Am deployten System mit der lokalen CDA-EPIC-Stichprobe geprueft:
 
@@ -126,8 +205,6 @@ Channel-Snapshot, Library-Importe, Rollback und Sync beider Git-Remotes:
   CDA-Datei bestanden, externe Patienten-/Bundle-Schritte nur simuliert.
 - Alle Gateway-Routen nach CORS-Aenderung authentifiziert nachtesten,
   insbesondere Fehlerantworten/Tokenablauf, ohne unbeabsichtigte Writes.
-- Werkbank-Anzeige: Nach einem Netzwerkfehler koennen alte Antwortmetadaten
-  stehen bleiben. Separat korrigieren; kein Nachweis eines aktuellen HTTP 200.
 - Eine verpflichtende FHIR-IG-Validierung vor saemtlichen bestehenden
   Importwegen ist noch nicht implementiert.
 

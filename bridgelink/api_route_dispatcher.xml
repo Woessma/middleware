@@ -188,7 +188,7 @@ olRouteApply(
         <contentType>${requestContentType}</contentType>
         <dataTypeBinary>false</dataTypeBinary>
         <charset>UTF-8</charset>
-        <socketTimeout>30000</socketTimeout>
+        <socketTimeout>180000</socketTimeout>
       </properties>
       <transformer version="26.3.1">
         <elements/>
@@ -1256,7 +1256,7 @@ return;</undeployScript>
         {
             id: &apos;cda.import&apos;, method: &apos;POST&apos;,
             path: &apos;/v1/cda/import&apos;,
-            middlewarePath: &apos;/cda/convert&apos;,
+            middlewarePath: &apos;/cda/prepare&apos;,
             responseTarget: &apos;hapi&apos;, forwardQuery: true,
             checkCdaEncoding: true,
             logMessage: &apos;CDA (&apos; + path + &apos;), responseTarget=hapi&apos;

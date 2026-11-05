@@ -9,6 +9,23 @@ class FhirValidationError(Exception):
     pass
 
 
+def is_valid_operation_outcome(outcome) -> bool:
+    issues = outcome.get("issue") if isinstance(outcome, dict) else None
+    return (
+        isinstance(outcome, dict)
+        and outcome.get("resourceType") == "OperationOutcome"
+        and isinstance(issues, list)
+        and bool(issues)
+        and all(
+            isinstance(issue, dict)
+            and issue.get("severity") in ("fatal", "error", "warning", "information")
+            and isinstance(issue.get("code"), str)
+            and bool(issue["code"])
+            for issue in issues
+        )
+    )
+
+
 def validate_fhir_bundle(bundle: dict) -> tuple[int, dict]:
     if bundle.get("resourceType") != "Bundle":
         raise ValueError("A FHIR Bundle is required")
@@ -34,23 +51,10 @@ def validate_fhir_bundle(bundle: dict) -> tuple[int, dict]:
         outcome = response.json()
     except ValueError as ex:
         raise FhirValidationError("Internal FHIR validator returned invalid JSON") from ex
-    issues = outcome.get("issue") if isinstance(outcome, dict) else None
-    if (
-        not isinstance(outcome, dict)
-        or outcome.get("resourceType") != "OperationOutcome"
-        or not isinstance(issues, list)
-        or not issues
-        or any(
-            not isinstance(issue, dict)
-            or issue.get("severity") not in ("fatal", "error", "warning", "information")
-            or not isinstance(issue.get("code"), str)
-            or not issue["code"]
-            for issue in issues
-        )
-    ):
+    if not is_valid_operation_outcome(outcome):
         raise FhirValidationError("Internal FHIR validator returned an invalid OperationOutcome")
     if response.status_code in {400, 422} and not any(
-        issue["severity"] in {"error", "fatal"} for issue in issues
+        issue["severity"] in {"error", "fatal"} for issue in outcome["issue"]
     ):
         raise FhirValidationError("Internal FHIR validator returned an inconsistent error outcome")
     return response.status_code, outcome

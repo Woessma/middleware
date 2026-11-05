@@ -29,8 +29,8 @@ function workbench() {
 test('only implemented routes are released', () => {
   const {cases} = workbench();
   assert.deepEqual(Array.from(cases, item => item.id), [
-    'patient-everything', 'bundle-import', 'cda-convert', 'cda-validate', 'cda-bundle-validate', 'cda-import',
-    'vacd-convert', 'vacd-validate', 'vacd-send',
+    'patient-everything', 'bundle-import', 'cda-convert', 'cda-source-validate', 'cda-validate', 'cda-bundle-validate', 'pmlc-generate', 'cda-import',
+    'vacd-convert', 'vacd-validate', 'vacd-husky-validate', 'vacd-bundle-husky-validate', 'vacd-send',
     'emed-convert', 'emed-import', 'emed-qr-convert', 'emed-qr-import', 'echosos-resolve'
   ]);
 });
@@ -85,7 +85,7 @@ test('EchoSOS URL uses resolve, not the unsupported external qr route', () => {
   assert.equal(context.requestFor(item).body, elements.payload.value);
 });
 
-for (const id of ['vacd-convert', 'vacd-validate', 'vacd-send', 'cda-validate']) {
+for (const id of ['vacd-convert', 'vacd-validate', 'vacd-husky-validate', 'vacd-send', 'cda-validate', 'cda-source-validate']) {
   test(`${id}: raw XML and explicit route`, () => {
     const {context, elements, cases} = workbench();
     const item = cases.find(item => item.id === id);
@@ -114,11 +114,15 @@ test('response metadata separates the browser URL from the configured processing
     ['emed-import', 'BridgeLink → Middleware → BridgeLink → HAPI'],
     ['emed-qr-convert', 'Middleware (QR-Dekodierung und Konvertierung, kein HAPI-Write)'],
     ['vacd-send', 'Middleware → konfiguriertes externes VACD-FHIR-Ziel'],
+    ['cda-source-validate', 'Middleware → interner Husky-CDA-Validator (keine Speicherung)'],
+    ['pmlc-generate', 'Middleware → interner HAPI (nur Lesen) → Husky CH-EMED-EPR (keine Speicherung)'],
     ['patient-everything', 'FHIR-Server direkt'],
     ['cda-convert', 'BridgeLink → Middleware (kein HAPI-Write)'],
     ['cda-validate', 'Middleware → interner HAPI-Validator (keine Speicherung)'],
     ['cda-bundle-validate', 'Middleware → interner HAPI-Validator (keine Speicherung)'],
-    ['vacd-validate', 'Middleware → interner HAPI-Validator (keine Speicherung)']
+    ['vacd-validate', 'Middleware → interner HAPI-Validator (keine Speicherung)'],
+    ['vacd-husky-validate', 'Middleware → interner Husky CH-VACD-6.0.0-Validator (keine Speicherung)'],
+    ['vacd-bundle-husky-validate', 'Middleware → interner Husky CH-VACD-6.0.0-Validator (keine Speicherung)']
   ]) {
     const item = cases.find(item => item.id === id);
     const url = context.urlFor(item);
@@ -128,6 +132,24 @@ test('response metadata separates the browser URL from the configured processing
   }
   assert.match(html, /el\.responseMeta\.textContent=responseMetadata\(/);
   assert.doesNotMatch(html, /Same-origin BridgeLink-Proxy/);
+});
+
+test('VACD Husky bundle validation preserves supplied JSON and uses same-origin', () => {
+  const {context, elements, cases} = workbench();
+  const item = cases.find(item => item.id === 'vacd-bundle-husky-validate');
+  const bundle = {resourceType: 'Bundle', type: 'document', entry: []};
+  elements.payload.value = JSON.stringify(bundle);
+  const request = context.requestFor(item);
+  assert.deepEqual(JSON.parse(request.body), bundle);
+  assert.equal(request.headers['Content-Type'], 'application/fhir+json');
+  assert.equal(context.urlFor(item).href, 'https://middleware.example/fhir/vacd/husky/validate');
+});
+
+test('PMLC reuses the active Keycloak Authorization header on its same-origin request', () => {
+  const {context, cases} = workbench();
+  const item = cases.find(item => item.id === 'pmlc-generate');
+  assert.equal(context.requestFor(item).headers.Authorization, context.auth().Authorization);
+  assert.equal(context.urlFor(item).origin, 'https://middleware.example');
 });
 
 test('route field renders processing flow and direct request path on separate lines', () => {

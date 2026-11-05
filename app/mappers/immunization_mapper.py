@@ -4,7 +4,7 @@ import uuid
 
 from fhir.fhir_helpers import oid_to_fhir_system
 from terminology.cvx import CVX_VACCINES
-from terminology.vacd import VACD_VACCINES, SWISSMEDIC_AUTHORIZED_VACCINES
+from terminology.vacd import VACD_VACCINES
 from utils.fhir_utils import (
     cda_ts_to_fhir_date,
 )
@@ -48,7 +48,6 @@ def _build_vaccine_code_codings(vaccine_code, vaccine_display, code_system=None)
     if vaccine_key:
         cvx_value = CVX_VACCINES.get(vaccine_key, {}).get("cvx")
         snomed_value = CVX_VACCINES.get(vaccine_key, {}).get("snomed") or VACD_VACCINES.get(vaccine_key, {}).get("snomed")
-        swissmedic_value = VACD_VACCINES.get(vaccine_key, {}).get("swissmedic")
 
         if cvx_value:
             coding.insert(0, {
@@ -61,13 +60,6 @@ def _build_vaccine_code_codings(vaccine_code, vaccine_display, code_system=None)
             coding.insert(1 if cvx_value else 0, {
                 "system": "http://snomed.info/sct",
                 "code": snomed_value,
-                "display": vaccine_display or vaccine_key.replace("_", " ").title(),
-            })
-
-        if swissmedic_value:
-            coding.append({
-                "system": SWISSMEDIC_AUTHORIZED_VACCINES,
-                "code": swissmedic_value,
                 "display": vaccine_display or vaccine_key.replace("_", " ").title(),
             })
 

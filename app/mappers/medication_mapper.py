@@ -43,7 +43,7 @@ def _normalize_status(status):
     status = _clean(status)
 
     if not status:
-        return "active"
+        return "unknown"
 
     mapping = {
         "active": "active",
@@ -59,7 +59,7 @@ def _normalize_status(status):
 
     return mapping.get(
         status.lower(),
-        "active"
+        "unknown"
     )
 
 
@@ -187,9 +187,10 @@ def _build_dosage(entry):
         dose_quantity = dict(dose_quantity)
         if dose_quantity.get("value") is not None:
             dose_quantity["value"] = fhir_decimal(dose_quantity["value"])
-        if dose_quantity.get("unit") and not dose_quantity.get("code"):
-            dose_quantity["code"] = dose_quantity["unit"]
-        if dose_quantity.get("code") and not dose_quantity.get("system"):
+        ucum_units = {"mg", "g", "kg", "ug", "ng", "mL", "L", "mmol", "mol", "[iU]", "1"}
+        unit = dose_quantity.get("code") or dose_quantity.get("unit")
+        if unit in ucum_units and not dose_quantity.get("system"):
+            dose_quantity["code"] = unit
             dose_quantity["system"] = "http://unitsofmeasure.org"
         dosage["doseAndRate"] = [
             {
@@ -276,9 +277,52 @@ def _build_notes(entry):
             continue
 
         seen.add(text)
-        notes.append({"text": text})
+        note = {"text": text}
+        if text in (entry.get("directionsText"), entry.get("dosageText"), entry.get("text")):
+            authors = entry.get("medicationAuthors") or []
+            if len(authors) == 1:
+                author = authors[0]
+                if author.get("time"):
+                    timestamp = cda_ts_to_fhir_datetime(author["time"])
+                    if timestamp:
+                        note["time"] = timestamp
+                identifiers = author.get("identifiers") or []
+                if len(identifiers) == 1:
+                    identifier = identifiers[0]
+                    note["authorReference"] = {"identifier": {
+                        "system": oid_to_fhir_system(identifier["root"]) or f"urn:oid:{identifier['root']}",
+                        "value": identifier.get("extension") or identifier["root"],
+                    }}
+                elif author.get("display"):
+                    note["authorString"] = author["display"]
+        notes.append(note)
 
     return notes if notes else None
+
+
+def _apply_medication_authorship(medication, entry, context):
+    authors = entry.get("medicationAuthors") or []
+    if len(authors) != 1:
+        return
+    author = authors[0]
+    if author.get("display"):
+        medication.setdefault("informationSource", {})["display"] = author["display"]
+    timestamp = cda_ts_to_fhir_datetime(author.get("time")) if author.get("time") else None
+    if timestamp:
+        medication["dateAsserted"] = timestamp
+    identifiers = author.get("identifiers") or []
+    if len(identifiers) == 1:
+        identifier = identifiers[0]
+        system = oid_to_fhir_system(identifier["root"]) or f"urn:oid:{identifier['root']}"
+        medication.setdefault("informationSource", {})["identifier"] = {
+            "system": system, "value": identifier.get("extension") or identifier["root"],
+        }
+        source_identifier = medication["informationSource"]["identifier"]
+        if context.get("practitioner_id") and any(
+            item.get("system") == source_identifier["system"] and item.get("value") == source_identifier["value"]
+            for item in context.get("practitioner_identifiers", [])
+        ):
+            medication["informationSource"]["reference"] = f"Practitioner/{context['practitioner_id']}"
 
 
 def _extract_cda_identifier(entry):
@@ -590,6 +634,7 @@ def map_medication_section(
             )
         }
         add_author_display(medication, entry)
+        _apply_medication_authorship(medication, entry, context)
 
         source_system = oid_to_fhir_system(
             _clean(medication_code.get("codeSystem"))
@@ -621,6 +666,12 @@ def map_medication_section(
         notes = _build_notes(entry)
 
         if notes:
+            source = medication.get("informationSource", {})
+            if source.get("reference") and source.get("identifier"):
+                for note in notes:
+                    author = note.get("authorReference", {})
+                    if author.get("identifier") == source["identifier"]:
+                        author["reference"] = source["reference"]
             medication["note"] = notes
 
         if fhir_datetime:

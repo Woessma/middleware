@@ -1,6 +1,6 @@
 # Endpunkte und erwartetes Verhalten
 
-Stand: 2026-11-04
+Stand: 2026-11-05
 
 ## Basis-URLs
 
@@ -17,6 +17,54 @@ Stand: 2026-11-04
 - VACD Send: https://vaccination-demo.raly.ch/api/fhir
 
 ## Status
+
+### CH-EMED-EPR-FHIR-Vorschau aus aktiven Medikationen
+
+`POST /fhir/medications/pmlc/from-server?patient_id=<FHIR-ID>`
+liest ausschliesslich aktive MedicationStatements dieses Patienten
+aus dem internen HAPI und erzeugt mit Husky eine PMLC-FHIR-Vorschau.
+Optional `language=de-CH|fr-CH|it-CH` und
+`confidentiality=normal|restricted|secret` (Default restricted).
+Keine MedicationRequests, keine Speicherung, kein PDF/QR.
+Vor dem Lesen erfolgt eine lokale Keycloak-Signatur-/Issuer-/Ablaufpruefung.
+Der bestehende Werkbank-Token wird uebernommen; standardmaessig ist
+`PMLC_KEYCLOAK_ALLOWED_CLIENTS=app-omnilink-cardtest` ueber den signierten
+`azp`-Claim erlaubt, ausdruecklich ohne zusaetzliche Realm-Rolle.
+Eine gesetzte `PMLC_KEYCLOAK_AUDIENCE` wird zusaetzlich geprueft.
+Ohne Allowlist und Audience bleibt der Leseweg deaktiviert.
+401/403 kennzeichnen Auth-Fehler, 503 eine fehlende Auth-Konfiguration.
+
+Die finale Vorschau wird intern gegen CH-EMED-EPR 3.0.0 / CH-EMED 6.0.0 /
+CH Core 6.0.0 mit lokal gebuendelten Paketen validiert. Der bestehende
+HAPI-Profilbestand und `/fhir/validate` bleiben unveraendert.
+Antwort: `bundle`, `validation` (OperationOutcome), `coverage`, `source`.
+error/fatal ergibt 422 mit Dokument und Bericht; Engine-/Quellfehler 502.
+
+Die vorgeschriebene PDF/A-Originaldarstellung fehlt im ersten Ausbau
+bewusst. Damit ist die Ausgabe noch nicht profilkonform; dies wird
+ausdruecklich als Validierungsfehler angezeigt, nicht als Erfolg.
+[Quelle, Abdeckung und Antwortvertrag](docs/ch-emed-epr-pmlc.md).
+
+### CDA-Eingangsvalidierung mit Husky
+
+`POST /cda/source/validate?level=full|xsd` prueft das originale CDA-XML,
+ohne FHIR-Konvertierung oder Speicherung. Raw-XML, Multipart `file` und
+Form `raw_xml` werden akzeptiert; maximal 5 MiB CDA-Inhalt.
+Die Werkbank verwendet diesen Endpunkt same-origin.
+
+Der interne Husky-Dienst hat keinen Hostport. Die CDA-R2-XSD ist aktiv.
+`full` ist der Default und verlangt zusaetzlich passende Profil-Schematrons.
+Fuer die untersuchten EPIC/C-CDA- und AT-Arztbrief-Templateversionen sind
+noch keine exakt passenden offiziellen Regeln installiert; dies ergibt
+einen ausdruecklichen `not-supported`-Fehler, auch bei gueltiger XSD.
+`xsd` behauptet keine Profilkonformitaet.
+
+Das OperationOutcome enthaelt Fehler/Warnungen und explizite
+CDA-Pruefgruppen fuer die Werkbank. HTTP 200 bedeutet nicht Fehlerfreiheit.
+Leere Eingabe liefert 400, uebergrosse Eingabe 413, Dienst-/Enginefehler 502.
+Bestehende Convert-/Importwege und HAPI-Validierungen bleiben unveraendert.
+Abdeckung, Herkunft, Isolation und Betrieb:
+[Husky-Dienst](husky-validator/README.md).
 
 ### Separate Validierung ohne Speicherung
 
@@ -47,6 +95,59 @@ Die Zieladresse ist ausschliesslich das konfigurierte interne `FHIR_BASE`;
 Clients koennen kein externes Validierungsziel angeben.
 
 Andere Importwege erhalten dadurch noch keine automatische Validierungssperre.
+
+### Verpflichtende Medikations-Importpruefung (2026-11-05)
+
+Getrennt von der EPR-Ausgabe: CDA-Importe verwenden `/cda/prepare`;
+eMediplan (Text, FHIR-JSON, QR) verwendet wie bisher `/emediplan/prepare`
+bzw. die entsprechenden Middleware-Importfunktionen. Der letzte Schritt
+nach Terminologie-, Patienten-/Dublettenabgleich prueft das tatsaechlich
+zurueckgegebene Transaction-Bundle intern mit HAPI. Medikationsressourcen
+erhalten mindestens ihr CH-Core-Profil; vorhandene Profile bleiben erhalten
+und werden ebenfalls geprueft. Unbekannte deklarierte Profile blockieren.
+422 bei error/fatal (auch wenn HAPI HTTP 200 liefert), 502 bei Pruefausfall,
+kein BridgeLink-/HAPI-Write im abgewiesenen Schritt. Warnungen allein
+blockieren nicht; ihre Anzahl wird protokolliert.
+Ohne Medikationsressourcen bleibt das bisherige Verhalten erhalten.
+`/fhir/convert` wendet dieselbe Pruefung auf Medikationsbundles an;
+reine Convert-/Stabilize-Endpunkte werden nicht zu Importen umgedeutet.
+
+**CDA-Gateway muss neu deployt werden:** Die lokalen OL_ROUTING-/Channel-XMLs
+wurden auf `/v1/cda/import -> /cda/prepare` umgestellt. Die bisher laufende
+Route `/cda/convert` ist noch keine Importsperre. Datei-Aenderung allein
+aendert den Live-Channel nicht. Siehe [BridgeLink](bridgelink/README.md).
+
+Importmapping: unzweideutige direkte CDA-Medikationsautoren werden mit
+Identifier und `dateAsserted` strukturiert erhalten; eigene Entry-Notizen
+erhalten vorhandene Autoren-/Zeitangaben. Verschachtelte Kommentarautoren
+oder reine Therapiezeiten werden nicht als Assertion-Zeit ausgegeben.
+Fehlender/unbekannter CDA-Medikationsstatus wird als `unknown` gespeichert,
+nicht mehr automatisch `active`. Bestehende Dupletten-Identifier bleiben
+unveraendert. Keine automatische Migration vorhandener HAPI-Daten.
+
+### Zusaetzliche VACD-Pruefung mit Husky (2026-11-05)
+
+- `POST /cda/vacd/husky/validate`: CDA als Raw-XML, Multipart `file`
+  oder Formular `raw_xml`; verwendet die bestehende VACD-Konvertierung.
+- `POST /fhir/vacd/husky/validate`: bestehendes FHIR-Document-Bundle als JSON;
+  unveraenderte Pruefung ohne Stabilisierung oder Anreicherung.
+
+Beide rufen ausschliesslich den internen Offline-Husky-Instance-Validator auf.
+Erzwingt das Immunization-Administration-Dokumentprofil **CH-VACD 6.0.0**
+und prueft zusaetzlich deklarierte Profile. CH Core 6.0.0, CH Term 3.3.0,
+HL7 Terminology 7.0.1 und Extensions R4 5.2.0 sind lokal geladen.
+Unbekannte deklarierte Profile sind Fehler; keine Downloads oder externen
+Terminologieaufrufe im Request.
+
+Antwort: originales `OperationOutcome`, HTTP 200 ohne error/fatal,
+422 bei Profilfehlern, 400 bei falscher Eingabe, 502 bei Engine-Ausfall.
+Maximal 5 MiB FHIR-JSON; keine Speicherung, kein Zielkontakt und keine
+klinische Impfempfehlung. Der Validator liest keine Patienten aus HAPI;
+der CDA-Weg behaelt den bestehenden read-only Patienten-/Referenzabgleich
+der Konvertierung bei.
+Die beiden neuen Werkbankaktionen sind eigenstaendige zusaetzliche Prueflaeufe,
+nicht automatisch mit HAPI kombiniert. `/cda/vacd/validate` sowie beide
+HAPI-Pruefungen des Versands bleiben unveraendert. Kein BridgeLink-Redeploy.
 
 ✅ **Im Testlab getestet und freigegeben (2026-11-04):**
 
@@ -322,10 +423,13 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/cda/umzh/send` | Konvertiert CDA und versendet den UMZH-Workflow | UMZH-Sendefluss |
 | `POST` | `/cda/vacd/convert` | Erzeugt ein CH-VACD-Dokumentbundle | CDA -> CH-VACD |
 | `POST` | `/cda/vacd/validate` | Konvertiert und validiert das CH-VACD-Dokument ohne Speicherung | CDA -> CH-VACD -> HAPI `$validate` |
+| `POST` | `/cda/vacd/husky/validate` | Zusaetzliche Offline-Profilpruefung mit Husky | CDA -> CH-VACD 6.0.0 -> Husky |
+| `POST` | `/fhir/vacd/husky/validate` | Bestehendes VACD-Document unveraendert mit Husky pruefen | FHIR-JSON -> Husky |
 | `POST` | `/cda/vacd/prepare`, `/cda/vacd/import` | Deaktiviert, HTTP 410 mit OperationOutcome | Kein Import |
 | `POST` | `/cda/vacd/send` | Konvertiert CDA und versendet an den VACD-Zielserver | CH-VACD-Sendefluss |
 | `POST` | `/emediplan/convert` | Konvertiert Text, PDF oder QR-Bild in ein FHIR-Bundle | eMediplan -> FHIR |
 | `POST` | `/emediplan/prepare` | Bereitet eMediplan oder FHIR-JSON mit Importpruefungen als Transaction-Bundle vor; kein Write | BridgeLink -> Middleware -> BridgeLink |
+| `POST` | `/cda/prepare` | CDA-Transaction fuer Import vorbereiten; Medikationen verpflichtend mit HAPI pruefen | Kein Write; CDA-Gateway-Routingupdate erforderlich |
 | `POST` | `/emediplan/import` | Konvertiert eMediplan-Daten und importiert das FHIR-Bundle über BridgeLink | eMediplan -> FHIR -> BridgeLink -> HAPI |
 | `POST` | `/emediplan/import-bundle` | Validiert ein FHIR-Resource-Objekt oder Bundle und importiert es über BridgeLink | FHIR-JSON -> BridgeLink -> HAPI |
 | `POST` | `/emediplan/qr/convert` | Liest einen eMediplan-QR-Code und konvertiert ihn | eMediplan-QR -> FHIR |

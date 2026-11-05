@@ -16,6 +16,11 @@ services:
       - EPIC_JWKS_KID=${EPIC_JWKS_KID:-epic-key-1}
       - BRIDGELINK_CDA_IMPORT_URL=${BRIDGELINK_CDA_IMPORT_URL:-https://api.omnilink.ch/v1/cda/import}
       - BRIDGELINK_EMEDIPLAN_IMPORT_URL=${BRIDGELINK_EMEDIPLAN_IMPORT_URL:-https://api.omnilink.ch/v1/emediplan/import}
+      - HUSKY_VALIDATOR_URL=http://husky-validator:8091
+      - PMLC_KEYCLOAK_ISSUER=${PMLC_KEYCLOAK_ISSUER:-https://idp.omnilink.ch/realms/omnilink}
+      - PMLC_KEYCLOAK_AUDIENCE=${PMLC_KEYCLOAK_AUDIENCE:-}
+      - PMLC_KEYCLOAK_ALLOWED_CLIENTS=${PMLC_KEYCLOAK_ALLOWED_CLIENTS-app-omnilink-cardtest}
+      - PMLC_KEYCLOAK_REQUIRED_ROLE=${PMLC_KEYCLOAK_REQUIRED_ROLE:-}
     volumes:
       - type: bind
         source: ${EPIC_PUBLIC_KEY_HOST_PATH:-/home/ansibleadmin/.local/share/omnilink/epic/epic-public.pem}
@@ -30,9 +35,29 @@ services:
     networks:
       - default
       - proxy
+      - validation
+    restart: unless-stopped
+
+  husky-validator:
+    build: ./husky-validator
+    volumes:
+      - ./husky-validator/definitions:/definitions:ro
+    networks:
+      - validation
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 2g
+    pids_limit: 64
     restart: unless-stopped
  
 networks:
+  validation:
+    internal: true
   proxy:
     external: true
     name: proxy

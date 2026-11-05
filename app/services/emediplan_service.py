@@ -801,6 +801,9 @@ def _build_medication_resources(medicament, patient_reference):
 
     statement = {
         "resourceType": "MedicationStatement",
+        "meta": {"profile": [
+            "http://fhir.ch/ig/ch-core/StructureDefinition/ch-core-medicationstatement",
+        ]},
         "id": _stable_id("medstmt", med_stmt_identifier),
         "identifier": [
             {
