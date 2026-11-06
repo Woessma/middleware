@@ -160,6 +160,19 @@ class EmediplanServiceTests(unittest.TestCase):
         # Plan-level Dt becomes dateAsserted (CH-EMED requirement, valid in CH-Core).
         self.assertEqual(statement["dateAsserted"], "2026-07-29T09:15:00+02:00")
 
+        medication = next(
+            resource
+            for resource in resources
+            if resource["resourceType"] == "Medication"
+        )
+        coding_systems = {
+            coding["system"]: coding["code"]
+            for coding in medication["code"]["coding"]
+        }
+        # GTINs carry both the CH-EMED slice system and the legacy sgtin coding.
+        self.assertEqual(coding_systems["urn:oid:2.51.1.1"], "7680123456789")
+        self.assertEqual(coding_systems["urn:epc:id:sgtin"], "7680123456789")
+
     def test_invalid_plan_date_is_not_mapped_to_date_asserted(self):
         payload = self._sample_emediplan_object()
         payload["Dt"] = "29.07.2026 09:15"
@@ -1178,6 +1191,14 @@ class EmediplanServiceTests(unittest.TestCase):
         self.assertIn(
             {
                 "system": "urn:epc:id:sgtin",
+                "code": "7680485780715",
+                "display": "Torem 10, Tabletten",
+            },
+            medication["code"]["coding"],
+        )
+        self.assertIn(
+            {
+                "system": "urn:oid:2.51.1.1",
                 "code": "7680485780715",
                 "display": "Torem 10, Tabletten",
             },

@@ -34,6 +34,9 @@ MEDICATION_IDENTIFIER_SYSTEM_MAP = {
 }
 
 SNOMED_SYSTEM = "http://snomed.info/sct"
+# CH-EMED (GTIN slice) codes GTINs with this OID; urn:epc:id:sgtin stays as
+# additional coding/identifier for backward-compatible duplicate matching.
+SWISS_GTIN_SYSTEM = "urn:oid:2.51.1.1"
 CH_EMED_MEDICATION_PROFILE = (
     "http://fhir.ch/ig/ch-emed/StructureDefinition/ch-emed-medication"
 )
@@ -687,6 +690,27 @@ def _append_resource_if_new(resources, seen_resource_keys, resource):
     resources.append(resource)
 
 
+def _append_swiss_gtin_codings(codings):
+    for coding in list(codings):
+        if not isinstance(coding, dict) or not coding.get("code"):
+            continue
+        if coding.get("system") != MEDICATION_IDENTIFIER_SYSTEM_MAP[2]:
+            continue
+        swiss_coding = {
+            "system": SWISS_GTIN_SYSTEM,
+            "code": str(coding["code"]),
+        }
+        if coding.get("display"):
+            swiss_coding["display"] = coding["display"]
+        if not any(
+            isinstance(item, dict)
+            and item.get("system") == SWISS_GTIN_SYSTEM
+            and item.get("code") == swiss_coding["code"]
+            for item in codings
+        ):
+            codings.append(swiss_coding)
+
+
 def _practitioner_name_from_refdata(refdata_entry):
     """CH-Core ch-pract-1: a HumanName without a family name violates the
     profile, so only build a name when refdata provides the family name."""
@@ -786,6 +810,8 @@ def _build_medication_resources(medicament, patient_reference, date_asserted=Non
     snomed_coding = _extract_snomed_coding(medicament)
     if snomed_coding:
         coding_entries.append(snomed_coding)
+
+    _append_swiss_gtin_codings(coding_entries)
 
     if coding_entries:
         unique_codings = []
@@ -1166,6 +1192,8 @@ def enrich_emediplan_bundle(bundle):
                 if strength:
                     ingredient["strength"] = strength
                 resource["ingredient"] = [ingredient]
+
+        _append_swiss_gtin_codings(codings)
 
     return bundle
 
