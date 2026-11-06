@@ -137,6 +137,7 @@
       ['eMediplan','emed-validate','eMediplan CH-EMED validieren (ohne Speicherung)','POST','/emediplan/validate','text','Konvertiert eMediplan-JSON oder CHMED16A0/1 und prüft das Bundle intern gegen die deklarierten Profile plus das strikte CH-EMED-MedicationStatement-Profil 6.0.0. Nur beratend: Der Import bleibt unverändert und wird durch Befunde nicht blockiert. Fehler und Warnungen stehen im OperationOutcome.',undefined,[],'same-origin'],
       ['eMediplan','emed-import','eMediplan JSON / CHMED16A → FHIR Import','POST','/emediplan/import','text','BridgeLink lässt Patient, Duplikate, GLN und Terminologie prüfen und schreibt das Transaction-Bundle nach HAPI. Wiederimport mit derselben Eingabe prüft die Wiederverwendung.'],
       ['eMediplan','emed-qr-convert','eMediplan QR (PDF/Bild) → FHIR Bundle','POST','/emediplan/qr/convert','binary-file','Liest den QR-Code lokal in der Middleware und liefert ein FHIR-Bundle. Kein HAPI-Write.',undefined,[],'same-origin'],
+      ['eMediplan','emed-qr-validate','eMediplan QR (PDF/Bild) → CH-EMED validieren (ohne Speicherung)','POST','/emediplan/validate','binary-file','Die Middleware liest den QR-Code aus PDF/Bild, konvertiert und prüft das Bundle intern gegen die deklarierten Profile plus das strikte CH-EMED-MedicationStatement-Profil 6.0.0. Nur beratend: kein Import, keine Speicherung; Fehler und Warnungen stehen im OperationOutcome.',undefined,[],'same-origin'],
       ['eMediplan','emed-qr-import','eMediplan QR (PDF/Bild) → FHIR Import über BridgeLink','POST','/emediplan/qr/import','binary-file','Die Middleware dekodiert PDF/Bild, prüft Patient, Duplikate, GLN und Terminologie und sendet FHIR-JSON über BridgeLink nach HAPI.',undefined,[],'same-origin'],
       ['EchoSOS','echosos-resolve','EchoSOS URL → FHIR Import über BridgeLink','POST','/echosos/resolve','text','Sendet die EchoSOS-URL aus dem QR-Code an BridgeLink; die Middleware bereitet das Bundle für den HAPI-Write vor.'],
       ['EchoSOS','echosos-qr','EchoSOS QR/PKPass → BridgeLink FHIR Import','POST','/echosos/qr','binary-file','Dekodiert EchoSOS, sucht den Patienten nach Name und Geburtsdatum und liefert ein Transaction-Bundle an BridgeLink für den HAPI-Write.'],
@@ -159,7 +160,7 @@
     vacdSendCase.target='same-origin';
     vacdSendCase.params=vacdSendCase.params.filter(param=>param.name!=='outbound_authorization');
     vacdSendCase.params[0].value='https://vaccination-demo.raly.ch/api/fhir';
-    const approvedUseCaseIds=new Set(['cda-convert','cda-source-validate','cda-validate','cda-bundle-validate','pmlc-generate','cda-import','emed-convert','emed-validate','emed-import','bundle-import','emed-qr-convert','emed-qr-import','echosos-resolve','patient-everything','vacd-convert','vacd-validate','vacd-husky-validate','vacd-bundle-husky-validate','vacd-send']);
+    const approvedUseCaseIds=new Set(['cda-convert','cda-source-validate','cda-validate','cda-bundle-validate','pmlc-generate','cda-import','emed-convert','emed-validate','emed-import','bundle-import','emed-qr-convert','emed-qr-validate','emed-qr-import','echosos-resolve','patient-everything','vacd-convert','vacd-validate','vacd-husky-validate','vacd-bundle-husky-validate','vacd-send']);
     function visibleCases(){return cases.filter(item=>approvedUseCaseIds.has(item.id))}
     function current(){return visibleCases().find(item=>item.id===el.useCase.value)||visibleCases()[0]}
     function processingPath(item){
@@ -167,6 +168,7 @@
       if(item.id==='pmlc-generate')return 'Middleware → interner HAPI (nur Lesen) → Husky CH-EMED-EPR (keine Speicherung)';
       if(item.id==='cda-source-validate')return 'Middleware → interner Husky-CDA-Validator (keine Speicherung)';
       if(['cda-validate','cda-bundle-validate','vacd-validate','emed-validate'].includes(item.id))return 'Middleware → interner HAPI-Validator (keine Speicherung)';
+      if(item.id==='emed-qr-validate')return 'Middleware (QR-Dekodierung) → interner HAPI-Validator (keine Speicherung)';
       if(['cda-import','emed-qr-import'].includes(item.id))return 'Middleware → BridgeLink → HAPI';
       if(item.id==='emed-qr-convert')return 'Middleware (QR-Dekodierung und Konvertierung, kein HAPI-Write)';
       if(item.id==='vacd-send')return 'Middleware → konfiguriertes externes VACD-FHIR-Ziel';

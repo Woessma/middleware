@@ -101,6 +101,55 @@ class EmediplanValidateEndpointTests(unittest.TestCase):
         self.assertEqual(outcome["resourceType"], "OperationOutcome")
         self.assertEqual(outcome["issue"][0]["severity"], "error")
 
+    @patch("main.validate_fhir_bundle")
+    def test_validate_accepts_qr_pdf_and_image_uploads(self, validate_fhir_bundle):
+        import base64
+        import gzip
+        import io
+
+        import pymupdf
+        import qrcode
+
+        outcome = {
+            "resourceType": "OperationOutcome",
+            "issue": [{"severity": "information", "code": "informational"}],
+        }
+        validate_fhir_bundle.return_value = (200, outcome)
+
+        chmed = b"CHMED16A1" + base64.b64encode(
+            gzip.compress(_sample_emediplan_payload())
+        )
+        qr_image = qrcode.make(chmed.decode("ascii")).convert("RGB")
+        png_buffer = io.BytesIO()
+        qr_image.save(png_buffer, format="PNG")
+        document = pymupdf.open()
+        page = document.new_page()
+        page.insert_image(page.rect, stream=png_buffer.getvalue())
+        pdf_bytes = document.tobytes()
+        document.close()
+
+        for name, content, content_type in (
+            ("plan.pdf", pdf_bytes, "application/pdf"),
+            ("plan.png", png_buffer.getvalue(), "image/png"),
+        ):
+            with self.subTest(name=name):
+                response = self.client.post(
+                    "/emediplan/validate",
+                    files={"file": (name, content, content_type)},
+                )
+
+                self.assertEqual(response.status_code, 200, response.text)
+                self.assertEqual(response.json(), outcome)
+                validated_bundle = validate_fhir_bundle.call_args.args[0]
+                statements = [
+                    entry["resource"]
+                    for entry in validated_bundle["entry"]
+                    if entry["resource"]["resourceType"] == "MedicationStatement"
+                ]
+                self.assertTrue(statements)
+                for statement in statements:
+                    self.assertIn(STRICT_PROFILE, statement["meta"]["profile"])
+
     def test_validate_rejects_empty_payload(self):
         response = self.client.post("/emediplan/validate")
 

@@ -100,7 +100,8 @@ Andere Importwege erhalten dadurch noch keine automatische Validierungssperre.
 
 `POST /emediplan/validate` akzeptiert dieselben Eingaben wie
 `/emediplan/convert` (eMediplan-JSON, CHMED16A0/1, Multipart `file` oder
-Form-Feld `raw_payload`), konvertiert und prueft das Bundle intern mit HAPI
+Form-Feld `raw_payload`; bei PDF/Bild wird der eMediplan-QR-Code lokal
+dekodiert), konvertiert und prueft das Bundle intern mit HAPI
 gegen die deklarierten Profile. Zusaetzlich wird auf einer Kopie des Bundles
 das strikte Profil `ch-emed-medicationstatement` (CH EMED 6.0.0) auf allen
 MedicationStatements deklariert und mitgeprueft. Die Antwort ist das
@@ -446,7 +447,7 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/cda/vacd/prepare`, `/cda/vacd/import` | Deaktiviert, HTTP 410 mit OperationOutcome | Kein Import |
 | `POST` | `/cda/vacd/send` | Konvertiert CDA und versendet an den VACD-Zielserver | CH-VACD-Sendefluss |
 | `POST` | `/emediplan/convert` | Konvertiert Text, PDF oder QR-Bild in ein FHIR-Bundle | eMediplan -> FHIR |
-| `POST` | `/emediplan/validate` | Konvertiert eMediplan-Daten und prueft das Bundle beratend gegen deklarierte Profile plus striktes CH-EMED-MedicationStatement; keine Speicherung | eMediplan -> FHIR -> HAPI `$validate` |
+| `POST` | `/emediplan/validate` | Konvertiert eMediplan-Daten (Text, PDF oder QR-Bild) und prueft das Bundle beratend gegen deklarierte Profile plus striktes CH-EMED-MedicationStatement; keine Speicherung | eMediplan -> FHIR -> HAPI `$validate` |
 | `POST` | `/emediplan/prepare` | Bereitet eMediplan oder FHIR-JSON mit Importpruefungen als Transaction-Bundle vor; kein Write | BridgeLink -> Middleware -> BridgeLink |
 | `POST` | `/cda/prepare` | CDA-Transaction fuer Import vorbereiten; Medikationen verpflichtend mit HAPI pruefen | Kein Write; CDA-Gateway-Routingupdate erforderlich |
 | `POST` | `/emediplan/import` | Konvertiert eMediplan-Daten und importiert das FHIR-Bundle über BridgeLink | eMediplan -> FHIR -> BridgeLink -> HAPI |

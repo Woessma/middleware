@@ -31,7 +31,7 @@ test('only implemented routes are released', () => {
   assert.deepEqual(Array.from(cases, item => item.id), [
     'patient-everything', 'bundle-import', 'cda-convert', 'cda-source-validate', 'cda-validate', 'cda-bundle-validate', 'pmlc-generate', 'cda-import',
     'vacd-convert', 'vacd-validate', 'vacd-husky-validate', 'vacd-bundle-husky-validate', 'vacd-send',
-    'emed-convert', 'emed-validate', 'emed-import', 'emed-qr-convert', 'emed-qr-import', 'echosos-resolve'
+    'emed-convert', 'emed-validate', 'emed-import', 'emed-qr-convert', 'emed-qr-validate', 'emed-qr-import', 'echosos-resolve'
   ]);
 });
 
@@ -80,7 +80,7 @@ test('FHIR bundle import uses the supported BridgeLink import route', () => {
   assert.equal(context.requestFor(item).headers['Content-Type'], 'application/fhir+json');
 });
 
-for (const id of ['emed-qr-convert', 'emed-qr-import']) {
+for (const id of ['emed-qr-convert', 'emed-qr-validate', 'emed-qr-import']) {
   test(`${id}: multipart file goes to the existing same-origin middleware endpoint`, () => {
     const {context, elements, cases} = workbench();
     const item = cases.find(item => item.id === id);
