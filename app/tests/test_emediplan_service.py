@@ -157,6 +157,21 @@ class EmediplanServiceTests(unittest.TestCase):
 
         self.assertEqual(statement["status"], "active")
         self.assertIn("medicationReference", statement)
+        # Plan-level Dt becomes dateAsserted (CH-EMED requirement, valid in CH-Core).
+        self.assertEqual(statement["dateAsserted"], "2026-07-29T09:15:00+02:00")
+
+    def test_invalid_plan_date_is_not_mapped_to_date_asserted(self):
+        payload = self._sample_emediplan_object()
+        payload["Dt"] = "29.07.2026 09:15"
+
+        bundle = emediplan_to_fhir_bundle(json.dumps(payload).encode("utf-8"))
+
+        statement = next(
+            entry["resource"]
+            for entry in bundle["entry"]
+            if entry["resource"]["resourceType"] == "MedicationStatement"
+        )
+        self.assertNotIn("dateAsserted", statement)
 
     def test_apply_ch_emed_statement_profiles_is_an_advisory_copy(self):
         bundle = emediplan_to_fhir_bundle(self._sample_chmed16a_payload())

@@ -113,6 +113,20 @@ def _clean(value):
     return value
 
 
+FHIR_DATETIME_PATTERN = re.compile(
+    r"^\d{4}(-\d{2}(-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2}))?)?)?$"
+)
+
+
+def _fhir_datetime(value):
+    """Return the value only when it is a valid FHIR dateTime, since an
+    invalid date would otherwise fail the blocking HAPI import validation."""
+    value = _clean(value)
+    if isinstance(value, str) and FHIR_DATETIME_PATTERN.match(value):
+        return value
+    return None
+
+
 def _is_valid_gln(value):
     # GLN/GTIN-13 use the GS1 mod-10 check digit (no external lookup needed to
     # validate the format; full name/address enrichment still requires
@@ -688,7 +702,7 @@ def _practitioner_name_from_refdata(refdata_entry):
     return [name_entry]
 
 
-def _build_medication_resources(medicament, patient_reference):
+def _build_medication_resources(medicament, patient_reference, date_asserted=None):
     raw_med_id = _clean(medicament.get("Id"))
     raw_med_id_type = medicament.get("IdType")
 
@@ -839,6 +853,9 @@ def _build_medication_resources(medicament, patient_reference):
         },
     }
 
+    if date_asserted:
+        statement["dateAsserted"] = date_asserted
+
     posologies = medicament.get("Pos") or []
     if posologies:
         first = posologies[0]
@@ -960,10 +977,12 @@ def emediplan_to_fhir_bundle(raw_content):
         _append_resource_if_new(resources, seen_resource_keys, resource)
 
     medicaments = med_object.get("Medicaments") or []
+    plan_date = _fhir_datetime(med_object.get("Dt"))
     for medicament in medicaments:
         medication, statement, practitioner = _build_medication_resources(
             medicament,
             patient_reference,
+            date_asserted=plan_date,
         )
         _append_resource_if_new(resources, seen_resource_keys, medication)
         _append_resource_if_new(resources, seen_resource_keys, statement)
