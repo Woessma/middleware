@@ -673,6 +673,21 @@ def _append_resource_if_new(resources, seen_resource_keys, resource):
     resources.append(resource)
 
 
+def _practitioner_name_from_refdata(refdata_entry):
+    """CH-Core ch-pract-1: a HumanName without a family name violates the
+    profile, so only build a name when refdata provides the family name."""
+    family_name = _clean(refdata_entry.get("family_name"))
+    if not family_name:
+        return None
+    name_entry = {"family": family_name}
+    given_name = _clean(refdata_entry.get("given_name"))
+    if given_name:
+        name_entry["given"] = [given_name]
+    if refdata_entry.get("name"):
+        name_entry["text"] = refdata_entry["name"]
+    return [name_entry]
+
+
 def _build_medication_resources(medicament, patient_reference):
     raw_med_id = _clean(medicament.get("Id"))
     raw_med_id_type = medicament.get("IdType")
@@ -906,8 +921,9 @@ def _build_medication_resources(medicament, patient_reference):
             # Silently skipped when the API isn't configured/reachable or the GLN isn't found.
             refdata_entry = lookup_gln(prescribed_by, partner_type="NAT")
             if refdata_entry:
-                if refdata_entry.get("name"):
-                    practitioner["name"] = [{"text": refdata_entry["name"]}]
+                refdata_name = _practitioner_name_from_refdata(refdata_entry)
+                if refdata_name:
+                    practitioner["name"] = refdata_name
                 if refdata_entry.get("address"):
                     address = refdata_entry["address"]
                     practitioner["address"] = [
@@ -1039,8 +1055,9 @@ def enrich_emediplan_bundle(bundle):
             if gln:
                 refdata_entry = lookup_gln(gln, partner_type="NAT")
                 if refdata_entry:
-                    if not resource.get("name") and refdata_entry.get("name"):
-                        resource["name"] = [{"text": refdata_entry["name"]}]
+                    refdata_name = _practitioner_name_from_refdata(refdata_entry)
+                    if not resource.get("name") and refdata_name:
+                        resource["name"] = refdata_name
                     if not resource.get("address") and refdata_entry.get("address"):
                         resource["address"] = [
                             {

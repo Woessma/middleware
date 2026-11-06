@@ -72,6 +72,7 @@ Neu seit 2026-07-30:
 - refdata.ch Partner-API fuer optionale Name-/Adressanreicherung von GLN-Practitionern angebunden.
 - Matrix-Bot fuer eMediplan und CDA mit blockierender Identitaetspruefung, privaten Zwei-Personen-Raeumen und Self-Service-Profilpflege umgesetzt.
 - Beratende CH-EMED-Validierung `POST /emediplan/validate` (2026-11-06): prueft das konvertierte Bundle intern mit HAPI gegen deklarierte Profile plus striktes `ch-emed-medicationstatement` 6.0.0 auf einer Kopie; Convert-/Importwege und deren blockierende Pruefung bleiben unveraendert. Eingaben wie Convert inkl. PDF/Bild mit eMediplan-QR; eigene Werkbank-Use-Cases fuer Text und QR-Datei.
+- ch-pract-1-Befund aus realem Validierungslauf behoben (2026-11-06): refdata-angereicherte Practitioner erhalten strukturierte `family`/`given`-Namen statt nur `text`; ohne bekannten Nachnamen wird kein HumanName gesetzt, damit die blockierende Importpruefung nicht faelschlich abweist.
 
 ## UMZH Connect
 

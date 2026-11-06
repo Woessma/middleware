@@ -1121,6 +1121,8 @@ class EmediplanServiceTests(unittest.TestCase):
         }
         lookup_gln.return_value = {
             "name": "Max Muster",
+            "given_name": "Max",
+            "family_name": "Muster",
             "address": {"city": "Bern", "line": []},
         }
         bundle = {
@@ -1172,8 +1174,27 @@ class EmediplanServiceTests(unittest.TestCase):
             medication["ingredient"][0]["itemCodeableConcept"],
             {"text": "Torasemid"},
         )
-        self.assertEqual(practitioner["name"], [{"text": "Max Muster"}])
+        self.assertEqual(
+            practitioner["name"],
+            [{"family": "Muster", "given": ["Max"], "text": "Max Muster"}],
+        )
         self.assertEqual(practitioner["address"], [{"city": "Bern"}])
+
+    @patch("services.emediplan_service.lookup_gln")
+    def test_refdata_name_without_family_is_skipped_for_ch_pract_1(self, lookup_gln):
+        # ch-pract-1: a HumanName without family would block the HAPI import check.
+        lookup_gln.return_value = {"name": "Praxis am See", "family_name": None}
+        payload = self._sample_emediplan_object()
+        payload["Medicaments"][0]["PrscbBy"] = "7601009545993"
+
+        bundle = emediplan_to_fhir_bundle(json.dumps(payload).encode("utf-8"))
+
+        practitioner = next(
+            entry["resource"]
+            for entry in bundle["entry"]
+            if entry["resource"]["resourceType"] == "Practitioner"
+        )
+        self.assertNotIn("name", practitioner)
 
 
 if __name__ == "__main__":
