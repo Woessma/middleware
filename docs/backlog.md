@@ -1,6 +1,6 @@
 # Backlog
 
-Stand: 2026-11-05
+Stand: 2026-11-06
 
 ## Medikation und Validierung: aktueller Abschluss
 

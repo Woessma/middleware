@@ -1,6 +1,46 @@
 # BridgeLink - Project Memory
 
-Stand: 2026-11-05
+Stand: 2026-11-06
+
+## Tagesabschluss 2026-11-06: Beratende CH-EMED-Validierung und Mappingfixes
+
+- Neuer advisory Endpunkt `POST /emediplan/validate` (Text/JSON/CHMED16A und
+  QR aus PDF/Bild) mit zwei Werkbank-Use-Cases. Die Pruefkopie des
+  konvertierten Bundles wird in die CH-EMED-Struktur transformiert
+  (contained Medication mit `#`-Referenzen, deterministische
+  `urn:uuid`-Identifier, Verschreiber als PractitionerRole) und intern mit
+  HAPI gegen deklarierte Profile plus striktes
+  `ch-emed-medicationstatement` 6.0.0 geprueft. Realer 6-Medikamente-Plan:
+  von 37 auf 0 Fehler. Kein Import, keine Speicherung, keine Blockade.
+- Convert-, Prepare- und Importwege liefern bewusst weiterhin die
+  CH-Core-Struktur mit eigenstaendigen Medications und
+  eMediplan-Identifiern (Basis fuer Upsert/Dedup); die blockierende
+  HAPI-Importpruefung bleibt unveraendert scharf und wurde ohne Write
+  end-to-end nachgewiesen.
+- Echte Mappingfixes aus den Validierungslaeufen: refdata-Practitioner
+  erhalten strukturierte `family`/`given`-Namen (ch-pract-1 haette sonst
+  Importe blockiert); `dateAsserted` aus Plan-`Dt` mit
+  FHIR-dateTime-Guard; `Auth`-GLN als informationSource-Fallback ohne
+  `PrscbBy` (gilt auch fuer Convert/Import); GTINs zusaetzlich mit
+  CH-EMED-System `urn:oid:2.51.1.1`; generierte Narrative auch im
+  Convert-Collection-Bundle.
+- Erkenntnisse auf alle Use Cases uebertragen: CDA-Medikationsmapper loest
+  eingehende OID-GTINs ueber das Terminologie-Mapping auf und ergaenzt
+  GTIN-Zwillingscodings; Dublettenabgleich matcht auch OID-GTIN-Codings;
+  refdata-Enrichment setzt keinen text-only-HumanName mehr; EchoSOS-
+  Importbundles erhalten Narrative. CDA/VACD/eTOC/UMZH, HL7v2 und PMLC
+  waren bereits konform.
+- Validierung: 343 Python- und 24 Werkbanktests gruen; mehrfache
+  E2E-Pruefungen gegen den internen HAPI (advisory 0 Fehler,
+  Importvorbereitung bestanden, dom-6/Slice-Befunde verifiziert beseitigt).
+  Bestandsdaten in HAPI werden nicht migriert; Verbesserungen greifen bei
+  neuen Importen bzw. Re-Imports per Upsert.
+- Middleware mehrfach neu gebaut und deployt, Health jeweils geprueft.
+  `main` auf beide Remotes (origin, post) gepusht. Fuer CH-EMED-EPR-konforme
+  Ausgaben bleibt der PMLC-Pfad zustaendig.
+
+Details: [ENDPOINTS](../ENDPOINTS.md), [Backlog](backlog.md),
+[Roadmap](roadmap.md).
 
 ## Tagesabschluss 2026-11-05: Husky, Medikation und Importpruefung
 

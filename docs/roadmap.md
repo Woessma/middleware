@@ -1,8 +1,16 @@
 # Roadmap
 
-Stand: 2026-11-05
+Stand: 2026-11-06
 
-## Aktuelle Ergaenzung: Validierung und Medikationsvorschau
+## Aktuelle Ergaenzung: Beratende CH-EMED-Validierung fuer eMediplan
+
+- `POST /emediplan/validate` fuer Text/JSON/CHMED16A und QR aus PDF/Bild mit eigenen Werkbank-Use-Cases umgesetzt
+- Pruefkopie wird in die CH-EMED-Struktur transformiert (contained Medication, UUID-Identifier, PractitionerRole) und intern mit HAPI geprueft; Realplan 0 Fehler
+- Convert/Import liefern unveraendert die CH-Core-Struktur fuer Upsert und Dublettenabgleich; blockierende Importpruefung unveraendert scharf
+- Datenqualitaet verbessert: strukturierte refdata-Namen (ch-pract-1), `dateAsserted` aus Plan-`Dt`, `Auth`-GLN als informationSource-Fallback, GTIN zusaetzlich als `urn:oid:2.51.1.1`, Narrative im Convert-Bundle
+- Erkenntnisse auf alle Use Cases uebertragen: CDA-Mapper mit OID-GTIN-Aufloesung und -Zwillingscodings, Dublettenabgleich auch per OID-GTIN, EchoSOS-Narrative
+
+## Vorherige Ergaenzung: Validierung und Medikationsvorschau
 
 - Interner Husky-Dienst und zusaetzliche VACD-Pruefung mit stabilen 6.0.0-Profilen deployt
 - PMLC-FHIR-Vorschau ohne Speicherung umgesetzt; PDF/A/QR und finale EPR-Konformitaet offen
