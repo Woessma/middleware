@@ -20,6 +20,9 @@ CH_CORE_MEDICATION_STATEMENT_PROFILE = (
 
 PHARMACODE_SYSTEM = "https://emediplan.ch/fhir/NamingSystem/pharmacode"
 GTIN_SYSTEM = "urn:epc:id:sgtin"
+# CH-EMED (GTIN slice) codes GTINs with this OID; sgtin stays for
+# backward-compatible duplicate matching.
+SWISS_GTIN_SYSTEM = "urn:oid:2.51.1.1"
 DISPENSING_CATEGORY_EXTENSION = (
     "https://emediplan.ch/fhir/StructureDefinition/dispensing-category"
 )
@@ -105,7 +108,7 @@ def _build_medication_codeable(concept_code):
 
         if system == PHARMACODE_SYSTEM:
             resolved = resolve_medication_identity(3, code)
-        elif system == GTIN_SYSTEM:
+        elif system in (GTIN_SYSTEM, SWISS_GTIN_SYSTEM):
             resolved = resolve_medication_identity(2, code)
         else:
             resolved = None
@@ -152,6 +155,16 @@ def _build_medication_codeable(concept_code):
         coding_list.append(translation_coding)
 
     if coding_list:
+        # GTINs carry both the CH-EMED slice system and the legacy sgtin coding.
+        twin_systems = {GTIN_SYSTEM: SWISS_GTIN_SYSTEM, SWISS_GTIN_SYSTEM: GTIN_SYSTEM}
+        for coding in list(coding_list):
+            twin_system = twin_systems.get(coding.get("system"))
+            if twin_system and coding.get("code"):
+                twin = {"system": twin_system, "code": coding["code"]}
+                if coding.get("display"):
+                    twin["display"] = coding["display"]
+                coding_list.append(twin)
+
         unique = []
         seen = set()
 

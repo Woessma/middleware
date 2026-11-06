@@ -582,6 +582,8 @@ class EchoSosServiceTests(unittest.TestCase):
         self.assertEqual(patient_entry["request"]["url"], "Patient")
         self.assertIn("ifNoneExist", patient_entry["request"])
         self.assertEqual(bundle["entry"][1]["resource"]["subject"]["reference"], patient_reference)
+        for entry in bundle["entry"]:
+            self.assertEqual(entry["resource"]["text"]["status"], "generated")
         post.assert_not_called()
         put.assert_not_called()
 

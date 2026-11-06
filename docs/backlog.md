@@ -73,6 +73,7 @@ Neu seit 2026-07-30:
 - Matrix-Bot fuer eMediplan und CDA mit blockierender Identitaetspruefung, privaten Zwei-Personen-Raeumen und Self-Service-Profilpflege umgesetzt.
 - Beratende CH-EMED-Validierung `POST /emediplan/validate` (2026-11-06): transformiert eine Pruefkopie des konvertierten Bundles in die CH-EMED-Struktur (contained Medication, UUID-Identifier, PractitionerRole) und prueft sie intern mit HAPI gegen deklarierte Profile plus striktes `ch-emed-medicationstatement` 6.0.0; Convert-/Importwege und deren blockierende Pruefung bleiben auf der CH-Core-Struktur. Eingaben wie Convert inkl. PDF/Bild mit eMediplan-QR; eigene Werkbank-Use-Cases fuer Text und QR-Datei. Plan-Autoren-GLN (`Auth`) dient als informationSource-Fallback ohne `PrscbBy`.
 - ch-pract-1-Befund aus realem Validierungslauf behoben (2026-11-06): refdata-angereicherte Practitioner erhalten strukturierte `family`/`given`-Namen statt nur `text`; ohne bekannten Nachnamen wird kein HumanName gesetzt, damit die blockierende Importpruefung nicht faelschlich abweist.
+- Erkenntnisse auf alle Use Cases uebertragen (2026-11-06): CDA-Medikationsmapper codiert GTINs zusaetzlich mit `urn:oid:2.51.1.1` und loest eingehende OID-GTINs ueber das Terminologie-Mapping auf; Dublettenabgleich matcht auch OID-GTIN-Codings; refdata-Practitioner-Enrichment setzt keinen text-only-HumanName mehr (ch-pract-1); EchoSOS-Importbundles erhalten generierte Narrative (dom-6).
 
 ## UMZH Connect
 

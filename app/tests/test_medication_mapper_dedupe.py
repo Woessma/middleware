@@ -41,6 +41,40 @@ class MedicationMapperDedupeTests(unittest.TestCase):
         self.assertEqual(len(resources), 1)
         self.assertEqual(resources[0].get("effectiveDateTime"), "2025-05-01")
 
+    def test_gtin_codings_carry_both_swiss_oid_and_sgtin_systems(self):
+        section = {
+            "entries": [
+                {
+                    "statusCode": "active",
+                    "consumable": {
+                        "code": {
+                            "code": "7680483060482",
+                            "codeSystem": "2.51.1.1",
+                            "displayName": "Beispielmedikament",
+                        }
+                    },
+                },
+            ]
+        }
+
+        resources = map_medication_section(
+            section,
+            patient_reference="Patient/3192",
+            context={},
+        )
+
+        statement = next(
+            resource
+            for resource in resources
+            if resource["resourceType"] == "MedicationStatement"
+        )
+        systems = {
+            coding["system"]: coding["code"]
+            for coding in statement["medicationCodeableConcept"]["coding"]
+        }
+        self.assertEqual(systems["urn:oid:2.51.1.1"], "7680483060482")
+        self.assertEqual(systems["urn:epc:id:sgtin"], "7680483060482")
+
     def test_epic_medication_section_maps_dosage_and_instruction_notes(self):
         epic_path = Path(__file__).parent / "data" / "CDA-EPIC.xml"
         root = ET.parse(epic_path).getroot()

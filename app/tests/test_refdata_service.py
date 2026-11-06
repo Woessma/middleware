@@ -159,6 +159,25 @@ class RefdataServiceTests(unittest.TestCase):
     @patch(
         "services.refdata_service.lookup_gln",
         return_value={
+            "name": "Praxis am See",
+            "given_name": None,
+            "family_name": None,
+        },
+    )
+    def test_practitioner_without_family_name_gets_no_name(self, mock_lookup):
+        # ch-pract-1: a HumanName without family would violate CH-Core.
+        result = enrich_practitioner_resource(
+            {
+                "resourceType": "Practitioner",
+                "identifier": [{"system": "urn:oid:2.51.1.3", "value": "7601000115690"}],
+            }
+        )
+
+        self.assertNotIn("name", result)
+
+    @patch(
+        "services.refdata_service.lookup_gln",
+        return_value={
             "name": "St Martini Apotheke",
             "name2": "GaleniCare AG",
             "address": {"line": ["Marktgasse 2"], "city": "Luzern"},

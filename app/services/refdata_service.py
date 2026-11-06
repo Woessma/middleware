@@ -291,9 +291,9 @@ def enrich_practitioner_resource(practitioner):
             name["family"] = entry["family_name"]
         if entry.get("given_name"):
             name["given"] = [entry["given_name"]]
-        if not name and entry.get("name"):
-            name["text"] = entry["name"]
-        if name:
+        # ch-pract-1: a HumanName without a family name violates CH-Core, so
+        # no text-only fallback when the registry lacks the family name.
+        if name.get("family"):
             enriched["name"] = [name]
     elif isinstance(names, list) and names and isinstance(names[0], dict):
         if not names[0].get("family") and entry.get("family_name"):

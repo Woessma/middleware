@@ -39,6 +39,7 @@ def find_existing_resource_by_identifier(resource: dict, fhir_base: str = FHIR_B
         product_code_systems = {
             "https://emediplan.ch/fhir/NamingSystem/pharmacode",
             "urn:epc:id:sgtin",
+            "urn:oid:2.51.1.1",
         }
         searches.extend(
             ("code", coding.get("system"), coding.get("code"))

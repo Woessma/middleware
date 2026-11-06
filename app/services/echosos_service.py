@@ -13,6 +13,7 @@ from uuid import uuid4
 import requests
 
 from config import FHIR_BASE
+from fhir.narrative import ensure_resource_narrative
 from services.patient_service import warn_if_external_patient_duplicate
 from services.terminology_service import validate_coding
 from terminology.echosos import (
@@ -664,6 +665,7 @@ def _existing_resource_id(resource):
 
 def _transaction_entry(resource):
     resource_type = resource["resourceType"]
+    ensure_resource_narrative(resource)
     existing_id = _existing_resource_id(resource)
     identifiers = resource.get("identifier", [])
     if isinstance(identifiers, dict):
@@ -702,6 +704,7 @@ def import_echosos(raw_bytes, content_type=None, author="unknown"):
         raise ValueError("EchoSOS-Daten enthalten keinen vollständigen Namen und kein Geburtsdatum")
     existing = _patient_search(data)
     patient = _patient_resource(data, existing)
+    ensure_resource_narrative(patient)
     if existing:
         patient_id = existing["id"]
         patient_reference = f"Patient/{patient_id}"
