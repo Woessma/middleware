@@ -13,6 +13,7 @@ import zlib
 import requests
 
 from fhir.bundle import build_bundle_entry
+from fhir.narrative import ensure_resource_narrative
 from services.refdata_service import lookup_gln
 from terminology.emediplan_medication_map import resolve_medication_identity
 
@@ -1024,6 +1025,8 @@ def emediplan_to_fhir_bundle(raw_content):
     }
 
     for resource in resources:
+        # Same generated narrative as the CDA-to-FHIR path (dom-6).
+        ensure_resource_narrative(resource)
         _rewrite_reference_values(resource, full_urls)
 
     bundle = {

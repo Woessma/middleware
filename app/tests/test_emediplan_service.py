@@ -173,6 +173,11 @@ class EmediplanServiceTests(unittest.TestCase):
         self.assertEqual(coding_systems["urn:oid:2.51.1.1"], "7680123456789")
         self.assertEqual(coding_systems["urn:epc:id:sgtin"], "7680123456789")
 
+        # Every DomainResource carries a generated narrative (dom-6), like CDA->FHIR.
+        for resource in resources:
+            self.assertEqual(resource["text"]["status"], "generated")
+            self.assertIn('xmlns="http://www.w3.org/1999/xhtml"', resource["text"]["div"])
+
     def test_invalid_plan_date_is_not_mapped_to_date_asserted(self):
         payload = self._sample_emediplan_object()
         payload["Dt"] = "29.07.2026 09:15"
