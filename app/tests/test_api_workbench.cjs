@@ -31,7 +31,7 @@ test('only implemented routes are released', () => {
   assert.deepEqual(Array.from(cases, item => item.id), [
     'patient-everything', 'bundle-import', 'cda-convert', 'cda-source-validate', 'cda-validate', 'cda-bundle-validate', 'pmlc-generate', 'cda-import',
     'vacd-convert', 'vacd-validate', 'vacd-husky-validate', 'vacd-bundle-husky-validate', 'vacd-send',
-    'emed-convert', 'emed-import', 'emed-qr-convert', 'emed-qr-import', 'echosos-resolve'
+    'emed-convert', 'emed-validate', 'emed-import', 'emed-qr-convert', 'emed-qr-import', 'echosos-resolve'
   ]);
 });
 
@@ -55,6 +55,22 @@ for (const id of ['emed-convert', 'emed-import']) {
     assert.throws(() => context.requestFor(item));
   });
 }
+
+test('emed-validate: advisory CH-EMED check stays on the same-origin middleware', () => {
+  const {context, elements, cases} = workbench();
+  const item = cases.find(item => item.id === 'emed-validate');
+  for (const [payload, contentType] of [
+    ['{"Medicaments":[]}', 'application/json'],
+    ['CHMED16A0{"Medicaments":[]}', 'text/plain; charset=utf-8'],
+    ['CHMED16A1synthetic', 'text/plain; charset=utf-8']
+  ]) {
+    elements.payload.value = payload;
+    const request = context.requestFor(item);
+    assert.equal(request.headers['Content-Type'], contentType);
+    assert.equal(request.body, payload);
+    assert.equal(context.urlFor(item).href, 'https://middleware.example/emediplan/validate');
+  }
+});
 
 test('FHIR bundle import uses the supported BridgeLink import route', () => {
   const {context, elements, cases} = workbench();

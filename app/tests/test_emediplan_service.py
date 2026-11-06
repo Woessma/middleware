@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 from unittest.mock import Mock, patch
 
 from services.emediplan_service import (
+    apply_ch_emed_statement_profiles,
     enrich_emediplan_bundle,
     emediplan_to_fhir_bundle,
     fhir_medications_to_epic_cda,
@@ -156,6 +157,38 @@ class EmediplanServiceTests(unittest.TestCase):
 
         self.assertEqual(statement["status"], "active")
         self.assertIn("medicationReference", statement)
+
+    def test_apply_ch_emed_statement_profiles_is_an_advisory_copy(self):
+        bundle = emediplan_to_fhir_bundle(self._sample_chmed16a_payload())
+        strict_profile = (
+            "http://fhir.ch/ig/ch-emed/StructureDefinition/ch-emed-medicationstatement"
+        )
+
+        strict = apply_ch_emed_statement_profiles(bundle)
+
+        def statement_profiles(candidate):
+            return [
+                entry["resource"]["meta"]["profile"]
+                for entry in candidate["entry"]
+                if entry["resource"]["resourceType"] == "MedicationStatement"
+            ]
+
+        self.assertTrue(statement_profiles(strict))
+        for profiles in statement_profiles(strict):
+            self.assertIn(strict_profile, profiles)
+        # Convert/import output stays on CH-Core; the strict profile is advisory only.
+        for profiles in statement_profiles(bundle):
+            self.assertNotIn(strict_profile, profiles)
+
+        twice = apply_ch_emed_statement_profiles(strict)
+        for profiles in statement_profiles(twice):
+            self.assertEqual(profiles.count(strict_profile), 1)
+
+    def test_apply_ch_emed_statement_profiles_ignores_non_bundles(self):
+        self.assertEqual(
+            apply_ch_emed_statement_profiles({"resourceType": "Patient"}),
+            {"resourceType": "Patient"},
+        )
 
     def test_parse_chmed16a_uncompressed_json_preserves_string_whitespace(self):
         source = b'CHMED16A0{"Rmk":"take  with  food"}'

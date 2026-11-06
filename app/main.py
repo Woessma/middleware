@@ -133,6 +133,7 @@ from services.vacd_send_service import (
     _embed_precreated_resource,
 )
 from services.emediplan_service import (
+    apply_ch_emed_statement_profiles,
     enrich_emediplan_bundle,
     emediplan_to_fhir_bundle,
     fhir_medications_to_epic_cda,
@@ -2341,6 +2342,16 @@ async def emediplan_convert(
     except Exception as ex:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(ex))
+
+
+@app.post("/emediplan/validate")
+async def emediplan_validate(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    raw_payload: Optional[str] = Form(None),
+):
+    bundle = await emediplan_convert(request, file=file, raw_payload=raw_payload)
+    return await _validate_converted_bundle(apply_ch_emed_statement_profiles(bundle))
 
 
 @app.post("/emediplan/prepare")

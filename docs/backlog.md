@@ -71,6 +71,7 @@ Neu seit 2026-07-30:
 - `PrscbBy` als gueltige GLN geprueft und mit OID `urn:oid:2.51.1.3` als CH-Core-Practitioner abgebildet; Freitext bleibt `informationSource.display`.
 - refdata.ch Partner-API fuer optionale Name-/Adressanreicherung von GLN-Practitionern angebunden.
 - Matrix-Bot fuer eMediplan und CDA mit blockierender Identitaetspruefung, privaten Zwei-Personen-Raeumen und Self-Service-Profilpflege umgesetzt.
+- Beratende CH-EMED-Validierung `POST /emediplan/validate` (2026-11-06): prueft das konvertierte Bundle intern mit HAPI gegen deklarierte Profile plus striktes `ch-emed-medicationstatement` 6.0.0 auf einer Kopie; Convert-/Importwege und deren blockierende Pruefung bleiben unveraendert.
 
 ## UMZH Connect
 

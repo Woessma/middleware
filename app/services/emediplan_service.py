@@ -37,6 +37,9 @@ SNOMED_SYSTEM = "http://snomed.info/sct"
 CH_EMED_MEDICATION_PROFILE = (
     "http://fhir.ch/ig/ch-emed/StructureDefinition/ch-emed-medication"
 )
+CH_EMED_MEDICATIONSTATEMENT_PROFILE = (
+    "http://fhir.ch/ig/ch-emed/StructureDefinition/ch-emed-medicationstatement"
+)
 EMEDIPLAN_DISPENSING_CATEGORY_EXTENSION = (
     "https://emediplan.ch/fhir/StructureDefinition/dispensing-category"
 )
@@ -979,6 +982,30 @@ def emediplan_to_fhir_bundle(raw_content):
             "system": "https://emediplan.ch/fhir/NamingSystem/emediplan-plan-id",
             "value": plan_id,
         }
+
+    return bundle
+
+
+def apply_ch_emed_statement_profiles(bundle):
+    """Return a deep copy declaring the strict CH-EMED MedicationStatement profile.
+
+    Advisory only: the stricter profile is never declared on convert/import
+    bundles because the generated statements intentionally keep the CH-Core
+    structure (separate Medication entries, eMediplan identifiers).
+    """
+    bundle = copy.deepcopy(bundle)
+    if bundle.get("resourceType") != "Bundle":
+        return bundle
+
+    for entry in bundle.get("entry") or []:
+        resource = entry.get("resource") if isinstance(entry, dict) else None
+        if not isinstance(resource, dict):
+            continue
+        if resource.get("resourceType") != "MedicationStatement":
+            continue
+        profiles = resource.setdefault("meta", {}).setdefault("profile", [])
+        if CH_EMED_MEDICATIONSTATEMENT_PROFILE not in profiles:
+            profiles.append(CH_EMED_MEDICATIONSTATEMENT_PROFILE)
 
     return bundle
 
