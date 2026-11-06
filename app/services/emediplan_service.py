@@ -727,7 +727,9 @@ def _practitioner_name_from_refdata(refdata_entry):
     return [name_entry]
 
 
-def _build_medication_resources(medicament, patient_reference, date_asserted=None):
+def _build_medication_resources(
+    medicament, patient_reference, date_asserted=None, author_gln=None
+):
     raw_med_id = _clean(medicament.get("Id"))
     raw_med_id_type = medicament.get("IdType")
 
@@ -942,45 +944,56 @@ def _build_medication_resources(medicament, patient_reference, date_asserted=Non
 
     practitioner = None
     prescribed_by = _clean(medicament.get("PrscbBy"))
+    source_gln = None
+    source_display = None
 
     if prescribed_by:
         if _is_valid_gln(prescribed_by):
-            # GLN (Global Location Number), the standard CH identifier for healthcare professionals/orgs.
-            practitioner_id = _stable_id("prac-gln", prescribed_by)
-            practitioner = {
-                "resourceType": "Practitioner",
-                "id": practitioner_id,
-                "meta": {
-                    "profile": [CH_CORE_PRACTITIONER_PROFILE],
-                },
-                "identifier": [
-                    {
-                        "system": GLN_SYSTEM,
-                        "value": prescribed_by,
-                    }
-                ],
-            }
-
-            # Best-effort enrichment via refdata.ch's official GLN registry (Partner API).
-            # Silently skipped when the API isn't configured/reachable or the GLN isn't found.
-            refdata_entry = lookup_gln(prescribed_by, partner_type="NAT")
-            if refdata_entry:
-                refdata_name = _practitioner_name_from_refdata(refdata_entry)
-                if refdata_name:
-                    practitioner["name"] = refdata_name
-                if refdata_entry.get("address"):
-                    address = refdata_entry["address"]
-                    practitioner["address"] = [
-                        {
-                            key: value
-                            for key, value in address.items()
-                            if value
-                        }
-                    ]
-
-            statement["informationSource"] = {"reference": f"Practitioner/{practitioner_id}"}
+            source_gln = prescribed_by
         else:
-            statement["informationSource"] = {"display": prescribed_by}
+            source_display = prescribed_by
+    elif author_gln and _is_valid_gln(author_gln):
+        # CHMED16A Auth: the plan author asserts statements without an
+        # explicit prescriber (CH-EMED informationSource requirement).
+        source_gln = author_gln
+
+    if source_gln:
+        # GLN (Global Location Number), the standard CH identifier for healthcare professionals/orgs.
+        practitioner_id = _stable_id("prac-gln", source_gln)
+        practitioner = {
+            "resourceType": "Practitioner",
+            "id": practitioner_id,
+            "meta": {
+                "profile": [CH_CORE_PRACTITIONER_PROFILE],
+            },
+            "identifier": [
+                {
+                    "system": GLN_SYSTEM,
+                    "value": source_gln,
+                }
+            ],
+        }
+
+        # Best-effort enrichment via refdata.ch's official GLN registry (Partner API).
+        # Silently skipped when the API isn't configured/reachable or the GLN isn't found.
+        refdata_entry = lookup_gln(source_gln, partner_type="NAT")
+        if refdata_entry:
+            refdata_name = _practitioner_name_from_refdata(refdata_entry)
+            if refdata_name:
+                practitioner["name"] = refdata_name
+            if refdata_entry.get("address"):
+                address = refdata_entry["address"]
+                practitioner["address"] = [
+                    {
+                        key: value
+                        for key, value in address.items()
+                        if value
+                    }
+                ]
+
+        statement["informationSource"] = {"reference": f"Practitioner/{practitioner_id}"}
+    elif source_display:
+        statement["informationSource"] = {"display": source_display}
 
     return medication, statement, practitioner
 
@@ -1005,11 +1018,13 @@ def emediplan_to_fhir_bundle(raw_content):
 
     medicaments = med_object.get("Medicaments") or []
     plan_date = _fhir_datetime(med_object.get("Dt"))
+    author_gln = _clean(med_object.get("Auth"))
     for medicament in medicaments:
         medication, statement, practitioner = _build_medication_resources(
             medicament,
             patient_reference,
             date_asserted=plan_date,
+            author_gln=author_gln,
         )
         _append_resource_if_new(resources, seen_resource_keys, medication)
         _append_resource_if_new(resources, seen_resource_keys, statement)
@@ -1050,26 +1065,105 @@ def emediplan_to_fhir_bundle(raw_content):
     return bundle
 
 
-def apply_ch_emed_statement_profiles(bundle):
-    """Return a deep copy declaring the strict CH-EMED MedicationStatement profile.
-
-    Advisory only: the stricter profile is never declared on convert/import
-    bundles because the generated statements intentionally keep the CH-Core
-    structure (separate Medication entries, eMediplan identifiers).
+def build_ch_emed_validation_bundle(bundle):
+    """Return a deep copy transformed into the CH-EMED structure for the
+    advisory validation only: Medications become contained resources with
+    `#`-references, statement identifiers become stable UUIDs, and prescriber
+    information is wrapped in PractitionerRole entries. The convert/import
+    output intentionally keeps the CH-Core structure (separate Medication
+    entries, eMediplan identifiers) for upsert and duplicate matching.
     """
     bundle = copy.deepcopy(bundle)
     if bundle.get("resourceType") != "Bundle":
         return bundle
 
-    for entry in bundle.get("entry") or []:
-        resource = entry.get("resource") if isinstance(entry, dict) else None
+    entries = [entry for entry in bundle.get("entry") or [] if isinstance(entry, dict)]
+    by_full_url = {
+        entry.get("fullUrl"): entry for entry in entries if entry.get("fullUrl")
+    }
+    contained_medication_urls = set()
+    roles_by_target = {}
+    new_role_entries = []
+
+    for entry in entries:
+        resource = entry.get("resource")
         if not isinstance(resource, dict):
             continue
         if resource.get("resourceType") != "MedicationStatement":
             continue
+
         profiles = resource.setdefault("meta", {}).setdefault("profile", [])
         if CH_EMED_MEDICATIONSTATEMENT_PROFILE not in profiles:
             profiles.append(CH_EMED_MEDICATIONSTATEMENT_PROFILE)
+
+        # CH-EMED expects the Medication contained in the statement.
+        medication_reference = resource.get("medicationReference") or {}
+        medication_entry = by_full_url.get(medication_reference.get("reference"))
+        if medication_entry and isinstance(medication_entry.get("resource"), dict):
+            contained_medication = copy.deepcopy(medication_entry["resource"])
+            # Contained resources must not carry a narrative (dom-1).
+            contained_medication.pop("text", None)
+            resource["contained"] = [contained_medication]
+            medication_reference["reference"] = f"#{contained_medication['id']}"
+            contained_medication_urls.add(medication_entry.get("fullUrl"))
+
+        # CH-EMED fixes the identifier to a urn:ietf:rfc:3986 UUID; derive it
+        # deterministically from the stable eMediplan identifier.
+        identifiers = resource.get("identifier") or []
+        if identifiers and isinstance(identifiers[0], dict):
+            source_value = identifiers[0].get("value") or resource.get("id") or ""
+            resource["identifier"] = [
+                {
+                    "system": "urn:ietf:rfc:3986",
+                    "value": "urn:uuid:" + str(
+                        uuid.uuid5(
+                            uuid.NAMESPACE_URL,
+                            "https://emediplan.ch/fhir/medicationstatement-identifier/"
+                            + str(source_value),
+                        )
+                    ),
+                }
+            ]
+
+        # CH-EMED only allows Patient/PractitionerRole/RelatedPerson sources;
+        # wrap the eMediplan prescriber (Practitioner or free text) in a
+        # PractitionerRole.
+        source = resource.get("informationSource") or {}
+        source_reference = source.get("reference")
+        source_display = source.get("display")
+        referenced_entry = by_full_url.get(source_reference) if source_reference else None
+        referenced_type = (
+            (referenced_entry or {}).get("resource", {}).get("resourceType")
+        )
+        target_key = source_reference or source_display
+        if (referenced_type == "Practitioner") or (not source_reference and source_display):
+            role_entry = roles_by_target.get(target_key)
+            if role_entry is None:
+                role_id = _stable_id("pracrole", target_key)
+                role = {"resourceType": "PractitionerRole", "id": role_id}
+                if referenced_type == "Practitioner":
+                    role["practitioner"] = {"reference": source_reference}
+                else:
+                    role["practitioner"] = {"display": source_display}
+                ensure_resource_narrative(role)
+                role_entry = {
+                    "fullUrl": "urn:uuid:" + str(
+                        uuid.uuid5(
+                            uuid.NAMESPACE_URL,
+                            "https://emediplan.ch/fhir/PractitionerRole/" + role_id,
+                        )
+                    ),
+                    "resource": role,
+                }
+                roles_by_target[target_key] = role_entry
+                new_role_entries.append(role_entry)
+            resource["informationSource"] = {"reference": role_entry["fullUrl"]}
+
+    bundle["entry"] = [
+        entry
+        for entry in entries
+        if entry.get("fullUrl") not in contained_medication_urls
+    ] + new_role_entries
 
     return bundle
 

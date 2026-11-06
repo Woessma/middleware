@@ -101,19 +101,24 @@ Andere Importwege erhalten dadurch noch keine automatische Validierungssperre.
 `POST /emediplan/validate` akzeptiert dieselben Eingaben wie
 `/emediplan/convert` (eMediplan-JSON, CHMED16A0/1, Multipart `file` oder
 Form-Feld `raw_payload`; bei PDF/Bild wird der eMediplan-QR-Code lokal
-dekodiert), konvertiert und prueft das Bundle intern mit HAPI
-gegen die deklarierten Profile. Zusaetzlich wird auf einer Kopie des Bundles
-das strikte Profil `ch-emed-medicationstatement` (CH EMED 6.0.0) auf allen
-MedicationStatements deklariert und mitgeprueft. Die Antwort ist das
-OperationOutcome, nicht das Bundle.
+dekodiert). Die Pruefkopie des konvertierten Bundles wird in die
+CH-EMED-Struktur transformiert und intern mit HAPI geprueft: Medications
+werden als contained Ressourcen mit `#`-Referenzen eingebettet,
+Statement-Identifier deterministisch als `urn:uuid` abgebildet und der
+Verschreiber (GLN-Practitioner oder Freitext) in PractitionerRole-Eintraege
+gekapselt. Zusaetzlich zu den deklarierten Profilen wird das strikte Profil
+`ch-emed-medicationstatement` (CH EMED 6.0.0) auf allen MedicationStatements
+deklariert und mitgeprueft. Die Antwort ist das OperationOutcome, nicht das
+Bundle. Fehlt am Medikament ein Verschreiber (`PrscbBy`), dient die
+Plan-Autoren-GLN (`Auth`) als informationSource-Fallback; dieser Fallback
+gilt auch fuer Convert/Import.
 
 Die Pruefung ist bewusst **nur beratend**: Convert-, Prepare- und Importwege
-deklarieren weiterhin CH-Core-Profile und bleiben unveraendert; Befunde aus
-dieser Pruefung blockieren keinen Import. Erwartbare Befunde gegen das
-strikte Profil sind u.a. fehlende contained Medication, eMediplan- statt
-UUID-Identifier, fehlendes `dateAsserted` sowie `informationSource` vom Typ
-Practitioner. HTTP 200 bedeutet eine ausgefuehrte Pruefung, nicht
-Fehlerfreiheit; 400 bei ungueltiger Eingabe, 502 bei Validatorausfall.
+liefern weiterhin die CH-Core-Struktur mit eigenstaendigen
+Medication-Eintraegen und eMediplan-Identifiern (Basis fuer Upsert- und
+Dublettenabgleich) und werden durch Befunde nicht blockiert. HTTP 200
+bedeutet eine ausgefuehrte Pruefung, nicht Fehlerfreiheit; 400 bei
+ungueltiger Eingabe, 502 bei Validatorausfall.
 
 ### Verpflichtende Medikations-Importpruefung (2026-11-05)
 

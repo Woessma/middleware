@@ -133,7 +133,7 @@ from services.vacd_send_service import (
     _embed_precreated_resource,
 )
 from services.emediplan_service import (
-    apply_ch_emed_statement_profiles,
+    build_ch_emed_validation_bundle,
     enrich_emediplan_bundle,
     emediplan_to_fhir_bundle,
     fhir_medications_to_epic_cda,
@@ -2351,7 +2351,7 @@ async def emediplan_validate(
     raw_payload: Optional[str] = Form(None),
 ):
     bundle = await emediplan_convert(request, file=file, raw_payload=raw_payload)
-    return await _validate_converted_bundle(apply_ch_emed_statement_profiles(bundle))
+    return await _validate_converted_bundle(build_ch_emed_validation_bundle(bundle))
 
 
 @app.post("/emediplan/prepare")

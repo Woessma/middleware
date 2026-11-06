@@ -71,7 +71,7 @@ Neu seit 2026-07-30:
 - `PrscbBy` als gueltige GLN geprueft und mit OID `urn:oid:2.51.1.3` als CH-Core-Practitioner abgebildet; Freitext bleibt `informationSource.display`.
 - refdata.ch Partner-API fuer optionale Name-/Adressanreicherung von GLN-Practitionern angebunden.
 - Matrix-Bot fuer eMediplan und CDA mit blockierender Identitaetspruefung, privaten Zwei-Personen-Raeumen und Self-Service-Profilpflege umgesetzt.
-- Beratende CH-EMED-Validierung `POST /emediplan/validate` (2026-11-06): prueft das konvertierte Bundle intern mit HAPI gegen deklarierte Profile plus striktes `ch-emed-medicationstatement` 6.0.0 auf einer Kopie; Convert-/Importwege und deren blockierende Pruefung bleiben unveraendert. Eingaben wie Convert inkl. PDF/Bild mit eMediplan-QR; eigene Werkbank-Use-Cases fuer Text und QR-Datei.
+- Beratende CH-EMED-Validierung `POST /emediplan/validate` (2026-11-06): transformiert eine Pruefkopie des konvertierten Bundles in die CH-EMED-Struktur (contained Medication, UUID-Identifier, PractitionerRole) und prueft sie intern mit HAPI gegen deklarierte Profile plus striktes `ch-emed-medicationstatement` 6.0.0; Convert-/Importwege und deren blockierende Pruefung bleiben auf der CH-Core-Struktur. Eingaben wie Convert inkl. PDF/Bild mit eMediplan-QR; eigene Werkbank-Use-Cases fuer Text und QR-Datei. Plan-Autoren-GLN (`Auth`) dient als informationSource-Fallback ohne `PrscbBy`.
 - ch-pract-1-Befund aus realem Validierungslauf behoben (2026-11-06): refdata-angereicherte Practitioner erhalten strukturierte `family`/`given`-Namen statt nur `text`; ohne bekannten Nachnamen wird kein HumanName gesetzt, damit die blockierende Importpruefung nicht faelschlich abweist.
 
 ## UMZH Connect

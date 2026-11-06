@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from unittest.mock import Mock, patch
 
 from services.emediplan_service import (
-    apply_ch_emed_statement_profiles,
+    build_ch_emed_validation_bundle,
     enrich_emediplan_bundle,
     emediplan_to_fhir_bundle,
     fhir_medications_to_epic_cda,
@@ -191,37 +191,92 @@ class EmediplanServiceTests(unittest.TestCase):
         )
         self.assertNotIn("dateAsserted", statement)
 
-    def test_apply_ch_emed_statement_profiles_is_an_advisory_copy(self):
-        bundle = emediplan_to_fhir_bundle(self._sample_chmed16a_payload())
+    def test_build_ch_emed_validation_bundle_is_an_advisory_transform(self):
+        payload = self._sample_emediplan_object()
+        payload["Medicaments"][0]["PrscbBy"] = "Dr. med. Beispiel"
+        bundle = emediplan_to_fhir_bundle(json.dumps(payload).encode("utf-8"))
         strict_profile = (
             "http://fhir.ch/ig/ch-emed/StructureDefinition/ch-emed-medicationstatement"
         )
 
-        strict = apply_ch_emed_statement_profiles(bundle)
+        strict = build_ch_emed_validation_bundle(bundle)
 
-        def statement_profiles(candidate):
-            return [
-                entry["resource"]["meta"]["profile"]
-                for entry in candidate["entry"]
-                if entry["resource"]["resourceType"] == "MedicationStatement"
+        statements = [
+            entry["resource"]
+            for entry in strict["entry"]
+            if entry["resource"]["resourceType"] == "MedicationStatement"
+        ]
+        self.assertTrue(statements)
+        for statement in statements:
+            self.assertIn(strict_profile, statement["meta"]["profile"])
+            # Medication is embedded as contained resource with a #-reference.
+            contained = statement["contained"][0]
+            self.assertEqual(contained["resourceType"], "Medication")
+            self.assertNotIn("text", contained)
+            self.assertEqual(
+                statement["medicationReference"]["reference"], f"#{contained['id']}"
+            )
+            # Identifier becomes a stable urn:uuid.
+            identifier = statement["identifier"][0]
+            self.assertEqual(identifier["system"], "urn:ietf:rfc:3986")
+            self.assertTrue(identifier["value"].startswith("urn:uuid:"))
+            # informationSource points to a PractitionerRole entry.
+            source_reference = statement["informationSource"]["reference"]
+            role = next(
+                entry["resource"]
+                for entry in strict["entry"]
+                if entry["fullUrl"] == source_reference
+            )
+            self.assertEqual(role["resourceType"], "PractitionerRole")
+
+        # Contained medications are removed as standalone entries.
+        self.assertFalse(
+            [
+                entry
+                for entry in strict["entry"]
+                if entry["resource"]["resourceType"] == "Medication"
             ]
+        )
+        # Deterministic transform for identical input.
+        self.assertEqual(strict, build_ch_emed_validation_bundle(bundle))
 
-        self.assertTrue(statement_profiles(strict))
-        for profiles in statement_profiles(strict):
-            self.assertIn(strict_profile, profiles)
-        # Convert/import output stays on CH-Core; the strict profile is advisory only.
-        for profiles in statement_profiles(bundle):
-            self.assertNotIn(strict_profile, profiles)
+        # Convert/import output stays on CH-Core without contained resources.
+        for entry in bundle["entry"]:
+            resource = entry["resource"]
+            if resource["resourceType"] == "MedicationStatement":
+                self.assertNotIn("contained", resource)
+                self.assertNotIn(strict_profile, resource["meta"]["profile"])
 
-        twice = apply_ch_emed_statement_profiles(strict)
-        for profiles in statement_profiles(twice):
-            self.assertEqual(profiles.count(strict_profile), 1)
-
-    def test_apply_ch_emed_statement_profiles_ignores_non_bundles(self):
+    def test_build_ch_emed_validation_bundle_ignores_non_bundles(self):
         self.assertEqual(
-            apply_ch_emed_statement_profiles({"resourceType": "Patient"}),
+            build_ch_emed_validation_bundle({"resourceType": "Patient"}),
             {"resourceType": "Patient"},
         )
+
+    @patch("services.emediplan_service.lookup_gln")
+    def test_plan_author_gln_is_information_source_fallback(self, mock_lookup):
+        mock_lookup.return_value = None
+        payload = self._sample_emediplan_object()
+        payload["Auth"] = "7601009545993"
+        payload["Medicaments"][0].pop("PrscbBy", None)
+
+        bundle = emediplan_to_fhir_bundle(json.dumps(payload).encode("utf-8"))
+
+        statement = next(
+            entry["resource"]
+            for entry in bundle["entry"]
+            if entry["resource"]["resourceType"] == "MedicationStatement"
+        )
+        practitioner = next(
+            entry["resource"]
+            for entry in bundle["entry"]
+            if entry["resource"]["resourceType"] == "Practitioner"
+        )
+        self.assertEqual(
+            practitioner["identifier"],
+            [{"system": "urn:oid:2.51.1.3", "value": "7601009545993"}],
+        )
+        self.assertIn("informationSource", statement)
 
     def test_parse_chmed16a_uncompressed_json_preserves_string_whitespace(self):
         source = b'CHMED16A0{"Rmk":"take  with  food"}'
