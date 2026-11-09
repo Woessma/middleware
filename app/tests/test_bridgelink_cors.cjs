@@ -13,11 +13,12 @@ const response = scripts.find(script => script.includes('function setClientRespo
 assert.ok(auth);
 assert.ok(response);
 
-function authenticate(method, headers, jwtResult) {
+function authenticate(method, headers, jwtResult, uri = '/v1/cda/convert') {
   let jwtCalls = 0;
   const context = vm.createContext({
     sourceMap: new Map([
-      ['method', method], ['headers', {getHeader: name => headers[name] || null}]
+      ['method', method], ['uri', uri],
+      ['headers', {getHeader: name => headers[name] || null}]
     ]),
     omniLinkJwtAuthenticate: () => { jwtCalls++; return jwtResult; }
   });
@@ -40,7 +41,37 @@ test('only approved-origin GET/POST preflights bypass JWT', () => {
   }
 });
 
-test('actual requests always retain original JWT authentication', () => {
+test('public JWKS GET bypasses JWT, matching routing path normalization', () => {
+  for (const uri of [
+    '/v1/.well-known/jwks.json',
+    '/v1/.well-known/jwks.json?refresh=1',
+    '/V1/.WELL-KNOWN/JWKS.JSON'
+  ]) {
+    assert.deepEqual(authenticate('GET', {}, false, uri),
+      {result: true, jwtCalls: 0});
+  }
+});
+
+test('other paths and methods retain JWT authentication', () => {
+  for (const [method, uri] of [
+    ['POST', '/v1/.well-known/jwks.json'],
+    ['HEAD', '/v1/.well-known/jwks.json'],
+    ['DELETE', '/v1/.well-known/jwks.json'],
+    ['GET', '/v1/.well-known/jwks.json/'],
+    ['GET', '/v1/.well-known/jwks.json/extra'],
+    ['GET', '/v1/.well-known/%6awks.json'],
+    ['GET', '/v1/cda/convert'],
+    ['GET', ''],
+    ['POST', '/v1/cda/import']
+  ]) {
+    for (const jwtResult of [false, true]) {
+      assert.deepEqual(authenticate(method, {}, jwtResult, uri),
+        {result: jwtResult, jwtCalls: 1});
+    }
+  }
+});
+
+test('protected actual requests retain original JWT authentication', () => {
   for (const method of ['POST', 'GET', 'DELETE']) {
     for (const jwtResult of [false, true]) {
       assert.deepEqual(authenticate(method, {

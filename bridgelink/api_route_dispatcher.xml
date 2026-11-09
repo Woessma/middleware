@@ -11,7 +11,14 @@
       <pluginProperties>
         <com.mirth.connect.plugins.httpauth.javascript.JavaScriptHttpAuthProperties version="26.3.1">
   <authType>JAVASCRIPT</authType>
-          <script>if (String(sourceMap.get('method') || '').toUpperCase() === 'OPTIONS') {
+          <script>var method = String(sourceMap.get('method') || '').toUpperCase();
+var path = String(sourceMap.get('uri') || '').split('?')[0].toLowerCase();
+
+if (method === 'GET' &amp;&amp; path === '/v1/.well-known/jwks.json') {
+    return true;
+}
+
+if (method === 'OPTIONS') {
     var headers = sourceMap.get('headers');
     return headers != null
         &amp;&amp; String(headers.getHeader('Origin') || '') === 'https://middleware.local.omnilink.ch'

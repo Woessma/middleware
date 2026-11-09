@@ -1251,7 +1251,7 @@ FHIR Clinical Order and Referral Integration Platform
 
 fuer Placer- und Fulfiller-Szenarien innerhalb des UMZH-Connect-Oekosystems.
 
-## Epic FHIR Sandbox: Backend-OAuth mit Bruno (Stand 2026-10-28)
+## Epic FHIR Sandbox: Backend-OAuth mit Bruno (Stand 2026-11-09)
 
 - Token-Endpunkt: `POST https://fhir.epic.com/interconnect-fhir-oauth/oauth2/token` mit `grant_type=client_credentials` und `client_assertion` (RS256-JWT, `kid=epic-key-1`).
 - Client-Assertion: Pre-Request-Script erzeugt sie pro Request neu (`jti` = neue UUID, `exp` = jetzt + 300 s). Der Private Key liegt nur als Secret `PEM` im Bruno-Environment `omnilink`, nie im Repo. Auf dem Server liegt nur der Public Key fuer das JWKS (`/.well-known/jwks.json`).
@@ -1260,3 +1260,7 @@ fuer Placer- und Fulfiller-Szenarien innerhalb des UMZH-Connect-Oekosystems.
 - Scopes bestimmt Epic ueber die App-Registrierung auf fhir.epic.com, der `scope`-Parameter im Request wird ignoriert (Trenner waere ohnehin Leerzeichen).
 - Ergebnis: `GET Patient/{id}` liefert 200 nach Freigabe von Patient.Read. `Immunization?patient=` und `Observation?patient=&category=vital-signs` liefern 403 `insufficient_scope`; vermutet wird, dass die Search-APIs an der App fehlen (nicht verifiziert).
 - Offen: Search-APIs (Immunization, Observation, Patient, List) in der Epic-App ergaenzen, neuen Token holen, erneut testen. `Patient?identifier=FHIR|<id>` lieferte 404 (Code 59008, ungueltige FHIR-ID); Request-Pfad noch zu pruefen.
+- Fehlerbehebung 2026-11-09: Epic meldete `invalid_client`, und die Non-Production JWK Set URL konnte nicht validiert werden. Der externe JWKS-GET lieferte HTTP `401`, weil im HTTP Listener die oeffentliche JWKS-Ausnahme fehlte.
+- Der Nutzer hat die Ausnahme fuer `GET /v1/.well-known/jwks.json` vor der JWT-Pruefung eingespielt und den Channel redeployt. Danach wurde der JWKS-Abruf ohne Authorization erfolgreich geprueft (`kid=epic-key-1`, `kty=RSA`, `alg=RS256`, `use=sig`); der Nutzer bestaetigte den erfolgreichen Epic-Tokenabruf.
+- Die Ausnahme betrifft nur den oeffentlichen Schluesselabruf. Die bestehende OPTIONS-Behandlung bleibt erhalten; andere OmniLink-API-Aufrufe benoetigen weiterhin ein Keycloak-Bearer-Token. Zusaetzliche Annahme von Epic-Access-Tokens ist nicht implementiert.
+- Versionierter Channel-Export und Deployhinweise: [BridgeLink README](../bridgelink/README.md#public-epic-jwks-authentication). Die JWKS-, CORS-, Core- und Routing-Pruefungen bestanden mit 29 Tests.

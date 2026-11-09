@@ -230,6 +230,48 @@ existing filter. No new endpoint, dynamic Channel Writer, destination,
 permission model or external VACD send route is introduced. Destination
 filters and response processing remain unchanged.
 
+### Public Epic JWKS authentication
+
+The HTTP Listener authentication script must allow unauthenticated `GET`
+requests to `/v1/.well-known/jwks.json` before calling
+`omniLinkJwtAuthenticate()`. Epic retrieves this public signing key to verify
+the app's client assertion; requiring a bearer token here prevents that
+retrieval. This does not enable inbound Epic access-token authentication.
+
+The versioned channel export includes this exception. When updating an
+existing channel, prepend the following to its HTTP Listener JavaScript
+authentication script, retaining its existing OPTIONS handling and final
+`return omniLinkJwtAuthenticate();`:
+
+```javascript
+var method = String(sourceMap.get('method') || '').toUpperCase();
+var path = String(sourceMap.get('uri') || '').split('?')[0].toLowerCase();
+
+if (method === 'GET' && path === '/v1/.well-known/jwks.json') {
+    return true;
+}
+```
+
+Save and redeploy the channel. Verify without an Authorization header:
+
+```sh
+curl --fail-with-body https://api.omnilink.ch/v1/.well-known/jwks.json
+```
+
+Expect HTTP 200 and a JSON object containing `keys`. Its signing key's `kid`
+must match the client assertion and its public key must match the private key
+used by the signer. Other API paths must still reject unauthenticated requests.
+A 401 from the JWKS URL means the public exception is not effective; a 503
+means the middleware public-key configuration needs correction.
+
+Live verification on 2026-11-09: the public URL initially returned HTTP 401.
+After the user applied the listener exception and redeployed the channel, an
+unauthenticated retrieval succeeded with `kid=epic-key-1`, `kty=RSA`,
+`alg=RS256`, and `use=sig`. The user also confirmed that Epic issued an access
+token again. The targeted JWKS/CORS, core, and routing suite passed 29 tests.
+Other OmniLink API calls still require Keycloak authentication; accepting
+Epic access tokens on those routes has not been implemented.
+
 ### Migration
 
 1. Export the current, OL_CORE-enabled channel as a rollback copy.

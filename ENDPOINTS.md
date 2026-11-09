@@ -231,6 +231,16 @@ Die Middleware stellt `GET /.well-known/jwks.json` bereit. BridgeLink bildet
 auf diese Route ab. Die separate GET-Destination umgeht die FHIR-Verarbeitung;
 Destination 99 reicht den JWKS-Body und HTTP-Status unveraendert weiter.
 
+Live geprueft am 2026-11-09: Nach Ergaenzung der exakten JWKS-GET-Ausnahme
+im HTTP Listener und Redeploy ist der externe Abruf ohne Authorization
+erfolgreich (`kid=epic-key-1`, `alg=RS256`, `use=sig`). Zuvor lieferte die
+Route HTTP `401`, und Epic konnte die registrierte JWK Set URL nicht
+validieren; nach der Korrektur bestaetigte der Nutzer den Tokenabruf.
+Die Ausnahme und Deployschritte stehen im
+[BridgeLink README](bridgelink/README.md#public-epic-jwks-authentication).
+Sie erlaubt keine Epic-Access-Tokens fuer andere OmniLink-API-Aufrufe;
+deren Keycloak-Authentifizierung bleibt unveraendert.
+
 Compose bindet nur den oeffentlichen RSA-Schluessel read-only unter
 `/run/epic/epic-public.pem` ein und setzt `EPIC_PUBLIC_KEY_PATH` entsprechend.
 Die Host-Datei liegt standardmaessig unter
