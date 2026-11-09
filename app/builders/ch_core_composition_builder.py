@@ -1,4 +1,4 @@
-import html
+from fhir.narrative import build_text_narrative
 
 
 CH_CORE_COMPOSITION_PROFILE = (
@@ -212,15 +212,13 @@ def build_ch_core_composition(
         if note_references:
             section_entry["entry"] = note_references
 
-        if section_entry and not note_references:
+        if section_entry:
             narrative = section.get("narrativeText") or section.get("text")
-            if not isinstance(narrative, str) or not narrative.strip():
+            if isinstance(narrative, str) and narrative.strip():
+                section_entry["text"] = build_text_narrative(narrative)
+            elif not note_references:
                 narrative = "No structured entries were extracted from this CDA section."
-            section_entry["text"] = {
-                "status": "generated",
-                "div": '<div xmlns="http://www.w3.org/1999/xhtml">'
-                + html.escape(narrative) + "</div>",
-            }
+                section_entry["text"] = build_text_narrative(narrative)
 
         if section_entry:
             composition["section"].append(section_entry)

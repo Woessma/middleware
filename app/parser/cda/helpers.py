@@ -1,10 +1,6 @@
 
 from parser.cda.constants import NS
 
-from utils.fhir_utils import (
-    cda_ts_to_fhir_datetime,
-)
-
 
 def text_or_none(element):
     if element is None:

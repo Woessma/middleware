@@ -4,7 +4,7 @@ import re
 import zipfile
 from collections import Counter
 from datetime import date as date_type
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import urlsplit
 
 from services.echosos_service import parse_echosos_data, ECHOSOS_IDENTIFIER_SYSTEM
 

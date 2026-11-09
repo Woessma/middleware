@@ -1,4 +1,8 @@
+from collections.abc import Iterable
 from html import escape
+
+
+XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml"
 
 
 NON_DOMAIN_RESOURCE_TYPES = {
@@ -152,6 +156,25 @@ def _resource_summary(resource):
     ]
 
 
+def build_xhtml_narrative(div_content: str) -> dict[str, str]:
+    return {
+        "status": "generated",
+        "div": f'<div xmlns="{XHTML_NAMESPACE}">{div_content}</div>',
+    }
+
+
+def build_text_narrative(text: str) -> dict[str, str]:
+    return build_xhtml_narrative(escape(text))
+
+
+def build_list_narrative(items: Iterable[str]) -> dict[str, str]:
+    list_items = "".join(
+        f"<li>{escape(item)}</li>"
+        for item in items
+    )
+    return build_xhtml_narrative(f"<ul>{list_items}</ul>")
+
+
 def ensure_resource_narrative(resource):
     if not isinstance(resource, dict):
         return resource
@@ -184,14 +207,8 @@ def ensure_resource_narrative(resource):
     else:
         content = f"<p>{escape(resource_type)}</p>"
 
-    resource["text"] = {
-        "status": "generated",
-        "div": (
-            "<div xmlns=\"http://www.w3.org/1999/xhtml\">"
-            f"<p><b>{escape(title)}</b></p>"
-            f"{content}"
-            "</div>"
-        ),
-    }
+    resource["text"] = build_xhtml_narrative(
+        f"<p><b>{escape(title)}</b></p>{content}"
+    )
 
     return resource

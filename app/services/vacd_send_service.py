@@ -36,13 +36,13 @@ import copy
 import hashlib
 import json
 import uuid
-from html import escape
 from typing import Callable, Optional
 from urllib.parse import quote
 
 import requests
 
 from config import FHIR_BASE, VACD_IMPORT_DB
+from fhir.narrative import build_list_narrative
 from services.fhir_validation_service import FhirValidationError, validate_fhir_bundle
 from services.patient_service import PatientLookupError, PatientMatchConflictError
 from services.vacd_import_guard import VacdImportGuard
@@ -388,17 +388,11 @@ def _retain_new_immunizations(bundle, existing):
         or any(entry["resource"] is resource for resource in retained)
     ]
     summaries = [
-        escape(
             f"{(resource.get('vaccineCode') or {}).get('text') or ', '.join(code for _, code in sorted(_vaccine_codes(resource)))}"
             f" | {resource.get('occurrenceDateTime') or resource.get('occurrenceString') or ''}"
             f" | {resource.get('lotNumber') or ''}"
-        )
         for resource in retained
     ]
-    narrative = '<div xmlns="http://www.w3.org/1999/xhtml"><ul>' + "".join(
-        f"<li>{summary}</li>" for summary in summaries
-    ) + "</ul></div>"
-
     def rebuild_sections(sections):
         for section in sections:
             original = section.get("entry") or []
@@ -408,7 +402,7 @@ def _retain_new_immunizations(bundle, existing):
                 for coding in (section.get("code") or {}).get("coding") or []
             )
             if len(section["entry"]) != len(original) or is_vaccination_section:
-                section["text"] = {"status": "generated", "div": narrative}
+                section["text"] = build_list_narrative(summaries)
                 if not section["entry"]:
                     section.pop("entry")
                     section["emptyReason"] = {"coding": [{
@@ -432,7 +426,7 @@ def _retain_new_immunizations(bundle, existing):
             resource["identifier"] = copy.deepcopy(new_identifier)
             rebuild_sections(resource.get("section") or [])
             if "text" in resource:
-                resource["text"] = {"status": "generated", "div": narrative}
+                resource["text"] = build_list_narrative(summaries)
     return len(retained), removed_count
 
 

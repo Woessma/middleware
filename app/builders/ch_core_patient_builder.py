@@ -1,5 +1,7 @@
 from html import escape
 
+from fhir.narrative import build_xhtml_narrative
+
 from domain.patient import PatientData
 
 CH_CORE_PROFILE = (
@@ -351,20 +353,16 @@ def set_patient_narrative(resource):
     birth_date = resource.get("birthDate") or "unknown"
     address = _format_patient_address(resource)
 
-    resource["text"] = {
-        "status": "generated",
-        "div": (
-            "<div xmlns=\"http://www.w3.org/1999/xhtml\">"
-            f"<p><b>Generated Narrative: Patient {escape(resource.get('id') or '')}</b></p>"
-            f"<p>{escape(patient_name)} {escape(gender)}, DoB: {escape(birth_date)}</p>"
-            + (
-                f"<p>Contact Detail {escape(address)}</p>"
-                if address
-                else ""
-            )
-            + "</div>"
-        ),
-    }
+    content = (
+        f"<p><b>Generated Narrative: Patient {escape(resource.get('id') or '')}</b></p>"
+        f"<p>{escape(patient_name)} {escape(gender)}, DoB: {escape(birth_date)}</p>"
+        + (
+            f"<p>Contact Detail {escape(address)}</p>"
+            if address
+            else ""
+        )
+    )
+    resource["text"] = build_xhtml_narrative(content)
 
 def build_ch_core_patient(patient: PatientData) -> dict:
 

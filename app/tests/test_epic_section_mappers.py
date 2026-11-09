@@ -193,6 +193,26 @@ class EpicSectionMapperTests(unittest.TestCase):
         self.assertEqual(resources[0]["code"]["coding"][0]["code"], "30954-2")
         self.assertEqual(resources[0]["conclusion"], "Wert 1: 5.2 mmol/l\nWert 2: normal")
 
+    def test_lab_section_keeps_narrative_with_structured_results(self):
+        section = {
+            "title": "Resultate",
+            "code": {"code": "30954-2"},
+            "entries": [{
+                "code": {
+                    "code": "30954-2",
+                    "codeSystem": "2.16.840.1.113883.6.1",
+                },
+                "value": {"value": "5.2", "unit": "mmol/L"},
+            }],
+            "narrativeText": "Glucose: 5.2 mmol/L",
+        }
+
+        resources = map_lab_section(section, "Patient/123", {})
+
+        self.assertEqual(resources[0]["resourceType"], "DiagnosticReport")
+        self.assertEqual(resources[0]["conclusion"], "Glucose: 5.2 mmol/L")
+        self.assertEqual(len(resources[0]["result"]), 1)
+
     def test_extract_sections_preserves_narrative_text_for_lab_sections(self):
         xml_payload = '''
         <ClinicalDocument xmlns="urn:hl7-org:v3">

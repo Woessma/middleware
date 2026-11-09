@@ -1,117 +1,52 @@
-# LEGACY
-# replaced by parse_patient() + build_ch_core_patient()
-
-
-from fastapi import FastAPI, UploadFile, File, HTTPException
-
-import requests
-import traceback
-import xml.etree.ElementTree as ET
-import uuid
-from datetime import datetime, timezone
-import os
-import logging
-import json
 import copy
 import hashlib
+import json
+import logging
+import os
+import traceback
+import uuid
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
+from typing import Optional
 from urllib.parse import urljoin, urlsplit
 
-DEBUG_MODE = os.getenv(
-    "DEBUG_MODE",
-    "false"
-).lower() == "true"
-
-logger = logging.getLogger(__name__)
-
-# Import
-
-from typing import Optional
+import requests
 
 from fastapi import (
-    UploadFile,
+    FastAPI,
     File,
     Form,
     HTTPException,
-    Request,
     Query,
+    Request,
     Response,
+    UploadFile,
 )
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from starlette.concurrency import run_in_threadpool
 
-
-# CDA Constants
 from parser.cda.constants import NS
-
-# CDA Parser
-from parser.cda.patient_parser import parse_patient
-from parser.cda.practitioner_parser import parse_practitioner
-from parser.cda.encounter_parser import (
-    parse_encounters,
-)
 
 from parser.cda.section_parser import (
     extract_sections,
-)
-
-from parser.cda.section_parser import (
     extract_code,
 )
 from parser.hl7v2.oru_r01_parser import parse_oru_r01, to_transaction_bundle
 
-
-# Builder
 from builders.ch_core_patient_builder import (
-    build_ch_core_patient,
     ensure_contact_address,
-)
-
-from builders.ch_core_practitioner_builder import (
-    build_ch_core_practitioner
-)
-
-from builders.ch_core_organization_builder import (
-    build_ch_core_organization
-)
-
-from builders.ch_core_practitioner_role_builder import (
-    build_ch_core_practitioner_role
-)
-
-from builders.ch_core_encounter_builder import (
-    build_ch_core_encounter,
-)
-from builders.observation_builder import build_observation_from_entry
-
-# Mapper
-from mappers.organization_mapper import (
-    organization_to_fhir_params
-)
-
-# Converter
-from converter.section_dispatcher import (
-    get_section_mapper
 )
 
 from converter.profile_detector import (
     detect_profile
 )
 
-# Utils
 from utils.fhir_utils import (
     cda_ts_to_fhir_date,
     cda_ts_to_fhir_datetime
 )
 
-# Services
-from services.patient_service import (
-    get_or_create_patient
-)
-
-from services.practitioner_service import (
-    get_or_create_practitioner
-)
 from services.organization_service import (
     get_or_create_organization
 )
@@ -140,6 +75,7 @@ from services.emediplan_service import (
     fetch_medication_bundle_from_fhir_server,
 )
 from services.patient_service import (
+    get_or_create_patient,
     PatientMatchConflictError,
     PatientLookupError,
     find_matching_patient,
@@ -158,7 +94,7 @@ from services.terminology_service import (
     enrich_bundle_terminology,
     validate_bundle_terminology,
 )
-from fhir.narrative import ensure_resource_narrative
+from fhir.narrative import build_text_narrative, ensure_resource_narrative
 
 # helpers
 from parser.cda.helpers import (
@@ -189,6 +125,13 @@ from services.pmlc_auth_service import PmlcAuthError, authorize_pmlc
 from services.vacd_validation_service import VacdValidationError, validate_vacd_husky
 from services.medication_import_validation_service import MedicationImportRejected, validate_medication_import
 
+
+DEBUG_MODE = os.getenv(
+    "DEBUG_MODE",
+    "false"
+).lower() == "true"
+
+logger = logging.getLogger(__name__)
 
 UMZH_SEND_BASE_URL = os.getenv("UMZH_SEND_BASE_URL", "")
 UMZH_SEND_TIMEOUT = int(os.getenv("UMZH_SEND_TIMEOUT", "60"))
@@ -1829,10 +1772,7 @@ def _mark_vacd_bundle(bundle):
                         coding["system"] = "http://loinc.org"
 
                 if section.get("title") and not section.get("text"):
-                    section["text"] = {
-                        "status": "generated",
-                        "div": f"<div xmlns=\"http://www.w3.org/1999/xhtml\">{section['title']}</div>",
-                    }
+                    section["text"] = build_text_narrative(section["title"])
 
                 section_code = {
                     coding.get("code")

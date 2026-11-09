@@ -2,14 +2,12 @@ import logging
 import hashlib
 import uuid
 
-from parser.cda.helpers import text_or_none
 from terminology.loinc import (
     LOINC,
     get_loinc_display
 )
 from terminology.oid import oid_to_fhir_system
 from utils.fhir_utils import (
-    cda_ts_to_fhir_date,
     cda_ts_to_fhir_datetime
 )
 from mappers.author_helpers import add_author_display
@@ -37,6 +35,13 @@ def map_lab_section(
     )
  
     observation_refs = []
+    narrative_text = (
+        section.get("narrativeText")
+        or section.get("text")
+        or ""
+    )
+    if not isinstance(narrative_text, str):
+        narrative_text = ""
  
     for entry in entries:
  
@@ -63,41 +68,31 @@ def map_lab_section(
                 observation["id"],
             )
  
-    if observation_refs:
- 
+    if observation_refs or narrative_text.strip():
         diagnostic_report = build_diagnostic_report(
             section,
             patient_reference,
             observation_refs
         )
- 
+
+        if narrative_text.strip():
+            diagnostic_report["conclusion"] = narrative_text
+
         resources.insert(
             0,
             diagnostic_report
         )
- 
-    elif section.get("narrativeText") or section.get("text"):
- 
-        diagnostic_report = build_diagnostic_report(
-            section,
-            patient_reference,
-            []
-        )
- 
-        narrative_text = (
-            section.get("narrativeText")
-            or section.get("text")
-            or ""
-        )
- 
-        if narrative_text:
-            diagnostic_report["conclusion"] = narrative_text
- 
-        resources.insert(0, diagnostic_report)
- 
+
+        if not observation_refs:
+            logger.debug(
+                "CREATED DIAGNOSTIC REPORT: %s",
+                diagnostic_report["id"],
+            )
+
+    if observation_refs:
         logger.debug(
-            "CREATED DIAGNOSTIC REPORT: %s",
-            diagnostic_report["id"],
+            "CREATED DIAGNOSTIC REPORT WITH %s RESULTS",
+            len(observation_refs),
         )
  
     logger.debug(

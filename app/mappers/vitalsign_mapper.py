@@ -5,7 +5,6 @@ import uuid
 from terminology.loinc import get_loinc_display
 from utils.fhir_utils import (
     fhir_decimal,
-    cda_ts_to_fhir_date,
     cda_ts_to_fhir_datetime
 )
 from mappers.author_helpers import add_author_display

@@ -3,10 +3,7 @@ import hashlib
 import uuid
 from mappers.author_helpers import add_author_display
 
-from utils.fhir_utils import (
-    cda_ts_to_fhir_date,
-    cda_ts_to_fhir_datetime
-)
+from utils.fhir_utils import cda_ts_to_fhir_date
 
 
 logger = logging.getLogger(__name__)

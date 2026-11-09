@@ -6,14 +6,6 @@ from config import FHIR_BASE
 from fhir.identifiers import import_resource_identity
 from fhir.narrative import ensure_resource_narrative
 
-from mappers.medication_mapper import (
-    get_medication_if_none_exist,
-)
-
-from mappers.allergy_mapper import (
-    get_allergy_if_none_exist,
-)
-
 
 def _preserve_existing_careteam_participants(resource, resource_id):
     if resource.get("resourceType") != "CareTeam" or resource.get("participant"):

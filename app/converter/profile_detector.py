@@ -1,4 +1,3 @@
-import xml.etree.ElementTree as ET
 from parser.cda.constants import NS
 
 

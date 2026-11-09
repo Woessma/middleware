@@ -37,6 +37,31 @@ class CdaR4StructureTests(unittest.TestCase):
         )
         self.assertIn("A &lt; B &amp; C", composition["section"][0]["text"]["div"])
 
+    def test_section_preserves_narrative_alongside_resource_references(self):
+        composition = build_ch_core_composition(
+            patient_reference="Patient/synthetic",
+            document_type_code={"code": "synthetic"},
+            title="Synthetic", date="2026-01-01",
+            section_summaries=[{
+                "title": "Resultate",
+                "code": {"code": "30954-2"},
+                "narrativeText": "Glucose < 6 mmol/L",
+            }],
+            clinical_note_references=[],
+            section_resource_references=[{
+                "reference": "DiagnosticReport/report-1",
+                "sectionCode": "30954-2",
+                "sectionTitle": "Resultate",
+            }],
+        )
+
+        section = composition["section"][0]
+        self.assertEqual(
+            section["entry"],
+            [{"reference": "DiagnosticReport/report-1"}],
+        )
+        self.assertIn("Glucose &lt; 6 mmol/L", section["text"]["div"])
+
     def test_document_references_resolve_and_entries_have_no_transaction_fields(self):
         response = Mock()
         response.raise_for_status.return_value = None
