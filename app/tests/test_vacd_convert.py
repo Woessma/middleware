@@ -329,6 +329,103 @@ class VacdConvertEndpointTests(unittest.TestCase):
             [{"reference": "urn:uuid:patient"}],
         )
 
+    def test_epic_fhir_bundle_converts_to_vacd_and_validates_without_writing(self):
+        source = {
+            "resourceType": "Bundle",
+            "type": "document",
+            "meta": {"tag": [{"system": "https://example.test", "code": "epic"}]},
+            "entry": [
+                {
+                    "fullUrl": "urn:uuid:composition",
+                    "resource": {
+                        "resourceType": "Composition",
+                        "id": "composition",
+                        "meta": {"profile": [
+                            "http://fhir.ch/ig/ch-ips/StructureDefinition/ch-ips-composition"
+                        ]},
+                        "subject": {"reference": "Patient/patient"},
+                        "section": [{
+                            "title": "Immunizations",
+                            "code": {"coding": [{
+                                "system": "http://loinc.org",
+                                "code": "11369-6",
+                            }]},
+                            "entry": [{"reference": "Immunization/immunization"}],
+                        }],
+                    },
+                },
+                {
+                    "fullUrl": "urn:uuid:patient",
+                    "resource": {"resourceType": "Patient", "id": "patient"},
+                },
+                {
+                    "fullUrl": "urn:uuid:immunization",
+                    "resource": {
+                        "resourceType": "Immunization",
+                        "id": "immunization",
+                        "patient": {"reference": "Patient/patient"},
+                    },
+                },
+                {
+                    "fullUrl": "urn:uuid:observation",
+                    "resource": {"resourceType": "Observation", "id": "observation"},
+                },
+            ],
+        }
+
+        outcome = {
+            "resourceType": "OperationOutcome",
+            "issue": [{"severity": "information", "code": "informational"}],
+        }
+        with (
+            patch("main._validate_bundle", side_effect=lambda bundle: bundle) as terminology,
+            patch("main.validate_fhir_bundle", return_value=(200, outcome)) as validate,
+            patch("main.requests.post") as post,
+        ):
+            response = TestClient(app).post("/fhir/vacd/convert", json=source)
+
+        self.assertEqual(response.status_code, 200, response.text)
+        result = response.json()
+        bundle = result["bundle"]
+        self.assertEqual(result["validation"], outcome)
+        self.assertEqual(response.headers["cache-control"], "no-store")
+        self.assertEqual(bundle["type"], "document")
+        self.assertNotIn("tag", bundle["meta"])
+        self.assertIn(
+            "http://fhir.ch/ig/ch-vacd/StructureDefinition/"
+            "ch-vacd-document-immunization-administration",
+            bundle["meta"]["profile"],
+        )
+        self.assertEqual(
+            [entry["resource"]["resourceType"] for entry in bundle["entry"]],
+            ["Composition", "Patient", "Immunization"],
+        )
+        immunization = bundle["entry"][2]["resource"]
+        self.assertEqual(
+            immunization["extension"][0]["valueCoding"]["code"],
+            "76104008",
+        )
+        terminology.assert_called_once()
+        validate.assert_called_once()
+        self.assertEqual(
+            validate.call_args.args[0]["entry"][0]["resource"]["resourceType"],
+            "Composition",
+        )
+        post.assert_not_called()
+
+    def test_fhir_vacd_convert_rejects_bundle_without_required_resources(self):
+        client = TestClient(app)
+        for entries in ([], [None]):
+            with self.subTest(entries=entries):
+                response = client.post(
+                    "/fhir/vacd/convert",
+                    json={"resourceType": "Bundle", "entry": entries},
+                )
+
+                self.assertEqual(response.status_code, 400)
+                expected = "entry must contain a resource" if entries else "Composition, Patient"
+                self.assertIn(expected, response.json()["detail"])
+
 
 if __name__ == "__main__":
     unittest.main()

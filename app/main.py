@@ -1934,6 +1934,46 @@ async def cda_vacd_convert(
         )
 
 
+@app.post("/fhir/vacd/convert")
+async def fhir_vacd_convert(bundle: dict):
+    if bundle.get("resourceType") != "Bundle" or not isinstance(bundle.get("entry"), list):
+        raise HTTPException(
+            status_code=400,
+            detail="A FHIR Bundle with an entry array is required",
+        )
+
+    if not all(
+        isinstance(entry, dict) and isinstance(entry.get("resource"), dict)
+        for entry in bundle["entry"]
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Every FHIR Bundle entry must contain a resource object",
+        )
+
+    resources = [entry["resource"] for entry in bundle["entry"]]
+    resource_types = {
+        resource.get("resourceType")
+        for resource in resources
+        if isinstance(resource.get("resourceType"), str)
+    }
+    if not {"Composition", "Patient", "Immunization"}.issubset(resource_types):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "The FHIR Bundle must contain a Composition, Patient, "
+                "and at least one Immunization"
+            ),
+        )
+
+    try:
+        converted_bundle = _validate_bundle(_mark_vacd_bundle(bundle))
+        return await _validate_converted_bundle(converted_bundle, include_bundle=True)
+    except Exception as ex:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(ex))
+
+
 def _validation_outcome_response(status_code, code, diagnostics):
     return JSONResponse(
         status_code=status_code,
@@ -1945,16 +1985,26 @@ def _validation_outcome_response(status_code, code, diagnostics):
     )
 
 
-async def _validate_converted_bundle(bundle):
+async def _validate_converted_bundle(bundle, *, include_bundle=False):
     try:
         status_code, outcome = await run_in_threadpool(validate_fhir_bundle, bundle)
     except ValueError as ex:
-        return _validation_outcome_response(400, "invalid", str(ex))
+        response = _validation_outcome_response(400, "invalid", str(ex))
+        if include_bundle:
+            response.headers["Cache-Control"] = "no-store"
+        return response
     except FhirValidationError as ex:
         logger.error("FHIR validation failed: %s", ex)
-        return _validation_outcome_response(502, "exception", str(ex))
+        response = _validation_outcome_response(502, "exception", str(ex))
+        if include_bundle:
+            response.headers["Cache-Control"] = "no-store"
+        return response
+    content = {"bundle": bundle, "validation": outcome} if include_bundle else outcome
     return JSONResponse(
-        status_code=status_code, content=outcome, media_type="application/fhir+json"
+        status_code=status_code,
+        content=content,
+        media_type="application/fhir+json",
+        headers={"Cache-Control": "no-store"} if include_bundle else None,
     )
 
 

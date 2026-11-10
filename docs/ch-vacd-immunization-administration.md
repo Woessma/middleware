@@ -55,6 +55,9 @@ Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt n
 ## Aktuelle Endpunkte
 
 - Konvertierung: `POST /cda/vacd/convert`
+- Epic-FHIR-Document in ein CH-VACD-Dokument umwandeln, intern validieren und
+  Bundle plus OperationOutcome liefern, ohne Speicherung oder Versand:
+  `POST /fhir/vacd/convert`
 - Validierung ohne Speicherung: `POST /cda/vacd/validate`
 - Zusaetzliche Husky-Pruefung aus CDA: `POST /cda/vacd/husky/validate`
 - Bestehendes FHIR-Document mit Husky pruefen: `POST /fhir/vacd/husky/validate`

@@ -144,6 +144,7 @@
       ['EPIC CDA','fhir-epic','FHIR Bundle → EPIC CDA','POST','/fhir/medications/epic-cda','json','Erzeugt ein EPIC-Medikations-CDA aus einem FHIR-Bundle.',sampleBundle],
       ['EPIC CDA','emed-epic','eMediplan → EPIC CDA','POST','/emediplan/epic-cda','binary-file','Konvertiert eMediplan (Text, PDF oder Bild mit QR-Code) über FHIR in ein EPIC-Medikations-CDA.'],
       ['EPIC CDA','server-epic','FHIR-Server → EPIC CDA','GET','/fhir/medications/epic-cda/from-server','none','Liest Medikationen aus FHIR und erzeugt ein EPIC-CDA.',undefined,[{name:'patient_id',label:'Patient-ID',type:'text',placeholder:'optional'},{name:'count',label:'Max. Treffer',type:'number',value:'100'}]],
+      ['EPIC Sandbox','vacd-epic-convert','Epic FHIR-Bundle → CH VACD validieren','POST','/fhir/vacd/convert','json','Wandelt ein aus der Epic Sandbox abgefragtes FHIR-Document-Bundle in ein CH-VACD-Immunization-Administration-Dokument um und validiert es intern. Keine Speicherung und kein Versand.',undefined,[],'same-origin'],
       ['Terminologie','tx-expand','ValueSet $expand','POST','/terminology/ValueSet/$expand','json','Expandiert ein ValueSet über den TX-Server.',{resourceType:'Parameters',parameter:[{name:'url',valueUri:'http://hl7.org/fhir/ValueSet/observation-codes'}]}],
       ['Terminologie','tx-lookup','CodeSystem $lookup','POST','/terminology/CodeSystem/$lookup','json','Liest Details zu einem Code aus dem TX-Server.',txCode],
       ['Terminologie','tx-validate','ValueSet $validate-code','POST','/terminology/ValueSet/$validate-code','json','Validiert einen Code gegen ein ValueSet.',txCode],
@@ -160,13 +161,14 @@
     vacdSendCase.target='same-origin';
     vacdSendCase.params=vacdSendCase.params.filter(param=>param.name!=='outbound_authorization');
     vacdSendCase.params[0].value='https://vaccination-demo.raly.ch/api/fhir';
-    const approvedUseCaseIds=new Set(['cda-convert','cda-source-validate','cda-validate','cda-bundle-validate','pmlc-generate','cda-import','emed-convert','emed-validate','emed-import','bundle-import','emed-qr-convert','emed-qr-validate','emed-qr-import','echosos-resolve','patient-everything','vacd-convert','vacd-validate','vacd-husky-validate','vacd-bundle-husky-validate','vacd-send']);
+    const approvedUseCaseIds=new Set(['cda-convert','cda-source-validate','cda-validate','cda-bundle-validate','pmlc-generate','cda-import','emed-convert','emed-validate','emed-import','bundle-import','emed-qr-convert','emed-qr-validate','emed-qr-import','echosos-resolve','patient-everything','vacd-convert','vacd-validate','vacd-husky-validate','vacd-bundle-husky-validate','vacd-send','vacd-epic-convert']);
     function visibleCases(){return cases.filter(item=>approvedUseCaseIds.has(item.id))}
     function current(){return visibleCases().find(item=>item.id===el.useCase.value)||visibleCases()[0]}
     function processingPath(item){
       if(['vacd-husky-validate','vacd-bundle-husky-validate'].includes(item.id))return 'Middleware → interner Husky CH-VACD-6.0.0-Validator (keine Speicherung)';
       if(item.id==='pmlc-generate')return 'Middleware → interner HAPI (nur Lesen) → Husky CH-EMED-EPR (keine Speicherung)';
       if(item.id==='cda-source-validate')return 'Middleware → interner Husky-CDA-Validator (keine Speicherung)';
+      if(item.id==='vacd-epic-convert')return 'Middleware → CH-VACD-Aufbereitung → interner HAPI-Validator (keine Speicherung)';
       if(['cda-validate','cda-bundle-validate','vacd-validate','emed-validate'].includes(item.id))return 'Middleware → interner HAPI-Validator (keine Speicherung)';
       if(item.id==='emed-qr-validate')return 'Middleware (QR-Dekodierung) → interner HAPI-Validator (keine Speicherung)';
       if(['cda-import','emed-qr-import'].includes(item.id))return 'Middleware → BridgeLink → HAPI';
@@ -236,7 +238,10 @@
     function parse(text,type){const trimmed=text.trim();if(!trimmed)return{};if(type.includes('json')||trimmed.startsWith('{')||trimmed.startsWith('[')){try{return JSON.parse(text)}catch{return text}}return text}
     function validationReports(value){
       if(value?.resourceType==='OperationOutcome')return [{title:'Validierung',outcome:value}];
-      if(value?.bundle?.resourceType==='Bundle'&&value?.validation?.resourceType==='OperationOutcome')return [{title:'CH-EMED-EPR Medikationsliste',outcome:value.validation}];
+      if(value?.bundle?.resourceType==='Bundle'&&value?.validation?.resourceType==='OperationOutcome'){
+        const vacd=(value.bundle.meta?.profile||[]).some(profile=>profile.includes('/ch-vacd/'));
+        return [{title:vacd?'CH-VACD Epic Sandbox':'CH-EMED-EPR Medikationsliste',outcome:value.validation}];
+      }
       const validation=value?.send?.validation;
       if(!validation)return [];
       return [
