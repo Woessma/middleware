@@ -1836,6 +1836,36 @@ def _mark_vacd_bundle(bundle):
     return bundle
 
 
+def _normalize_epic_vacd_bundle(bundle):
+    bundle = copy.deepcopy(bundle)
+    entries = bundle.get("entry") or []
+
+    for entry in entries:
+        resource = entry.get("resource") or {}
+        resource_type = resource.get("resourceType")
+
+        if resource_type == "Composition" and not resource.get("language"):
+            resource["language"] = "en"
+
+        if resource_type != "Immunization":
+            continue
+
+        for performer in resource.get("performer") or []:
+            actor = performer.get("actor") or {}
+            reference = actor.get("reference")
+            if not isinstance(reference, str):
+                continue
+
+            reference_path = reference.split("?", 1)[0].split("#", 1)[0]
+            reference_parts = reference_path.rstrip("/").split("/")
+            if len(reference_parts) >= 2 and reference_parts[-2] == "Practitioner":
+                actor.pop("reference", None)
+                if not actor.get("display"):
+                    actor["display"] = "Practitioner"
+
+    return bundle
+
+
 @app.post("/cda/convert")
 
 async def cda_convert(
@@ -1967,7 +1997,9 @@ async def fhir_vacd_convert(bundle: dict):
         )
 
     try:
-        converted_bundle = _validate_bundle(_mark_vacd_bundle(bundle))
+        converted_bundle = _validate_bundle(
+            _mark_vacd_bundle(_normalize_epic_vacd_bundle(bundle))
+        )
         return await _validate_converted_bundle(converted_bundle, include_bundle=True)
     except Exception as ex:
         traceback.print_exc()

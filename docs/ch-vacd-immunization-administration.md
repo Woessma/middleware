@@ -58,6 +58,12 @@ Der Pfad ist für Dokumente mit verabreichten Impfungen gedacht. Er übernimmt n
 - Epic-FHIR-Document in ein CH-VACD-Dokument umwandeln, intern validieren und
   Bundle plus OperationOutcome liefern, ohne Speicherung oder Versand:
   `POST /fhir/vacd/convert`
+- Beim Epic-Eingang wird eine fehlende `Composition.language` für die
+  englischsprachige Sandbox-Narrative als `en` ergänzt. Direkte
+  `Practitioner`-Referenzen in `Immunization.performer.actor` werden entfernt,
+  weil das CH-VACD-Profil nur `PractitionerRole` oder `Organization` zulässt;
+  vorhandene Anzeigenamen bleiben erhalten. Es wird keine
+  PractitionerRole/Organisation erfunden.
 - Validierung ohne Speicherung: `POST /cda/vacd/validate`
 - Zusaetzliche Husky-Pruefung aus CDA: `POST /cda/vacd/husky/validate`
 - Bestehendes FHIR-Document mit Husky pruefen: `POST /fhir/vacd/husky/validate`

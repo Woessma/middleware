@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from main import app, _mark_vacd_bundle
+from main import app, _mark_vacd_bundle, _normalize_epic_vacd_bundle
 from fhir.bundle import build_bundle_entry
 
 
@@ -344,6 +344,7 @@ class VacdConvertEndpointTests(unittest.TestCase):
                             "http://fhir.ch/ig/ch-ips/StructureDefinition/ch-ips-composition"
                         ]},
                         "subject": {"reference": "Patient/patient"},
+                        "language": "en",
                         "section": [{
                             "title": "Immunizations",
                             "code": {"coding": [{
@@ -364,6 +365,12 @@ class VacdConvertEndpointTests(unittest.TestCase):
                         "resourceType": "Immunization",
                         "id": "immunization",
                         "patient": {"reference": "Patient/patient"},
+                        "performer": [{
+                            "actor": {
+                                "reference": "https://epic.example/FHIR/R4/Practitioner/practitioner",
+                                "display": "Synthetic Practitioner",
+                            },
+                        }],
                     },
                 },
                 {
@@ -405,13 +412,56 @@ class VacdConvertEndpointTests(unittest.TestCase):
             immunization["extension"][0]["valueCoding"]["code"],
             "76104008",
         )
+        self.assertEqual(
+            immunization["performer"][0]["actor"],
+            {"display": "Synthetic Practitioner"},
+        )
         terminology.assert_called_once()
         validate.assert_called_once()
         self.assertEqual(
             validate.call_args.args[0]["entry"][0]["resource"]["resourceType"],
             "Composition",
         )
+        self.assertEqual(
+            validate.call_args.args[0]["entry"][0]["resource"]["language"],
+            "en",
+        )
         post.assert_not_called()
+
+    def test_epic_vacd_normalization_preserves_input_and_non_practitioner_actors(self):
+        source = {
+            "resourceType": "Bundle",
+            "entry": [
+                {"resource": {"resourceType": "Composition"}},
+                {"resource": {
+                    "resourceType": "Immunization",
+                    "performer": [
+                        {"actor": {
+                            "reference": "https://epic.example/FHIR/R4/Practitioner/p1",
+                        }},
+                        {"actor": {
+                            "reference": "Organization/o1",
+                            "display": "Synthetic Clinic",
+                        }},
+                    ],
+                }},
+            ],
+        }
+
+        normalized = _normalize_epic_vacd_bundle(source)
+
+        self.assertNotIn("language", source["entry"][0]["resource"])
+        self.assertEqual(normalized["entry"][0]["resource"]["language"], "en")
+        self.assertEqual(
+            normalized["entry"][1]["resource"]["performer"],
+            [
+                {"actor": {"display": "Practitioner"}},
+                {"actor": {
+                    "reference": "Organization/o1",
+                    "display": "Synthetic Clinic",
+                }},
+            ],
+        )
 
     def test_fhir_vacd_convert_rejects_bundle_without_required_resources(self):
         client = TestClient(app)
