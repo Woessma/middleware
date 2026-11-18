@@ -21,10 +21,15 @@
 | VACD Validate | Same-Origin `/cda/vacd/validate` | Nein |
 | CDA -> VACD zusaetzlich mit Husky pruefen | Same-Origin `/cda/vacd/husky/validate` | Nein |
 | VACD FHIR-Bundle mit Husky pruefen | Same-Origin `/fhir/vacd/husky/validate` | Nein |
+| Epic Sandbox FHIR-Bundle -> CH-VACD umwandeln und validieren | Same-Origin `/fhir/vacd/convert` | Nein |
 | VACD openEHR-Send | Same-Origin `/cda/vacd/send` | Externer Demo-FHIR-Server |
 
 Der VACD-HAPI-Import ist aus der Werkbank entfernt und serverseitig
 deaktiviert (HTTP 410 auch ueber die bisherige Importvorbereitung).
+Der Epic-Sandbox-Use-Case erwartet ein aus Epic exportiertes FHIR-Document-Bundle
+als JSON-Eingabe. Er bereitet es mit der bestehenden CH-VACD-Logik auf, prüft
+das Ergebnis mit dem internen HAPI-Validator und zeigt Bundle plus
+OperationOutcome; er speichert und versendet keine Daten.
 Der externe VACD-Sendeweg bleibt davon getrennt. Am 2026-11-05 wurde ein
 erfolgreicher Testaufruf anhand der bereitgestellten Antwort belegt:
 Patient neu angelegt, drei neue Impfungen, Dokumentantwort HTTP 201.
@@ -219,7 +224,7 @@ Adressen unter `link.self`; diese werden bewusst nicht umgeschrieben.
 - VACD-Live-Abnahme, 400-/401- und Ausfalltests nach dem Refactoring sind offen.
 
 Channel-Snapshot, Library-Importe, Rollback und Sync beider Git-Remotes:
-[BridgeLink-Dokumentation](bridgelink/README.md).
+[BridgeLink-Dokumentation](bridgelink/BridgeLink.md).
 
 ### Offene Punkte fuer die Fortsetzung
 

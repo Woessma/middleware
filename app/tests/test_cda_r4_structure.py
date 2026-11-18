@@ -101,3 +101,26 @@ class CdaR4StructureTests(unittest.TestCase):
             "http://fhir.ch/ig/ch-ips/StructureDefinition/ch-ips-composition",
             bundle["entry"][0]["resource"]["meta"]["profile"],
         )
+
+    def test_nullflavor_only_practitioner_is_skipped_instead_of_failing(self):
+        # Epic-Sandbox-Dokumente liefern Behandler nur mit nullFlavor
+        # (id/name/addr/telecom UNK); die Konvertierung darf daran nicht
+        # mit "Practitioner besitzt keinen Identifier" scheitern.
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {"entry": []}
+        with (
+            patch("fhir.bundle.requests.get", return_value=response),
+            patch.object(cda_bundle_service, "resolve_patient_id", return_value="synthetic-patient"),
+            patch.object(cda_bundle_service, "resolve_organization_id", return_value="synthetic-organization"),
+        ):
+            bundle = cda_bundle_service.cda_to_fhir_bundle(
+                (Path(__file__).parent / "data" / "EPIC_Sandbox.xml").read_bytes(),
+                bundle_type="document",
+            )
+        resource_types = {
+            entry["resource"]["resourceType"] for entry in bundle["entry"]
+        }
+        self.assertNotIn("Practitioner", resource_types)
+        self.assertNotIn("PractitionerRole", resource_types)
+        self.assertIn("Composition", resource_types)

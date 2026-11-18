@@ -1,7 +1,11 @@
 import requests
 
 from config import TERMINOLOGY_BASE_URL, TERMINOLOGY_TIMEOUT
-from terminology.cvx import SYSTEM as CVX_SYSTEM, snomed_code_for_cvx
+from terminology.cvx import (
+    SYSTEM as CVX_SYSTEM,
+    cvx_concept_for_code,
+    snomed_code_for_cvx,
+)
 
 
 VALIDATABLE_SYSTEMS = {
@@ -37,11 +41,22 @@ def validate_coding(
         return {"status": "skipped", "reason": "coding has no system or code"}
 
     if system == CVX_SYSTEM:
+        concept = cvx_concept_for_code(code)
+        if not concept:
+            return {
+                "status": "invalid",
+                "reason": "CVX code is not present in the bundled CDC code set",
+            }
+
         snomed_code = snomed_code_for_cvx(code)
         if not snomed_code:
             return {
-                "status": "skipped",
-                "reason": "CVX has no internal SNOMED mapping",
+                "status": "validated",
+                "result": {
+                    "code": str(code).strip(),
+                    "display": concept["display"],
+                    "status": concept["status"],
+                },
             }
 
         mapped_coding = {
@@ -58,6 +73,7 @@ def validate_coding(
         )
         result["mapped_from"] = coding
         result["mapped_coding"] = mapped_coding
+        result["cvx_status"] = concept["status"]
         return result
 
     if system not in VALIDATABLE_SYSTEMS:

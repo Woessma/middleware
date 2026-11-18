@@ -206,7 +206,7 @@ class TerminologyServiceTests(unittest.TestCase):
             "https://tx.fhir.ch/r4/CodeSystem/$lookup",
         )
 
-    def test_skips_cvx_without_internal_snomed_mapping(self):
+    def test_validates_cvx_without_internal_snomed_mapping(self):
         result = validate_coding(
             {
                 "system": "http://hl7.org/fhir/sid/cvx",
@@ -214,7 +214,19 @@ class TerminologyServiceTests(unittest.TestCase):
             }
         )
 
-        self.assertEqual(result["status"], "skipped")
+        self.assertEqual(result["status"], "validated")
+        self.assertEqual(result["result"]["code"], "184")
+        self.assertEqual(result["result"]["status"], "Inactive")
+
+    def test_rejects_cvx_code_missing_from_bundled_cdc_code_set(self):
+        result = validate_coding(
+            {
+                "system": "http://hl7.org/fhir/sid/cvx",
+                "code": "not-a-cvx-code",
+            }
+        )
+
+        self.assertEqual(result["status"], "invalid")
 
     @patch("services.terminology_service.requests.post")
     def test_calls_r4_validate_code_operation(self, mock_post):

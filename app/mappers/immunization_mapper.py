@@ -3,7 +3,12 @@ import hashlib
 import uuid
 
 from fhir.fhir_helpers import oid_to_fhir_system
-from terminology.cvx import CVX_VACCINES
+from terminology.cvx import (
+    CVX_VACCINES,
+    SYSTEM as CVX_SYSTEM,
+    cvx_concept_for_code,
+    snomed_code_for_cvx,
+)
 from terminology.vacd import VACD_VACCINES
 from utils.fhir_utils import (
     cda_ts_to_fhir_date,
@@ -20,19 +25,34 @@ CH_CORE_IMMUNIZATION_PROFILE = (
 
 def _build_vaccine_code_codings(vaccine_code, vaccine_display, code_system=None):
     coding = []
+    vaccine_system = oid_to_fhir_system(code_system) if code_system else None
+    cvx_concept = (
+        cvx_concept_for_code(vaccine_code)
+        if vaccine_code and vaccine_system == CVX_SYSTEM
+        else None
+    )
 
     if vaccine_code:
         primary_coding = {"code": vaccine_code}
-        if code_system:
-            system = oid_to_fhir_system(code_system)
-            if system:
-                primary_coding["system"] = system
-        if vaccine_display:
+        if vaccine_system:
+            primary_coding["system"] = vaccine_system
+        if vaccine_display and vaccine_display != "Unknown Vaccine":
+            primary_coding["display"] = vaccine_display
+        elif cvx_concept:
+            primary_coding["display"] = cvx_concept["display"]
+        elif vaccine_display:
             primary_coding["display"] = vaccine_display
         coding.append(primary_coding)
 
     normalized_name = (
-        "_".join((vaccine_display or "").strip().upper().replace("-", "_").split())
+        "_".join(
+            (vaccine_display or "")
+            .strip()
+            .upper()
+            .replace("-", "_")
+            .replace(",", " ")
+            .split()
+        )
     )
     vaccine_key = None
     for key in [normalized_name, (vaccine_code or "").strip()]:
@@ -46,21 +66,22 @@ def _build_vaccine_code_codings(vaccine_code, vaccine_display, code_system=None)
             break
 
     if vaccine_key:
-        cvx_value = CVX_VACCINES.get(vaccine_key, {}).get("cvx")
         snomed_value = CVX_VACCINES.get(vaccine_key, {}).get("snomed") or VACD_VACCINES.get(vaccine_key, {}).get("snomed")
 
-        if cvx_value:
-            coding.insert(0, {
-                "system": "http://hl7.org/fhir/sid/cvx",
-                "code": cvx_value,
-                "display": vaccine_display or vaccine_key.replace("_", " ").title(),
-            })
-
         if snomed_value:
-            coding.insert(1 if cvx_value else 0, {
+            coding.append({
                 "system": "http://snomed.info/sct",
                 "code": snomed_value,
                 "display": vaccine_display or vaccine_key.replace("_", " ").title(),
+            })
+
+    if cvx_concept:
+        snomed_value = snomed_code_for_cvx(vaccine_code)
+        if snomed_value:
+            coding.append({
+                "system": "http://snomed.info/sct",
+                "code": snomed_value,
+                "display": cvx_concept["display"],
             })
 
     if not coding and vaccine_display:

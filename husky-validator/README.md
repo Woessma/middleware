@@ -140,7 +140,7 @@ PractitionerRole-Verweise und unveraenderte Quellressourcen. Die separate
 verpflichtende Importpruefung verwendet den internen HAPI-Server, nicht
 den Husky-Ausgabevalidator. Bestehende HAPI-Daten werden nicht migriert.
 Middleware und Husky sind neu gebaut und gestartet; das CDA-Gateway
-benoetigt noch das [Routingupdate](../bridgelink/README.md).
+benoetigt noch das [Routingupdate](../bridgelink/BridgeLink.md).
 
 Der Docker-Build fuehrt die Java-Tests aus. Python-Tests:
 `app/tests/test_cda_source_validation.py`, bestehende FHIR-/VACD-Tests;

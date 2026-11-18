@@ -29,7 +29,7 @@ from .allergy import (
     REACTION_TYPE_CODE,
     REACTION_TYPE_TEXT,
 )
-from .cvx import CVX
+from .cvx import CVX, CVX_CODES
 from .terms import TERMS
 from .vacd import VACD, OLD_SWISS_VACCINES, SWISSMEDIC_AUTHORIZED_VACCINES
 from .ch_term import (
@@ -75,6 +75,7 @@ __all__ = [
     "REACTION_TYPE_CODE",
     "REACTION_TYPE_TEXT",
     "CVX",
+    "CVX_CODES",
     "TERMS",
     "VACD",
     "OLD_SWISS_VACCINES",

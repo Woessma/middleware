@@ -22,11 +22,9 @@ VACD_VACCINES = {
         "snomed": "1119349007",
     },
     "INFLUENZA": {
-        "cvx": "140",
         "snomed": "346524008",
     },
     "INFLUENZA_IMPFUNG": {
-        "cvx": "202",
         "snomed": "346524008",
     },
 }

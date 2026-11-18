@@ -379,6 +379,17 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
 
     practitioner_data = parse_practitioner(root)
 
+    if practitioner_data and not practitioner_data.identifiers:
+        # Epic-Sandbox/Testdokumente liefern teils nur nullFlavor-Behandler
+        # (id/name/addr/telecom UNK): ohne Identifier und ohne
+        # Fingerprint-Material wird kein Practitioner erzeugt statt mit
+        # HTTP 500 abzubrechen.
+        logger.info(
+            "CDA ohne verwertbare Behandlerangaben (nur nullFlavor); "
+            "Practitioner wird ausgelassen"
+        )
+        practitioner_data = None
+
     if practitioner_data:
 
         practitioner_resource = (
