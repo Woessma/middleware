@@ -1,0 +1,379 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "total": 4,
+  "link": [
+    {
+      "relation": "self",
+      "url": "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4/Immunization?patient=T81lum-5p6QvDR7l6hv7lfE52bAbA2ylWBnv9CZEzNb0B"
+    }
+  ],
+  "entry": [
+    {
+      "link": [
+        {
+          "relation": "self",
+          "url": "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4/Immunization/euRxNz.NRxWg0nSZxuyOQFw3"
+        }
+      ],
+      "fullUrl": "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4/Immunization/euRxNz.NRxWg0nSZxuyOQFw3",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "euRxNz.NRxWg0nSZxuyOQFw3",
+        "identifier": [
+          {
+            "use": "usual",
+            "system": "urn:oid:1.2.840.114350.1.13.0.1.7.2.768076",
+            "value": "21265"
+          }
+        ],
+        "status": "completed",
+        "vaccineCode": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/cvx",
+              "code": "09"
+            }
+          ],
+          "text": "Td"
+        },
+        "patient": {
+          "reference": "Patient/e63wRTbPfr1p8UW81d8Seiw3",
+          "display": "Mychart, Theodore"
+        },
+        "occurrenceDateTime": "2006-07-07",
+        "primarySource": true,
+        "location": {
+          "display": "FHIR Sandbox"
+        },
+        "manufacturer": {
+          "display": "Abbott Laboratories"
+        },
+        "lotNumber": "125",
+        "site": {
+          "coding": [
+            {
+              "system": "urn:oid:1.2.840.114350.1.13.0.1.7.10.768076.4040",
+              "code": "7",
+              "display": "Left deltoid"
+            }
+          ],
+          "text": "Left deltoid"
+        },
+        "route": {
+          "coding": [
+            {
+              "system": "urn:oid:1.2.840.114350.1.13.0.1.7.10.768076.4030",
+              "code": "2",
+              "display": "Intramuscular"
+            }
+          ],
+          "text": "Intramuscular"
+        },
+        "performer": [
+          {
+            "function": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0443",
+                  "code": "AP",
+                  "display": "Administering Provider"
+                }
+              ],
+              "text": "Administering Provider"
+            },
+            "actor": {
+              "reference": "Practitioner/erqn5oyiA9.LpVQkQ2Ulmgg3",
+              "type": "Practitioner",
+              "display": "Nurse Family Medicine, RN"
+            }
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      }
+    },
+    {
+      "link": [
+        {
+          "relation": "self",
+          "url": "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4/Immunization/eQ1XY8rJsbl65osRvcQSPqA3"
+        }
+      ],
+      "fullUrl": "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4/Immunization/eQ1XY8rJsbl65osRvcQSPqA3",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "eQ1XY8rJsbl65osRvcQSPqA3",
+        "identifier": [
+          {
+            "use": "usual",
+            "system": "urn:oid:1.2.840.114350.1.13.0.1.7.2.768076",
+            "value": "21266"
+          }
+        ],
+        "status": "completed",
+        "vaccineCode": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/cvx",
+              "code": "141"
+            }
+          ],
+          "text": "Influenza TIV (IM)"
+        },
+        "patient": {
+          "reference": "Patient/e63wRTbPfr1p8UW81d8Seiw3",
+          "display": "Mychart, Theodore"
+        },
+        "occurrenceDateTime": "2006-07-07",
+        "primarySource": true,
+        "location": {
+          "display": "FHIR Sandbox"
+        },
+        "manufacturer": {
+          "display": "Abbott Laboratories"
+        },
+        "lotNumber": "163",
+        "site": {
+          "coding": [
+            {
+              "system": "urn:oid:1.2.840.114350.1.13.0.1.7.10.768076.4040",
+              "code": "7",
+              "display": "Left deltoid"
+            }
+          ],
+          "text": "Left deltoid"
+        },
+        "route": {
+          "coding": [
+            {
+              "system": "urn:oid:1.2.840.114350.1.13.0.1.7.10.768076.4030",
+              "code": "2",
+              "display": "Intramuscular"
+            }
+          ],
+          "text": "Intramuscular"
+        },
+        "performer": [
+          {
+            "function": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0443",
+                  "code": "AP",
+                  "display": "Administering Provider"
+                }
+              ],
+              "text": "Administering Provider"
+            },
+            "actor": {
+              "reference": "Practitioner/erqn5oyiA9.LpVQkQ2Ulmgg3",
+              "type": "Practitioner",
+              "display": "Nurse Family Medicine, RN"
+            }
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      }
+    },
+    {
+      "link": [
+        {
+          "relation": "self",
+          "url": "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4/Immunization/eASBi3ppirWD.NBbbxgPTgQ3"
+        }
+      ],
+      "fullUrl": "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4/Immunization/eASBi3ppirWD.NBbbxgPTgQ3",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "eASBi3ppirWD.NBbbxgPTgQ3",
+        "identifier": [
+          {
+            "use": "usual",
+            "system": "urn:oid:1.2.840.114350.1.13.0.1.7.2.768076",
+            "value": "21267"
+          }
+        ],
+        "status": "completed",
+        "vaccineCode": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/cvx",
+              "code": "141"
+            }
+          ],
+          "text": "Influenza TIV (IM)"
+        },
+        "patient": {
+          "reference": "Patient/e63wRTbPfr1p8UW81d8Seiw3",
+          "display": "Mychart, Theodore"
+        },
+        "occurrenceDateTime": "2009-04-13",
+        "primarySource": true,
+        "location": {
+          "display": "FHIR Sandbox"
+        },
+        "manufacturer": {
+          "display": "Abbott Laboratories"
+        },
+        "lotNumber": "1956",
+        "site": {
+          "coding": [
+            {
+              "system": "urn:oid:1.2.840.114350.1.13.0.1.7.10.768076.4040",
+              "code": "7",
+              "display": "Left deltoid"
+            }
+          ],
+          "text": "Left deltoid"
+        },
+        "route": {
+          "coding": [
+            {
+              "system": "urn:oid:1.2.840.114350.1.13.0.1.7.10.768076.4030",
+              "code": "2",
+              "display": "Intramuscular"
+            }
+          ],
+          "text": "Intramuscular"
+        },
+        "performer": [
+          {
+            "function": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0443",
+                  "code": "AP",
+                  "display": "Administering Provider"
+                }
+              ],
+              "text": "Administering Provider"
+            },
+            "actor": {
+              "reference": "Practitioner/erqn5oyiA9.LpVQkQ2Ulmgg3",
+              "type": "Practitioner",
+              "display": "Nurse Family Medicine, RN"
+            }
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      }
+    },
+    {
+      "link": [
+        {
+          "relation": "self",
+          "url": "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4/Immunization/ek8jRRnKJ4UlNGzXOkqPgPQ3"
+        }
+      ],
+      "fullUrl": "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4/Immunization/ek8jRRnKJ4UlNGzXOkqPgPQ3",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "ek8jRRnKJ4UlNGzXOkqPgPQ3",
+        "identifier": [
+          {
+            "use": "usual",
+            "system": "urn:oid:1.2.840.114350.1.13.0.1.7.2.768076",
+            "value": "21268"
+          }
+        ],
+        "status": "completed",
+        "vaccineCode": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/cvx",
+              "code": "141"
+            }
+          ],
+          "text": "Influenza TIV (IM)"
+        },
+        "patient": {
+          "reference": "Patient/e63wRTbPfr1p8UW81d8Seiw3",
+          "display": "Mychart, Theodore"
+        },
+        "occurrenceDateTime": "2010-04-21",
+        "primarySource": true,
+        "location": {
+          "display": "FHIR Sandbox"
+        },
+        "manufacturer": {
+          "display": "Abbott Laboratories"
+        },
+        "lotNumber": "165",
+        "site": {
+          "coding": [
+            {
+              "system": "urn:oid:1.2.840.114350.1.13.0.1.7.10.768076.4040",
+              "code": "7",
+              "display": "Left deltoid"
+            }
+          ],
+          "text": "Left deltoid"
+        },
+        "route": {
+          "coding": [
+            {
+              "system": "urn:oid:1.2.840.114350.1.13.0.1.7.10.768076.4030",
+              "code": "2",
+              "display": "Intramuscular"
+            }
+          ],
+          "text": "Intramuscular"
+        },
+        "performer": [
+          {
+            "function": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0443",
+                  "code": "AP",
+                  "display": "Administering Provider"
+                }
+              ],
+              "text": "Administering Provider"
+            },
+            "actor": {
+              "reference": "Practitioner/erqn5oyiA9.LpVQkQ2Ulmgg3",
+              "type": "Practitioner",
+              "display": "Nurse Family Medicine, RN"
+            }
+          }
+        ]
+      },
+      "search": {
+        "mode": "match"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e2882dc2-3ff7-4a1d-81a8-a0c4511d6bc1",
+      "resource": {
+        "resourceType": "OperationOutcome",
+        "issue": [
+          {
+            "severity": "warning",
+            "code": "suppressed",
+            "details": {
+              "coding": [
+                {
+                  "system": "urn:oid:1.2.840.114350.1.13.0.1.7.2.657369",
+                  "code": "59204",
+                  "display": "The authenticated client's search request applies to a sub-resource that the client is not authorized for. Results of this sub-type will not be returned."
+                }
+              ],
+              "text": "The authenticated client's search request applies to a sub-resource that the client is not authorized for. Results of this sub-type will not be returned."
+            },
+            "diagnostics": "Client not authorized for Immunization - Outside Record. Search results of this type have not been included."
+          }
+        ]
+      },
+      "search": {
+        "mode": "outcome"
+      }
+    }
+  ]
+}

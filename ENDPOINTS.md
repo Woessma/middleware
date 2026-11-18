@@ -459,6 +459,7 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/cda/vacd/validate` | Konvertiert und validiert das CH-VACD-Dokument ohne Speicherung | CDA -> CH-VACD -> HAPI `$validate` |
 | `POST` | `/cda/vacd/husky/validate` | Zusaetzliche Offline-Profilpruefung mit Husky | CDA -> CH-VACD 6.0.0 -> Husky |
 | `POST` | `/fhir/vacd/husky/validate` | Bestehendes VACD-Document unveraendert mit Husky pruefen | FHIR-JSON -> Husky |
+| `POST` | `/fhir/vacd/convert` | Epic-FHIR zu CH-VACD aufbereiten und intern validieren; akzeptiert Document-Bundles sowie Epic `Immunization.Search`-searchsets (Patient kombiniert als `{"patient": ..., "immunizations": ...}` oder als Bundle-Eintrag; Composition/Organization werden synthetisiert) | Epic-FHIR -> CH-VACD -> HAPI `$validate` |
 | `POST` | `/cda/vacd/prepare`, `/cda/vacd/import` | Deaktiviert, HTTP 410 mit OperationOutcome | Kein Import |
 | `POST` | `/cda/vacd/send` | Konvertiert CDA und versendet an den VACD-Zielserver | CH-VACD-Sendefluss |
 | `POST` | `/emediplan/convert` | Konvertiert Text, PDF oder QR-Bild in ein FHIR-Bundle | eMediplan -> FHIR |

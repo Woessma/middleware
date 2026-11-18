@@ -22,6 +22,7 @@
 | CDA -> VACD zusaetzlich mit Husky pruefen | Same-Origin `/cda/vacd/husky/validate` | Nein |
 | VACD FHIR-Bundle mit Husky pruefen | Same-Origin `/fhir/vacd/husky/validate` | Nein |
 | Epic Sandbox FHIR-Bundle -> CH-VACD umwandeln und validieren | Same-Origin `/fhir/vacd/convert` | Nein |
+| EPIC-CH VACD: Epic Immunization-Searchset -> CH-VACD umwandeln und validieren | Same-Origin `/fhir/vacd/convert` | Nein |
 | VACD openEHR-Send | Same-Origin `/cda/vacd/send` | Externer Demo-FHIR-Server |
 
 Der VACD-HAPI-Import ist aus der Werkbank entfernt und serverseitig
@@ -30,6 +31,19 @@ Der Epic-Sandbox-Use-Case erwartet ein aus Epic exportiertes FHIR-Document-Bundl
 als JSON-Eingabe. Er bereitet es mit der bestehenden CH-VACD-Logik auf, prüft
 das Ergebnis mit dem internen HAPI-Validator und zeigt Bundle plus
 OperationOutcome; er speichert und versendet keine Daten.
+Der EPIC-CH-VACD-Searchset-Use-Case akzeptiert zusätzlich das Ergebnis von
+Epics `Immunization.Search` (searchset, ohne Composition). Da das searchset
+keinen Patient enthält, wird dieser entweder kombiniert als
+`{"patient": <Patient.Read-JSON>, "immunizations": <searchset>}` mitgegeben
+oder als zusätzlicher Bundle-Eintrag ergänzt (optional ebenso eine
+`organization`). Die Middleware synthetisiert Composition (SNOMED
+41000179103, Sektion LOINC 11369-6) und Custodian-Organization (Fallback:
+`location.display`), reichert CVX-Codes über den kuratierten Crosswalk mit
+SNOMED-Zwillingscodes an, entfernt Epic-interne site/route-Codings
+(Text bleibt erhalten) und lässt OperationOutcome-Einträge aus. Danach läuft
+derselbe Aufbereitungs- und Validierungsweg wie beim Document-Bundle.
+Live-Abnahme 2026-11-18 mit dem Sandbox-Searchset (Td + 3x Influenza):
+0 Fehler, nur Terminologie-/dom-6-Warnungen des lokalen Validators.
 Der externe VACD-Sendeweg bleibt davon getrennt. Am 2026-11-05 wurde ein
 erfolgreicher Testaufruf anhand der bereitgestellten Antwort belegt:
 Patient neu angelegt, drei neue Impfungen, Dokumentantwort HTTP 201.

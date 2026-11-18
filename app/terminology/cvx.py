@@ -86,6 +86,8 @@ CVX_VACCINES = {
 # contradict the Epic displays (Diphtherie-Tetanus/FSME); those are mapped via
 # the display-based CVX_VACCINES entries above instead.
 CVX_TO_SNOMED = {
+    "09": "871826000",
+    "141": "346524008",
     "207": "1119349007",
     "140": "346524008",
     "202": "346524008",

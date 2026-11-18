@@ -123,6 +123,7 @@ from services.cda_validation_service import (
 from services.pmlc_service import PmlcServiceError, PmlcSourceError, generate_pmlc
 from services.pmlc_auth_service import PmlcAuthError, authorize_pmlc
 from services.refdata_service import RefdataRefreshError, refresh_partner_files
+from services.epic_vacd_service import build_vacd_source_bundle, is_epic_immunization_payload
 from services.vacd_validation_service import VacdValidationError, validate_vacd_husky
 from services.medication_import_validation_service import MedicationImportRejected, validate_medication_import
 
@@ -1989,6 +1990,14 @@ async def cda_vacd_convert(
 
 @app.post("/fhir/vacd/convert")
 async def fhir_vacd_convert(bundle: dict):
+    if is_epic_immunization_payload(bundle):
+        # Epic Immunization.Search liefert ein searchset ohne Composition;
+        # Patient und Dokumentstruktur werden hier synthetisiert.
+        try:
+            bundle = build_vacd_source_bundle(bundle)
+        except ValueError as ex:
+            raise HTTPException(status_code=400, detail=str(ex))
+
     if bundle.get("resourceType") != "Bundle" or not isinstance(bundle.get("entry"), list):
         raise HTTPException(
             status_code=400,
