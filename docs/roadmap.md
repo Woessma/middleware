@@ -1,8 +1,15 @@
 # Roadmap
 
-Stand: 2026-11-06
+Stand: 2026-11-18
 
-## Aktuelle Ergaenzung: Beratende CH-EMED-Validierung fuer eMediplan
+## Aktuelle Ergaenzung: Automatisierter Refdata-Partner-Refresh
+
+- `POST /admin/api/refdata/refresh` laedt das offizielle Partner-Zip von api.refdata.ch, validiert NAT/JUR und ersetzt die Dateien atomar im persistenten Volume `refdata-data`
+- Refdata-XMLs aus dem Docker-Image entfernt; GLN-Anreicherung nutzt tagesaktuelle Volume-Daten, SQLite-Index wird automatisch neu aufgebaut
+- Taeglicher Trigger ueber BridgeLink-Channel `Refdata_Partner_Refresh` (02:00 UTC = 03:00 CET) mit alertbarem Fehlerverhalten; Snapshot versioniert unter `bridgelink/`
+- Geplante separate `omnilink_refdata`-PostgreSQL-Datenbank bleibt als langfristige Loesung im Backlog
+
+## Vorherige Ergaenzung: Beratende CH-EMED-Validierung fuer eMediplan
 
 - `POST /emediplan/validate` fuer Text/JSON/CHMED16A und QR aus PDF/Bild mit eigenen Werkbank-Use-Cases umgesetzt
 - Pruefkopie wird in die CH-EMED-Struktur transformiert (contained Medication, UUID-Identifier, PractitionerRole) und intern mit HAPI geprueft; Realplan 0 Fehler

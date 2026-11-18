@@ -122,6 +122,7 @@ from services.cda_validation_service import (
 )
 from services.pmlc_service import PmlcServiceError, PmlcSourceError, generate_pmlc
 from services.pmlc_auth_service import PmlcAuthError, authorize_pmlc
+from services.refdata_service import RefdataRefreshError, refresh_partner_files
 from services.vacd_validation_service import VacdValidationError, validate_vacd_husky
 from services.medication_import_validation_service import MedicationImportRejected, validate_medication_import
 
@@ -619,6 +620,28 @@ def admin_document(document_id: str):
         "title": document["title"],
         "filename": document["filename"],
         "content": content,
+    }
+
+
+@app.post("/admin/api/refdata/refresh")
+async def admin_refdata_refresh():
+    """Downloads the full Refdata partner export (zip) and replaces the local
+    NAT/JUR XML files. Intended to be triggered manually or by an external
+    scheduler (e.g. a BridgeLink polling channel or cron)."""
+    try:
+        results = await run_in_threadpool(refresh_partner_files)
+    except RefdataRefreshError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except requests.RequestException as exc:
+        logger.exception("Refdata partner export download failed")
+        raise HTTPException(
+            status_code=502, detail=f"Refdata-Download fehlgeschlagen: {exc}"
+        ) from exc
+
+    return {
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "files": results,
     }
 
 

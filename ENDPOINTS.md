@@ -139,7 +139,7 @@ reine Convert-/Stabilize-Endpunkte werden nicht zu Importen umgedeutet.
 **CDA-Gateway muss neu deployt werden:** Die lokalen OL_ROUTING-/Channel-XMLs
 wurden auf `/v1/cda/import -> /cda/prepare` umgestellt. Die bisher laufende
 Route `/cda/convert` ist noch keine Importsperre. Datei-Aenderung allein
-aendert den Live-Channel nicht. Siehe [BridgeLink](bridgelink/README.md).
+aendert den Live-Channel nicht. Siehe [BridgeLink](bridgelink/BridgeLink.md).
 
 Importmapping: unzweideutige direkte CDA-Medikationsautoren werden mit
 Identifier und `dateAsserted` strukturiert erhalten; eigene Entry-Notizen
@@ -221,7 +221,7 @@ Die Werkbank verbirgt interne Middleware-Pfade in der Anzeige; Browser-
 Netzwerkdetails und originale FHIR-Antworten bleiben davon unberuehrt.
 
 Versionierter Export, Templates und Git-Sync fuer beide Remotes:
-[BridgeLink](bridgelink/README.md). Anzeige und Abnahmegrenzen:
+[BridgeLink](bridgelink/BridgeLink.md). Anzeige und Abnahmegrenzen:
 [Werkbank](TEST-CLIENT.md).
 
 ### Epic JWKS
@@ -237,7 +237,7 @@ erfolgreich (`kid=epic-key-1`, `alg=RS256`, `use=sig`). Zuvor lieferte die
 Route HTTP `401`, und Epic konnte die registrierte JWK Set URL nicht
 validieren; nach der Korrektur bestaetigte der Nutzer den Tokenabruf.
 Die Ausnahme und Deployschritte stehen im
-[BridgeLink README](bridgelink/README.md#public-epic-jwks-authentication).
+[BridgeLink](bridgelink/BridgeLink.md#public-epic-jwks-authentication).
 Sie erlaubt keine Epic-Access-Tokens fuer andere OmniLink-API-Aufrufe;
 deren Keycloak-Authentifizierung bleibt unveraendert.
 
@@ -637,6 +637,23 @@ nicht gefundener Eintrag blockiert den Import nicht. Nicht als GLN erkennbare
 `MedicationStatement.informationSource.display` gespeichert. Das separate
 CHMED16A-Feld `Auth` bezeichnet den Dokumentautor und wird nicht als
 Verordner-GLN verwendet.
+
+### Refdata-Partner-Export aktualisieren
+
+`POST /admin/api/refdata/refresh` laedt den kompletten Partner-Export
+(Zip mit NAT- und JUR-XML) von der Refdata-API herunter, validiert beide
+Dateien und ersetzt sie atomar in `REFDATA_DATA_DIR`
+(Default `/var/lib/omnilink/refdata`, persistentes Docker-Volume). Der
+SQLite-Index wird beim naechsten Lookup automatisch neu aufgebaut.
+
+- Quelle: `REFDATA_PARTNERS_ZIP_URL`
+  (Default `https://api.refdata.ch/partners/1.0/Refdata.Partners.zip`),
+  authentifiziert per `X-API-Key` mit `REFDATA_API_KEY`.
+- Kein eingebauter Zeitplan: Der Endpunkt ist fuer externe Trigger gedacht
+  (cron oder ein BridgeLink-Polling-Channel).
+- Antworten: `200` mit Datei-Zusammenfassung (`items`, `size_bytes`,
+  `updated`), `503` wenn kein API-Key konfiguriert ist oder bereits ein
+  Refresh laeuft, `502` bei Download-Fehlern.
 
 ### HL7v2-Convert
 

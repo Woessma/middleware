@@ -116,7 +116,10 @@ GS1-Modulo-10-Verfahren geprueft und als CH-Core-`Practitioner` mit dem
 Identifier-System `urn:oid:2.51.1.3` abgebildet. Die natuerlichen Partner aus
 `Refdata.Partners.Nat.xml` ergaenzen Name und Adresse; die juristischen Partner
 aus `Refdata.Partners.Jur.xml` ergaenzen Organization-Ressourcen. Die Dateien
-werden zuerst durchsucht; die optionale Partner-API bleibt ein Best-Effort-Fallback.
+liegen im persistenten Volume `REFDATA_DATA_DIR` (`/var/lib/omnilink/refdata`)
+und werden ueber `POST /admin/api/refdata/refresh` von der Refdata-API
+aktualisiert. Sie werden zuerst durchsucht; die optionale Partner-API bleibt
+ein Best-Effort-Fallback.
 Ist `PrscbBy` keine GLN, bleibt der Wert
 als `MedicationStatement.informationSource.display` erhalten. Das separate
 Top-Level-Feld `Auth` bezeichnet den Dokumentautor und wird nicht als
@@ -128,6 +131,10 @@ Stand 2026-11-03: Die temporaere XML-Suche ist implementiert. Die Middleware
 liest die natuerlichen beziehungsweise juristischen Partnerdateien per Streaming
 und erstellt beim ersten Lookup einen SQLite-Index im System-Temp-Verzeichnis.
 Der Index wird bei geaenderter Dateigroesse oder Aenderungszeit neu aufgebaut.
+Stand 2026-11-18: Die Partnerdateien werden nicht mehr mit dem Image
+ausgeliefert, sondern per `POST /admin/api/refdata/refresh` als Zip von der
+Refdata-API geladen, validiert und atomar im Volume ersetzt (externer Trigger,
+z. B. BridgeLink-Polling-Channel oder cron).
 Damit wird die grosse XML-Datei nicht je Anfrage erneut durchsucht. Als
 dauerhafte Loesung ist weiterhin eine separate Refdata-Datenbank vorgesehen.
 

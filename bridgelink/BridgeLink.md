@@ -1,5 +1,32 @@
 # BridgeLink Code Templates
 
+## Refdata partner refresh channel (2026-11-18, deployed)
+
+[Refdata_Partner_Refresh.xml](Refdata_Partner_Refresh.xml) is the live export
+(revision 2) of the scheduler channel that keeps the middleware's Refdata
+partner files current:
+
+- Source: JavaScript Reader, Quartz cron `0 0 2 ? * *`. The container runs on
+  UTC, so this fires daily at 03:00 CET (04:00 CEST).
+- Destination `01 Middleware Refdata Refresh`: HTTP Sender,
+  `POST http://python-middleware:8000/admin/api/refdata/refresh`,
+  socket timeout 600000 ms. The middleware downloads the partner export zip
+  from api.refdata.ch, validates both XML files and atomically replaces them
+  in its `refdata-data` volume (see `app/terminology/data/README.md`).
+- The response transformer throws on any non-200 response, so middleware
+  errors (502 download failure, 503 missing key/refresh already running)
+  surface as message errors on this channel and can be alerted on.
+  Successful runs log the JSON summary (`items`, `size_bytes`, `updated`)
+  to `mirth.log`.
+- The channel contains no credentials; the Refdata API key lives in the
+  middleware environment (`REFDATA_API_KEY`), not in BridgeLink.
+- Verified end to end on 2026-11-18: destination SENT, middleware 200,
+  `updated:false` on an unchanged export.
+- Manual test note: REST message injection in this BridgeLink version needs
+  `POST /api/channels/{id}/messages?destinationMetaDataId=1`; without the
+  parameter the destination set is empty and only the source runs. The cron
+  trigger is not affected.
+
 ## Medication import gate update (2026-11-05, channel redeploy required)
 
 The local OL_ROUTING template and both channel XML copies now route

@@ -1,12 +1,16 @@
+import io
 import unittest
 import tempfile
+import zipfile
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 from services.refdata_service import (
+    RefdataRefreshError,
     enrich_organization_resource,
     enrich_practitioner_resource,
     lookup_gln,
+    refresh_partner_files,
 )
 
 _SAMPLE_RESPONSE = """<?xml version="1.0" encoding="utf-8"?>
@@ -197,6 +201,107 @@ class RefdataServiceTests(unittest.TestCase):
         self.assertEqual(result["alias"], ["GaleniCare AG"])
         self.assertEqual(result["address"][0]["city"], "Luzern")
         mock_lookup.assert_called_once_with("7601001028333", partner_type="JUR")
+
+
+_NAT_EXPORT_XML = """<PARTNER xmlns="http://refdatabase.refdata.ch/">
+  <ITEM xmlns="http://refdatabase.refdata.ch/Partner_out" DT="2026-11-18">
+    <PTYPE>NAT</PTYPE><GLN>7601000115690</GLN><STATUS>A</STATUS>
+    <DESCR1>Burgener</DESCR1><DESCR2>Roland</DESCR2>
+  </ITEM>
+</PARTNER>"""
+
+_JUR_EXPORT_XML = """<PARTNER xmlns="http://refdatabase.refdata.ch/">
+  <ITEM xmlns="http://refdatabase.refdata.ch/Partner_out" DT="2026-11-18">
+    <PTYPE>JUR</PTYPE><GLN>7601001028333</GLN><STATUS>A</STATUS>
+    <DESCR1>St Martini Apotheke</DESCR1>
+  </ITEM>
+</PARTNER>"""
+
+
+def _export_zip_bytes(nat_xml=_NAT_EXPORT_XML, jur_xml=_JUR_EXPORT_XML):
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("Refdata.Partners.Nat.xml", nat_xml)
+        archive.writestr("Refdata.Partners.Jur.xml", jur_xml)
+    return buffer.getvalue()
+
+
+def _mock_zip_response(zip_bytes):
+    response = MagicMock()
+    response.raise_for_status = Mock()
+    response.iter_content.return_value = [zip_bytes]
+    context = MagicMock()
+    context.__enter__.return_value = response
+    return context
+
+
+class RefdataRefreshTests(unittest.TestCase):
+    def test_refresh_requires_api_key(self):
+        with self.assertRaises(RefdataRefreshError):
+            refresh_partner_files(api_key="")
+
+    @patch("services.refdata_service.requests.get")
+    def test_refresh_downloads_replaces_and_detects_unchanged(self, mock_get):
+        mock_get.return_value = _mock_zip_response(_export_zip_bytes())
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            results = refresh_partner_files(
+                api_key="dummy-key", url="https://example.test/zip", data_dir=temp_dir
+            )
+
+            nat_path = Path(temp_dir, "Refdata.Partners.Nat.xml")
+            jur_path = Path(temp_dir, "Refdata.Partners.Jur.xml")
+            self.assertTrue(nat_path.is_file())
+            self.assertTrue(jur_path.is_file())
+            self.assertTrue(results["NAT"]["updated"])
+            self.assertTrue(results["JUR"]["updated"])
+            self.assertEqual(results["NAT"]["items"], 1)
+
+            headers = mock_get.call_args.kwargs["headers"]
+            self.assertEqual(headers["X-API-Key"], "dummy-key")
+
+            # Same export again: files stay in place, nothing is marked updated.
+            mock_get.return_value = _mock_zip_response(_export_zip_bytes())
+            second = refresh_partner_files(
+                api_key="dummy-key", url="https://example.test/zip", data_dir=temp_dir
+            )
+            self.assertFalse(second["NAT"]["updated"])
+            self.assertFalse(second["JUR"]["updated"])
+
+            # The refreshed directory takes precedence over the bundled files.
+            with (
+                patch("services.refdata_service.REFDATA_DATA_DIR", temp_dir),
+                patch("services.refdata_service.tempfile.gettempdir", return_value=temp_dir),
+            ):
+                entry = lookup_gln("7601000115690", api_key="", partner_type="NAT")
+            self.assertEqual(entry["family_name"], "Burgener")
+
+    @patch("services.refdata_service.requests.get")
+    def test_refresh_rejects_zip_without_expected_files(self, mock_get):
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("Refdata.Partners.Nat.xml", _NAT_EXPORT_XML)
+        mock_get.return_value = _mock_zip_response(buffer.getvalue())
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with self.assertRaises(RefdataRefreshError):
+                refresh_partner_files(
+                    api_key="dummy-key", url="https://example.test/zip", data_dir=temp_dir
+                )
+            self.assertFalse(Path(temp_dir, "Refdata.Partners.Nat.xml").exists())
+
+    @patch("services.refdata_service.requests.get")
+    def test_refresh_rejects_export_with_wrong_partner_type(self, mock_get):
+        mock_get.return_value = _mock_zip_response(
+            _export_zip_bytes(nat_xml=_JUR_EXPORT_XML)
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with self.assertRaises(RefdataRefreshError):
+                refresh_partner_files(
+                    api_key="dummy-key", url="https://example.test/zip", data_dir=temp_dir
+                )
+            self.assertFalse(Path(temp_dir, "Refdata.Partners.Jur.xml").exists())
 
 
 if __name__ == "__main__":

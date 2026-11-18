@@ -69,6 +69,8 @@ Nicht uebernehmen:
 
 [ ] Middleware neu bauen und starten: `docker compose up -d --build`.
 
+[ ] Refdata-Partnerdaten initial laden: `curl -X POST http://localhost:8000/admin/api/refdata/refresh` (benoetigt `REFDATA_API_KEY` in der `.env`; die XML-Dateien sind nicht mehr im Image enthalten). Danach den BridgeLink-Channel `Refdata_Partner_Refresh` aus `bridgelink/Refdata_Partner_Refresh.xml` importieren und deployen (taeglicher Trigger 02:00 UTC).
+
 [ ] Bestaetigen, dass `python-middleware` im Netzwerk `proxy` laeuft und HAPI ueber `http://hapi-fhir:8080/fhir` erreicht.
 
 [ ] Middleware-Logs auf fehlende Secrets, Netzwerkfehler und Terminologie-/refdata-Fehler pruefen: `docker compose logs --tail=100 middleware`.

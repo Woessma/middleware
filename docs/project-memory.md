@@ -1,6 +1,35 @@
 # BridgeLink - Project Memory
 
-Stand: 2026-11-06
+Stand: 2026-11-18
+
+## Tagesabschluss 2026-11-18: Automatisierter Refdata-Partner-Refresh
+
+- Neuer Endpunkt `POST /admin/api/refdata/refresh`: laedt das offizielle
+  Partner-Zip (`https://api.refdata.ch/partners/1.0/Refdata.Partners.zip`,
+  `X-API-Key` aus `REFDATA_API_KEY`), validiert beide XML-Dateien
+  (Wohlgeformtheit, ITEM-Anzahl, PTYPE) vor dem Austausch und ersetzt sie
+  atomar in `REFDATA_DATA_DIR` (`/var/lib/omnilink/refdata`, neues
+  persistentes Volume `refdata-data`). Unveraenderte Exporte werden per
+  Groessen-/SHA256-Vergleich erkannt (`updated:false`); Lock gegen
+  parallele Refreshes; 503 ohne Key, 502 bei Download-Fehler.
+- Heruntergeladene Dateien haben Vorrang vor gebuendelten; der
+  SQLite-GLN-Index wird dank mtime-Fingerprint beim naechsten Lookup
+  automatisch neu aufgebaut, veraltete Indizes werden entfernt.
+- Die Refdata-XMLs (166 MB) wurden aus `app/terminology/data/` und damit
+  aus dem Docker-Image entfernt; Produktivdaten kommen seitdem aus dem
+  Volume (erster Live-Refresh: 513'581 NAT- und 41'278 JUR-Eintraege in
+  ~11 s). API-Key-Subscription "Refdata Public Files" im Developer-Portal,
+  Key nur in der nicht versionierten `.env`.
+- BridgeLink-Channel `Refdata_Partner_Refresh` angelegt und deployt:
+  JavaScript Reader mit Quartz-Cron `0 0 2 ? * *` (Container laeuft auf
+  UTC, also 03:00 CET), HTTP Sender auf die Middleware, Response-
+  Transformer wirft bei non-200 (alertbarer Message-Error). End-to-end
+  verifiziert; Snapshot unter `bridgelink/Refdata_Partner_Refresh.xml`.
+- Eigenheit dieser BridgeLink-Version: manuelle REST-Injektionen benoetigen
+  `?destinationMetaDataId=1`, sonst bleibt das destinationSet leer; der
+  Cron-Betrieb ist nicht betroffen.
+- Vier neue Unit-Tests fuer den Refresh (Download/Replace, Unchanged,
+  fehlende Zip-Member, falscher PTYPE); Checklisten und Doku aktualisiert.
 
 ## Tagesabschluss 2026-11-06: Beratende CH-EMED-Validierung und Mappingfixes
 
@@ -86,7 +115,7 @@ Details: [ENDPOINTS](../ENDPOINTS.md), [Backlog](backlog.md),
 Details: [PMLC](ch-emed-epr-pmlc.md),
 [VACD](ch-vacd-immunization-administration.md),
 [Husky](../husky-validator/README.md),
-[Gateway-Redeploy](../bridgelink/README.md).
+[Gateway-Redeploy](../bridgelink/BridgeLink.md).
 
 ## Tagesabschluss 2026-11-02: Reader, Neuaufbau und Refdata
 
@@ -1263,4 +1292,4 @@ fuer Placer- und Fulfiller-Szenarien innerhalb des UMZH-Connect-Oekosystems.
 - Fehlerbehebung 2026-11-09: Epic meldete `invalid_client`, und die Non-Production JWK Set URL konnte nicht validiert werden. Der externe JWKS-GET lieferte HTTP `401`, weil im HTTP Listener die oeffentliche JWKS-Ausnahme fehlte.
 - Der Nutzer hat die Ausnahme fuer `GET /v1/.well-known/jwks.json` vor der JWT-Pruefung eingespielt und den Channel redeployt. Danach wurde der JWKS-Abruf ohne Authorization erfolgreich geprueft (`kid=epic-key-1`, `kty=RSA`, `alg=RS256`, `use=sig`); der Nutzer bestaetigte den erfolgreichen Epic-Tokenabruf.
 - Die Ausnahme betrifft nur den oeffentlichen Schluesselabruf. Die bestehende OPTIONS-Behandlung bleibt erhalten; andere OmniLink-API-Aufrufe benoetigen weiterhin ein Keycloak-Bearer-Token. Zusaetzliche Annahme von Epic-Access-Tokens ist nicht implementiert.
-- Versionierter Channel-Export und Deployhinweise: [BridgeLink README](../bridgelink/README.md#public-epic-jwks-authentication). Die JWKS-, CORS-, Core- und Routing-Pruefungen bestanden mit 29 Tests.
+- Versionierter Channel-Export und Deployhinweise: [BridgeLink](../bridgelink/BridgeLink.md#public-epic-jwks-authentication). Die JWKS-, CORS-, Core- und Routing-Pruefungen bestanden mit 29 Tests.

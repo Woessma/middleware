@@ -12,6 +12,8 @@ services:
       - FHIR_EXTERNAL_TIMEOUT=${FHIR_EXTERNAL_TIMEOUT:-5}
       - TERMINOLOGY_BASE_URL=https://tx.fhir.ch/r4
       - REFDATA_API_KEY=${REFDATA_API_KEY:-}
+      - REFDATA_PARTNERS_ZIP_URL=${REFDATA_PARTNERS_ZIP_URL:-}
+      - REFDATA_DATA_DIR=/var/lib/omnilink/refdata
       - EPIC_PUBLIC_KEY_PATH=/run/epic/epic-public.pem
       - EPIC_JWKS_KID=${EPIC_JWKS_KID:-epic-key-1}
       - BRIDGELINK_CDA_IMPORT_URL=${BRIDGELINK_CDA_IMPORT_URL:-https://api.omnilink.ch/v1/cda/import}
@@ -23,6 +25,7 @@ services:
       - PMLC_KEYCLOAK_REQUIRED_ROLE=${PMLC_KEYCLOAK_REQUIRED_ROLE:-}
     volumes:
       - vacd-import-state:/var/lib/omnilink/vacd
+      - refdata-data:/var/lib/omnilink/refdata
       - type: bind
         source: ${EPIC_PUBLIC_KEY_HOST_PATH:-/home/ansibleadmin/.local/share/omnilink/epic/epic-public.pem}
         target: /run/epic/epic-public.pem
@@ -58,6 +61,7 @@ services:
 
 volumes:
   vacd-import-state:
+  refdata-data:
 
 networks:
   validation:

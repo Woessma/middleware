@@ -30,5 +30,15 @@ REFDATA_BASE_URL = os.getenv(
 REFDATA_API_KEY = os.getenv("REFDATA_API_KEY", "")
 REFDATA_TIMEOUT = int(os.getenv("REFDATA_TIMEOUT", "15"))
 
+# Full partner export (zip with NAT + JUR XML) used by the admin-triggered refresh.
+REFDATA_PARTNERS_ZIP_URL = (
+    os.getenv("REFDATA_PARTNERS_ZIP_URL")
+    or "https://api.refdata.ch/partners/1.0/Refdata.Partners.zip"
+)
+REFDATA_DOWNLOAD_TIMEOUT = int(os.getenv("REFDATA_DOWNLOAD_TIMEOUT", "300"))
+# Writable directory for refreshed partner XML files; files found here take
+# precedence over the exports bundled with the application image.
+REFDATA_DATA_DIR = os.getenv("REFDATA_DATA_DIR") or "/var/lib/omnilink/refdata"
+
 EPIC_PUBLIC_KEY_PATH = os.getenv("EPIC_PUBLIC_KEY_PATH", "")
 EPIC_JWKS_KID = os.getenv("EPIC_JWKS_KID", "epic-key-1")

@@ -29,6 +29,15 @@ UMZH-Sendemodell, API-Struktur, Terminologiepflege und Testabdeckung.
 
 ## Reader, Refdata und Neuaufbau
 
+- [x] Automatisierter Refdata-Partner-Refresh (2026-11-18): Middleware laedt das
+      offizielle Partner-Zip via `POST /admin/api/refdata/refresh` von
+      api.refdata.ch, validiert NAT/JUR und ersetzt die Dateien atomar im
+      persistenten Volume (`REFDATA_DATA_DIR`); SQLite-GLN-Index wird beim
+      naechsten Lookup neu aufgebaut. Taeglicher Trigger ueber den
+      BridgeLink-Channel `Refdata_Partner_Refresh` (02:00 UTC), Snapshot unter
+      `bridgelink/Refdata_Partner_Refresh.xml`. Die XML-Dateien sind nicht mehr
+      im Image gebuendelt.
+
 - [x] eRezept & eMediplan Reader mit lokalen PDF-/Bildvorschauen,
       getrennten QR-/Metadaten-Ergebnissen und Original-/FHIR-JSON-Download
 - [x] Reader umbenannt; `/erezept-reader.html` und `/qr-reader.html` bleiben Aliase

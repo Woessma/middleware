@@ -69,6 +69,9 @@ Diese Checkliste beschreibt den Neuaufbau von HAPI FHIR, Nginx und optional Matr
     Erklaerung: Postgres muss gesund sein, bevor HAPI stabil arbeitet. Die Datenbank muss ein neu angelegtes, leeres Volume verwenden.
 
 [ ] Im Verzeichnis `/opt/python-middleware` die Konfiguration mit "docker compose config" pruefen und die Middleware mit "docker compose up -d --build" neu bauen und starten.
+
+[ ] Refdata-Partnerdaten initial laden: `curl -X POST http://localhost:8000/admin/api/refdata/refresh`.
+    Erklaerung: Die Refdata-XML-Dateien sind nicht mehr im Image enthalten. Der Aufruf laedt den aktuellen Export in das Volume `refdata-data`; dafuer muss der `REFDATA_API_KEY` in der `.env` gesetzt sein. Fuer die taegliche Aktualisierung den BridgeLink-Channel `Refdata_Partner_Refresh` aus `bridgelink/Refdata_Partner_Refresh.xml` importieren und deployen.
     Erklaerung: Der Container muss im Netzwerk proxy laufen und HAPI ueber http://hapi-fhir:8080/fhir erreichen.
 
 [ ] "https://fhir.omnilink.ch/fhir/metadata" ueber BridgeLink aufrufen.

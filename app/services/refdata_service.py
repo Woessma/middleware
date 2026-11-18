@@ -3,16 +3,25 @@ import hashlib
 import logging
 import os
 import re
+import shutil
 import sqlite3
 import tempfile
 import threading
 import uuid
 import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 
 import requests
 
-from config import REFDATA_API_KEY, REFDATA_BASE_URL, REFDATA_TIMEOUT
+from config import (
+    REFDATA_API_KEY,
+    REFDATA_BASE_URL,
+    REFDATA_DATA_DIR,
+    REFDATA_DOWNLOAD_TIMEOUT,
+    REFDATA_PARTNERS_ZIP_URL,
+    REFDATA_TIMEOUT,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +49,25 @@ _REFDATA_XML_FILES = {
     "NAT": Path(__file__).resolve().parents[1] / "terminology" / "data" / "Refdata.Partners.Nat.xml",
     "JUR": Path(__file__).resolve().parents[1] / "terminology" / "data" / "Refdata.Partners.Jur.xml",
 }
+_REFDATA_XML_FILENAMES = {
+    "NAT": "Refdata.Partners.Nat.xml",
+    "JUR": "Refdata.Partners.Jur.xml",
+}
 _INDEX_BUILD_LOCK = threading.Lock()
+_REFRESH_LOCK = threading.Lock()
+
+
+class RefdataRefreshError(RuntimeError):
+    """Raised when the Refdata partner export could not be refreshed."""
+
+
+def _xml_path_for(partner_type):
+    """Refreshed export in REFDATA_DATA_DIR wins over the file bundled with the image."""
+    if REFDATA_DATA_DIR:
+        downloaded = Path(REFDATA_DATA_DIR) / _REFDATA_XML_FILENAMES[partner_type]
+        if downloaded.is_file():
+            return downloaded
+    return _REFDATA_XML_FILES.get(partner_type)
 
 
 def _local_name(tag):
@@ -201,7 +228,7 @@ def _build_xml_index(xml_path, index_path, partner_type):
 def _lookup_gln_xml(gln, partner_type=None):
     partner_types = (partner_type,) if partner_type else _PARTNER_TYPES
     for current_type in partner_types:
-        xml_path = _REFDATA_XML_FILES.get(current_type)
+        xml_path = _xml_path_for(current_type)
         if not xml_path or not xml_path.is_file():
             continue
 
@@ -244,6 +271,139 @@ def _lookup_gln_xml(gln, partner_type=None):
             },
         }
     return None
+
+
+def _zip_member_for(archive, partner_type):
+    marker = partner_type.lower()
+    for name in archive.namelist():
+        base = name.rsplit("/", 1)[-1].lower()
+        if base.endswith(".xml") and marker in base:
+            return name
+    return None
+
+
+def _validate_partner_xml(xml_path, partner_type):
+    """Ensures the file is well-formed and holds items of the expected partner type.
+    Returns the number of ITEM elements."""
+    item_count = 0
+    root = None
+    for event, element in ET.iterparse(xml_path, events=("start", "end")):
+        if event == "start" and root is None:
+            root = element
+        elif event == "end" and _local_name(element.tag) == "ITEM":
+            item_count += 1
+            if item_count == 1:
+                ptype = next(
+                    (
+                        (child.text or "").strip()
+                        for child in element
+                        if _local_name(child.tag) == "PTYPE"
+                    ),
+                    None,
+                )
+                if ptype and ptype != partner_type:
+                    raise RefdataRefreshError(
+                        f"Export enthält PTYPE {ptype}, erwartet wurde {partner_type}"
+                    )
+            element.clear()
+            if root is not None:
+                root.clear()
+    if item_count == 0:
+        raise RefdataRefreshError(f"Export für {partner_type} enthält keine ITEM-Einträge")
+    return item_count
+
+
+def _file_sha256(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _drop_stale_indexes(partner_type):
+    pattern = f"python-middleware-refdata-{partner_type}-*.sqlite3"
+    for stale in Path(tempfile.gettempdir()).glob(pattern):
+        try:
+            stale.unlink()
+        except OSError:
+            pass
+
+
+def refresh_partner_files(api_key=None, url=None, timeout=None, data_dir=None):
+    """Downloads the full Refdata partner export (zip with NAT + JUR XML) and atomically
+    replaces the local files in REFDATA_DATA_DIR. The per-file SQLite index is rebuilt
+    lazily on the next lookup. Returns a per-partner-type result summary."""
+    api_key = REFDATA_API_KEY if api_key is None else api_key
+    url = url or REFDATA_PARTNERS_ZIP_URL
+    timeout = timeout or REFDATA_DOWNLOAD_TIMEOUT
+    data_dir = Path(data_dir or REFDATA_DATA_DIR)
+
+    if not api_key:
+        raise RefdataRefreshError("REFDATA_API_KEY ist nicht konfiguriert")
+
+    if not _REFRESH_LOCK.acquire(blocking=False):
+        raise RefdataRefreshError("Ein Refdata-Refresh läuft bereits")
+    try:
+        data_dir.mkdir(parents=True, exist_ok=True)
+
+        # Temp dir inside data_dir so os.replace stays on the same filesystem (atomic).
+        with tempfile.TemporaryDirectory(dir=data_dir) as temp_dir:
+            zip_path = Path(temp_dir) / "Refdata.Partners.zip"
+            with requests.get(
+                url,
+                headers={"X-API-Key": api_key},
+                stream=True,
+                timeout=timeout,
+            ) as response:
+                response.raise_for_status()
+                with zip_path.open("wb") as target:
+                    for chunk in response.iter_content(chunk_size=1024 * 1024):
+                        target.write(chunk)
+
+            results = {}
+            with zipfile.ZipFile(zip_path) as archive:
+                members = {}
+                for partner_type in _PARTNER_TYPES:
+                    member = _zip_member_for(archive, partner_type)
+                    if member is None:
+                        raise RefdataRefreshError(
+                            f"Zip enthält keine {partner_type}-XML-Datei "
+                            f"(Inhalt: {archive.namelist()})"
+                        )
+                    members[partner_type] = member
+
+                # Validate every file before replacing anything, so a broken export
+                # never leaves the two files in an inconsistent mixed state.
+                extracted_files = {}
+                for partner_type, member in members.items():
+                    extracted = Path(temp_dir) / f"{partner_type}.xml"
+                    with archive.open(member) as source, extracted.open("wb") as target:
+                        shutil.copyfileobj(source, target)
+                    item_count = _validate_partner_xml(extracted, partner_type)
+                    extracted_files[partner_type] = (extracted, item_count)
+
+            for partner_type, (extracted, item_count) in extracted_files.items():
+                final_path = data_dir / _REFDATA_XML_FILENAMES[partner_type]
+                changed = (
+                    not final_path.is_file()
+                    or final_path.stat().st_size != extracted.stat().st_size
+                    or _file_sha256(final_path) != _file_sha256(extracted)
+                )
+                if changed:
+                    os.replace(extracted, final_path)
+                    _drop_stale_indexes(partner_type)
+                results[partner_type] = {
+                    "file": str(final_path),
+                    "items": item_count,
+                    "size_bytes": final_path.stat().st_size,
+                    "updated": changed,
+                }
+
+        logger.info("Refdata-Partner-Export aktualisiert: %s", results)
+        return results
+    finally:
+        _REFRESH_LOCK.release()
 
 
 def _identifier_gln(resource):
