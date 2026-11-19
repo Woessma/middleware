@@ -184,6 +184,48 @@ class CdaVariantImportTests(unittest.TestCase):
         self.assertEqual(at_patient["communication"][0]["language"]["coding"][0]["code"], "de")
         self.assertEqual(at_patient["contact"][0]["name"]["family"], "Sorgenvoll")
 
+    def test_at_bundle_omits_invalid_patient_and_quantity_fields(self):
+        with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
+             patch.object(cda_bundle_service, "resolve_patient_id", return_value="1008"), \
+             patch.object(cda_bundle_service, "resolve_practitioner_id", return_value="456"), \
+             patch.object(cda_bundle_service, "resolve_organization_id", return_value="789"):
+            bundle = cda_bundle_service.cda_to_fhir_bundle(self.at_path.read_bytes())
+
+        patient = next(
+            entry["resource"]
+            for entry in bundle["entry"]
+            if entry["resource"]["resourceType"] == "Patient"
+        )
+        self.assertEqual(len(patient["contact"]), 1)
+        self.assertNotIn("telecom", patient["contact"][0])
+
+        birth_place = next(
+            extension["valueAddress"]
+            for extension in patient.get("extension", [])
+            if extension["url"] == "http://hl7.org/fhir/StructureDefinition/patient-birthPlace"
+        )
+        self.assertEqual(birth_place["city"], "Graz")
+        self.assertNotIn("text", birth_place)
+
+        observations_without_unit = [
+            entry["resource"]["valueQuantity"]
+            for entry in bundle["entry"]
+            if entry.get("resource", {}).get("resourceType") == "Observation"
+            and "valueQuantity" in entry["resource"]
+            and not entry["resource"]["valueQuantity"].get("unit")
+        ]
+        self.assertEqual(len(observations_without_unit), 2)
+        self.assertTrue(
+            all(set(quantity) == {"value"} for quantity in observations_without_unit)
+        )
+
+        related_persons = [
+            entry["resource"]
+            for entry in bundle["entry"]
+            if entry.get("resource", {}).get("resourceType") == "RelatedPerson"
+        ]
+        self.assertTrue(any(person.get("telecom") for person in related_persons))
+
     def test_at_bundle_includes_document_references_and_binary_entries_for_clinical_notes(self):
         with patch("fhir.bundle.requests.get", return_value=self._bundle_lookup_response()), \
              patch.object(cda_bundle_service, "resolve_patient_id", return_value="123"), \

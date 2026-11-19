@@ -72,6 +72,10 @@ MONTHS = {
 }
 
 
+class EchoSosPatientMatchConflictError(ValueError):
+    pass
+
+
 class _TextParser(HTMLParser):
     def __init__(self):
         super().__init__()
@@ -250,7 +254,392 @@ def parse_echosos_data(url, page_html=""):
     }
 
 
-def _patient_search(data):
+def to_poc_notfall_logobject(data):
+    emergency_contacts = []
+    for contact in data.get("emergency_contacts", []):
+        name_parts = contact.get("name", "").split(maxsplit=1)
+        emergency_contacts.append({
+            "firstName": name_parts[0] if name_parts else None,
+            "lastName": name_parts[1] if len(name_parts) > 1 else None,
+            "phone": contact.get("phone") or None,
+            "relationship": None,
+            "isHealthcareProxy": None,
+            "isHearingImpairedOrRestricted": None,
+        })
+
+    organ_donation = data.get("organ_donation") or {}
+    organ_donor = (
+        True
+        if organ_donation.get("outside_switzerland") == "yes"
+        or organ_donation.get("swiss_registry") == "registered"
+        else False
+        if organ_donation.get("outside_switzerland") == "no"
+        else None
+    )
+    medications = data.get("medications")
+    if medications:
+        medications = [medications]
+    else:
+        medications = data.get("medication_selections", [])
+
+    return {
+        "createdAt": datetime.now(timezone.utc).date().isoformat(),
+        "personal": {
+            "firstName": data.get("given") or None,
+            "lastName": data.get("family") or None,
+            "dateOfBirth": data.get("birth_date"),
+            "sex": None,
+            "memberNumber": None,
+        },
+        "emergencyContacts": emergency_contacts,
+        "medical": {
+            "bloodGroup": data.get("blood_group"),
+            "preExistingConditions": data.get("medical_history_selections", []),
+            "diagnosesFreeText": [],
+            "medications": medications,
+            "allergies": [
+                {
+                    "substance": selection["allergen"],
+                    "reaction": selection.get("reaction"),
+                }
+                for selection in data.get("allergy_selections", [])
+            ],
+            "pregnancy": None,
+            "pregnancyDueDate": None,
+            "specialNotes": data.get("other_information") or None,
+            "specialClinic": None,
+        },
+        "implants": {
+            "pacemaker": None,
+            "pacemakerWithDefibrillator": None,
+            "cochlearImplant": None,
+            "insulinPump": None,
+        },
+        "provision": {
+            "livingWill": None,
+            "livingWillLocation": None,
+            "organDonor": organ_donor,
+            "hasDependents": None,
+            "dependentsNotes": None,
+            "dependentsCaregiver": None,
+        },
+    }
+
+
+def _fhir_concept_text(concept):
+    if not isinstance(concept, dict):
+        return None
+    text = concept.get("text")
+    if isinstance(text, str) and text.strip():
+        return text.strip()
+    codings = concept.get("coding", [])
+    for coding in codings if isinstance(codings, list) else []:
+        if isinstance(coding, dict):
+            display = coding.get("display")
+            if isinstance(display, str) and display.strip():
+                return display.strip()
+    return None
+
+
+def _fhir_concept_codes(concept):
+    if not isinstance(concept, dict):
+        return set()
+    codings = concept.get("coding", [])
+    if not isinstance(codings, list):
+        return set()
+    return {
+        coding["code"]
+        for coding in codings
+        if isinstance(coding, dict) and isinstance(coding.get("code"), str)
+    }
+
+
+def _append_unique(values, value):
+    if not value:
+        return
+    normalized = value.casefold()
+    if not any(
+        isinstance(item, str) and item.casefold() == normalized
+        for item in values
+    ):
+        values.append(value)
+
+
+def _fhir_name_parts(name):
+    if not isinstance(name, dict):
+        return None, None
+    given = name.get("given")
+    first_name = (
+        " ".join(
+            item.strip()
+            for item in given
+            if isinstance(item, str) and item.strip()
+        )
+        if isinstance(given, list)
+        else ""
+    )
+    last_name = name.get("family") if isinstance(name.get("family"), str) else ""
+    if first_name or last_name:
+        return first_name or None, last_name or None
+    text = name.get("text")
+    parts = text.split(maxsplit=1) if isinstance(text, str) else []
+    return parts[0] if parts else None, parts[1] if len(parts) > 1 else None
+
+
+def enrich_poc_notfall_logobject(logobject, patient, bundle):
+    result = copy.deepcopy(logobject)
+    entries = bundle.get("entry", []) if isinstance(bundle, dict) else []
+    resources = [
+        entry["resource"]
+        for entry in entries
+        if isinstance(entry, dict)
+        and isinstance(entry.get("resource"), dict)
+    ] if isinstance(entries, list) else []
+    fhir_patient = next(
+        (resource for resource in resources if resource.get("resourceType") == "Patient"),
+        patient,
+    )
+
+    personal = result["personal"]
+    names = fhir_patient.get("name") or []
+    name = names[0] if isinstance(names, list) and names else {}
+    given_name, family_name = _fhir_name_parts(name)
+    for field, value in (
+        ("firstName", given_name),
+        ("lastName", family_name),
+        ("dateOfBirth", fhir_patient.get("birthDate")),
+        ("sex", {
+            "male": "M",
+            "female": "W",
+            "other": "D",
+        }.get(fhir_patient.get("gender"))),
+    ):
+        if personal.get(field) is None and value:
+            personal[field] = value
+    if personal.get("memberNumber") is None:
+        for identifier in fhir_patient.get("identifier") or []:
+            type_concept = identifier.get("type") or {}
+            if "MB" in _fhir_concept_codes(type_concept):
+                personal["memberNumber"] = identifier.get("value") or None
+                if personal["memberNumber"]:
+                    break
+
+    contacts = result["emergencyContacts"]
+    for contact in fhir_patient.get("contact") or []:
+        relationships = contact.get("relationship", [])
+        if not isinstance(relationships, list):
+            relationships = [relationships]
+        relationship_codes = set()
+        relationship_text = None
+        for relationship in relationships:
+            relationship_codes.update(_fhir_concept_codes(relationship))
+            relationship_text = relationship_text or _fhir_concept_text(relationship)
+        if "ECON" not in relationship_codes and not any(
+            term in (relationship_text or "").casefold()
+            for term in ("emergency", "notfall")
+        ):
+            continue
+
+        first_name, last_name = _fhir_name_parts(contact.get("name"))
+        telecoms = contact.get("telecom", [])
+        phone = next(
+            (
+                telecom.get("value")
+                for telecom in (telecoms if isinstance(telecoms, list) else [])
+                if isinstance(telecom, dict)
+                and telecom.get("system") == "phone"
+                and telecom.get("value")
+            ),
+            None,
+        )
+        matching = next(
+            (
+                item for item in contacts
+                if (phone and item.get("phone") == phone)
+                or (
+                    first_name
+                    and last_name
+                    and (item.get("firstName") or "").casefold() == first_name.casefold()
+                    and (item.get("lastName") or "").casefold() == last_name.casefold()
+                )
+            ),
+            None,
+        )
+        if matching is None:
+            contacts.append({
+                "firstName": first_name,
+                "lastName": last_name,
+                "phone": phone,
+                "relationship": relationship_text,
+                "isHealthcareProxy": None,
+                "isHearingImpairedOrRestricted": None,
+            })
+        else:
+            for key, value in (
+                ("firstName", first_name),
+                ("lastName", last_name),
+                ("phone", phone),
+                ("relationship", relationship_text),
+            ):
+                if matching.get(key) is None and value:
+                    matching[key] = value
+
+    condition_values = result["medical"]["preExistingConditions"]
+    diagnosis_values = result["medical"]["diagnosesFreeText"]
+    allergies = result["medical"]["allergies"]
+    medications = result["medical"]["medications"]
+    medication_names = {
+        f"Medication/{resource['id']}": _fhir_concept_text(resource.get("code"))
+        for resource in resources
+        if resource.get("resourceType") == "Medication"
+        and resource.get("id")
+        and _fhir_concept_text(resource.get("code"))
+    }
+    organ_donor_values = set()
+
+    for resource in resources:
+        resource_type = resource.get("resourceType")
+        if resource_type == "Condition":
+            code = resource.get("code") or {}
+            text = _fhir_concept_text(code)
+            if text:
+                target = condition_values if code.get("coding") else diagnosis_values
+                _append_unique(target, text)
+        elif resource_type in {"MedicationStatement", "MedicationRequest"}:
+            if resource.get("status") != "active":
+                continue
+            medication = resource.get("medicationCodeableConcept") or {}
+            reference = resource.get("medicationReference") or {}
+            text = (
+                _fhir_concept_text(medication)
+                or reference.get("display")
+                or medication_names.get(reference.get("reference"))
+            )
+            if text:
+                dosage = resource.get("dosage") or resource.get("dosageInstruction") or []
+                dosage_text = next(
+                    (
+                        item.get("text")
+                        for item in dosage
+                        if isinstance(item, dict) and item.get("text")
+                    ),
+                    None,
+                )
+                _append_unique(
+                    medications,
+                    f"{text} {dosage_text}".strip() if dosage_text else text,
+                )
+        elif resource_type == "AllergyIntolerance":
+            code = resource.get("code") or {}
+            if "716186003" in _fhir_concept_codes(code):
+                continue
+            substance = _fhir_concept_text(code)
+            if not substance:
+                continue
+            reactions = []
+            for reaction in resource.get("reaction") or []:
+                for manifestation in reaction.get("manifestation") or []:
+                    _append_unique(reactions, _fhir_concept_text(manifestation))
+            reaction_text = "; ".join(reactions) or None
+            matching = next(
+                (
+                    item for item in allergies
+                    if item.get("substance", "").casefold() == substance.casefold()
+                ),
+                None,
+            )
+            if matching is None:
+                allergies.append({"substance": substance, "reaction": reaction_text})
+            elif matching.get("reaction") is None and reaction_text:
+                matching["reaction"] = reaction_text
+        elif resource_type == "Observation":
+            codes = _fhir_concept_codes(resource.get("code"))
+            if BLOOD_GROUP_LOINC in codes and result["medical"]["bloodGroup"] is None:
+                result["medical"]["bloodGroup"] = (
+                    _fhir_concept_text(resource.get("valueCodeableConcept"))
+                    or resource.get("valueString")
+                )
+            if "82810-3" in codes and result["medical"]["pregnancy"] is None:
+                value = resource.get("valueBoolean")
+                value_concept = resource.get("valueCodeableConcept") or {}
+                value_codes = _fhir_concept_codes(value_concept)
+                value_text = (_fhir_concept_text(value_concept) or "").casefold()
+                if isinstance(value, bool):
+                    result["medical"]["pregnancy"] = value
+                elif (
+                    "60001007" in value_codes
+                    or "not pregnant" in value_text
+                    or "nicht schwanger" in value_text
+                ):
+                    result["medical"]["pregnancy"] = False
+                elif (
+                    "77386006" in value_codes
+                    or "pregnant" in value_text
+                    or "schwanger" in value_text
+                ):
+                    result["medical"]["pregnancy"] = True
+        elif resource_type == "Consent":
+            categories = resource.get("category") or []
+            category_codes = set().union(*(
+                _fhir_concept_codes(category)
+                for category in categories
+            ))
+            category_text = " ".join(
+                filter(None, (
+                    _fhir_concept_text(category)
+                    for category in categories
+                ))
+            ).casefold()
+            if "42348-3" in category_codes or "organ" in category_text:
+                consent_type = (resource.get("provision") or {}).get("type")
+                if resource.get("status") in {None, "active"}:
+                    if consent_type == "permit":
+                        organ_donor_values.add(True)
+                    elif consent_type == "deny":
+                        organ_donor_values.add(False)
+        elif resource_type == "Device":
+            device_names = resource.get("deviceName") or []
+            device_text = " ".join(filter(None, [
+                _fhir_concept_text(resource.get("type")),
+                *(
+                    item.get("name")
+                    for item in device_names
+                    if isinstance(item, dict)
+                ),
+            ])).casefold()
+            if "pacemaker" in device_text or "herzschrittmacher" in device_text:
+                result["implants"]["pacemaker"] = True
+            if "defibrillator" in device_text:
+                result["implants"]["pacemakerWithDefibrillator"] = True
+            if "cochlear" in device_text or "kochlea" in device_text:
+                result["implants"]["cochlearImplant"] = True
+            if "insulin pump" in device_text or "insulinpumpe" in device_text:
+                result["implants"]["insulinPump"] = True
+        elif resource_type == "RelatedPerson":
+            relationships = resource.get("relationship", [])
+            if not isinstance(relationships, list):
+                relationships = [relationships]
+            relation_text = " ".join(filter(None, (
+                _fhir_concept_text(relationship)
+                for relationship in relationships
+            ))).casefold()
+            relation_codes = set().union(*(
+                _fhir_concept_codes(relationship)
+                for relationship in relationships
+            ))
+            if (
+                relation_codes.intersection({"CHILD", "CHLD"})
+                or "child" in relation_text
+                or "kind" in relation_text
+            ):
+                result["provision"]["hasDependents"] = True
+
+    if result["provision"]["organDonor"] is None and len(organ_donor_values) == 1:
+        result["provision"]["organDonor"] = organ_donor_values.pop()
+    return result
+
+
+def _patient_search(data, check_external_duplicates=True):
     search_params = {
         "family": data["family"],
         "given": data["given"],
@@ -264,10 +653,13 @@ def _patient_search(data):
     )
     response.raise_for_status()
     result = response.json()
-    warn_if_external_patient_duplicate(search_params, "family-given-birthdate")
+    if check_external_duplicates:
+        warn_if_external_patient_duplicate(search_params, "family-given-birthdate")
     entries = result.get("entry", [])
     if result.get("total", len(entries)) > 1 or len(entries) > 1:
-        raise ValueError("EchoSOS-Patientensuche mit Name und Geburtsdatum ist nicht eindeutig")
+        raise EchoSosPatientMatchConflictError(
+            "EchoSOS-Patientensuche mit Name und Geburtsdatum ist nicht eindeutig"
+        )
     return entries[0]["resource"] if entries else None
 
 

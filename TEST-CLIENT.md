@@ -237,6 +237,16 @@ Adressen unter `link.self`; diese werden bewusst nicht umgeschrieben.
 - 41 Werkbank-/Core-/Routing-/CORS-Tests bestanden.
 - VACD-Live-Abnahme, 400-/401- und Ausfalltests nach dem Refactoring sind offen.
 
+### CDA-AT Import (2026-11-19)
+
+- Die lokale schreibfreie Konvertierung und FHIR-Validierung liefen ohne
+  Fehler/Fatal-Issues; 196 Warnungen und 18 Informationen bleiben.
+- Die bereitgestellte Antwort von `POST /v1/cda/import` war ein
+  `transaction-response` mit 46 Eintraegen: 45x HTTP 200, 1x HTTP 201
+  (`PractitionerRole`) und keine Error-/Fatal-Issues.
+- Eine unabhaengige Folgeabfrage der gespeicherten Ressourcen erfolgte nicht;
+  der Importnachweis beruht auf der HAPI-Transaktionsantwort.
+
 Channel-Snapshot, Library-Importe, Rollback und Sync beider Git-Remotes:
 [BridgeLink-Dokumentation](bridgelink/BridgeLink.md).
 
@@ -513,19 +523,53 @@ Eintragsstatus und Fehler-Issues. Die Patient-ID wird aus
 Middleware-Proxy an `FHIR_BASE`. Ein Fehler beim anschliessenden Lesen wird
 ausdruecklich vom bereits erfolgreichen Import unterschieden.
 
+### EchoSOS POC-Notfall-Logobject
+
+Die separate Testoberflaeche `echosos-poc-notfall-test.html` bietet zwei
+getrennte Wege:
+
+- **FHIR-Patient suchen:** `GET /echosos/fhir/Patient` durchsucht den lokalen
+  HAPI wie im Dubletten-Test per Identifier-System/Wert oder Nachname,
+  Vorname und Geburtsdatum. Nach expliziter Auswahl sendet die Seite
+  `{"patientId":"<FHIR-ID>"}` an `POST /echosos/poc-notfall-logobject`; das
+  Logobject entsteht aus `Patient/{id}/$everything`.
+- **EchoSOS verwenden:** EchoSOS-Link, QR-Bild oder PKPass werden direkt an
+  `POST /echosos/poc-notfall-logobject` gesendet. Der Endpoint dekodiert die
+  EchoSOS-Daten und ergänzt sie bei eindeutiger Übereinstimmung optional
+  lesend aus FHIR. Ohne Treffer bleiben die EchoSOS-Daten Grundlage; bei
+  mehrdeutiger Suche oder FHIR-Fehler wird ein Fehler angezeigt.
+
+Beide Wege sind schreibfrei: Es gibt keinen HAPI- oder BridgeLink-Write.
+FHIR-Medikationen werden nur bei `status: active` ausgegeben; abgeschlossene,
+pausierte oder Status-unbekannte Eintraege erscheinen nicht als aktuelle
+Medikation.
+Die bestehende `echosos-fhir-test.html` bleibt fuer den bisherigen
+Import-Usecase bestehen.
+
+Die Seite verwendet ebenfalls Keycloak mit dem Client
+`app-omnilink-cardtest`. Fuer den Login muss die Redirect-URI
+`https://middleware.local.omnilink.ch/echosos-poc-notfall-test.html` im Client
+freigeschaltet sein. Ein bereits aktives Token kann innerhalb derselben
+Browser-Session weiterverwendet werden.
+
+```text
+https://middleware.local.omnilink.ch/echosos-poc-notfall-test.html
+```
+
 ### Offener Keycloak-Login (Stand 2026-10-21)
 
-Der Live-Login der EchoSOS-Seite ist noch nicht erfolgreich bestaetigt:
+Der Live-Login der EchoSOS-Seiten ist noch nicht erfolgreich bestaetigt:
 Keycloak meldet fuer `app-omnilink-cardtest`
 `Invalid parameter: redirect_uri`. Die funktionierende Anmeldung der
-Card-Analysis-Seite gibt die EchoSOS-Ruecksprungadresse nicht automatisch frei.
+Card-Analysis-Seite gibt die EchoSOS-Ruecksprungadressen nicht automatisch frei.
 
 In der Keycloak-Administration unter Realm `omnilink` -> Clients ->
-`app-omnilink-cardtest` -> Settings -> **Valid redirect URIs** muss exakt
-dieser Eintrag gespeichert sein:
+`app-omnilink-cardtest` -> Settings -> **Valid redirect URIs** muessen die
+genutzten EchoSOS-Ruecksprungadressen freigeschaltet sein:
 
 ```text
 https://middleware.local.omnilink.ch/echosos-fhir-test.html
+https://middleware.local.omnilink.ch/echosos-poc-notfall-test.html
 ```
 
 Bestehende Eintraege, insbesondere fuer `card-analysis-test.html`, beibehalten.

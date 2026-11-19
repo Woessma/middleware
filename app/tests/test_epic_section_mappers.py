@@ -9,6 +9,7 @@ from mappers.encounter_mapper import map_encounter_section
 from mappers.lab_mapper import map_lab_section
 from mappers.medication_mapper import map_medication_section
 from mappers.procedure_mapper import map_procedure_section
+from mappers.vitalsign_mapper import map_vitalsign_section
 from parser.cda.section_parser import extract_sections
 
 
@@ -212,6 +213,47 @@ class EpicSectionMapperTests(unittest.TestCase):
         self.assertEqual(resources[0]["resourceType"], "DiagnosticReport")
         self.assertEqual(resources[0]["conclusion"], "Glucose: 5.2 mmol/L")
         self.assertEqual(len(resources[0]["result"]), 1)
+
+    def test_lab_quantity_omits_unit_fields_when_unit_is_missing(self):
+        resources = map_lab_section(
+            {
+                "code": {"code": "30954-2"},
+                "entries": [{
+                    "code": {
+                        "code": "8302-2",
+                        "codeSystem": "2.16.840.1.113883.6.1",
+                    },
+                    "value": {"value": "5.2"},
+                }],
+            },
+            "Patient/123",
+            {},
+        )
+
+        observation = next(
+            resource for resource in resources
+            if resource["resourceType"] == "Observation"
+        )
+        self.assertEqual(set(observation["valueQuantity"]), {"value"})
+        self.assertEqual(observation["valueQuantity"]["value"], 5.2)
+
+    def test_vital_sign_quantity_omits_unit_fields_when_unit_is_missing(self):
+        resources = map_vitalsign_section(
+            {
+                "entries": [{
+                    "components": [{
+                        "code": {"code": "8302-2"},
+                        "value": {"value": "1.75"},
+                    }],
+                }],
+            },
+            "Patient/123",
+            {},
+        )
+
+        self.assertEqual(len(resources), 1)
+        self.assertEqual(set(resources[0]["valueQuantity"]), {"value"})
+        self.assertEqual(resources[0]["valueQuantity"]["value"], 1.75)
 
     def test_extract_sections_preserves_narrative_text_for_lab_sections(self):
         xml_payload = '''

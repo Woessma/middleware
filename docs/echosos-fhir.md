@@ -1,6 +1,28 @@
 # EchoSOS zu FHIR
 
-Stand: 2026-10-29
+Stand: 2026-11-19
+
+## POC-Notfall-Logobject (2026-11-19)
+
+Der separate, schreibfreie POC besteht aus
+`POST /echosos/poc-notfall-logobject` und
+`GET /echosos-poc-notfall-test.html`. Die Testseite bietet zwei Eingabewege:
+
+- FHIR-Patienten suchen (Identifier oder Name/Geburtsdatum), einen Treffer
+  explizit auswaehlen und das Logobject aus `Patient/{id}/$everything`
+  erzeugen.
+- EchoSOS-Link, QR-Bild oder PKPass uebermitteln; der Endpoint dekodiert die
+  EchoSOS-Daten und ergaenzt bei eindeutiger Patientenuebereinstimmung
+  optional lesend aus FHIR.
+
+FHIR-Medikationen werden nur mit `MedicationStatement.status: active`
+uebernommen. Beide Wege erzeugen POC-JSON und schreiben weder nach HAPI noch
+ueber BridgeLink. Der bestehende klinische Import
+`POST /echosos/import` bleibt unveraendert und schreibt weiterhin ueber
+BridgeLink.
+
+Die Auswahl-, FHIR-Lese- und No-write-Regressionspruefungen bestanden; der
+POC wurde separat in der Middleware ausgeliefert.
 
 ## Tagesstand 2026-10-29
 

@@ -2,7 +2,7 @@ import unittest
 import json
 import io
 import zipfile
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from fastapi.testclient import TestClient
 
@@ -11,6 +11,177 @@ from services.echosos_service import parse_echosos_data
 
 
 class EchoSosFhirProxyTests(unittest.TestCase):
+    def test_poc_notfall_test_page_is_served_separately(self):
+        response = self.client.get("/echosos-poc-notfall-test.html")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/html", response.headers["content-type"])
+        self.assertIn("Patientensuche", response.text)
+        self.assertIn("Diesen Patienten auswählen", response.text)
+        self.assertIn("EchoSOS-Eingabe", response.text)
+        self.assertIn("sourceFile", response.text)
+        self.assertIn("POC-JSON erzeugen", response.text)
+
+    @patch("main._patient_search")
+    @patch("main._proxy_echosos_fhir_request", new_callable=AsyncMock)
+    def test_poc_notfall_logobject_is_created_from_selected_fhir_patient(
+        self, everything, patient_search,
+    ):
+        patient = {
+            "resourceType": "Patient",
+            "id": "p1",
+            "name": [{"given": ["Eva"], "family": "Beispiel"}],
+            "birthDate": "1980-01-02",
+            "gender": "female",
+        }
+        everything.return_value = Mock(
+            status_code=200,
+            body=json.dumps({
+                "resourceType": "Bundle",
+                "entry": [
+                    {"resource": patient},
+                    {"resource": {
+                        "resourceType": "Condition",
+                        "code": {"coding": [{"display": "Asthma"}]},
+                    }},
+                ],
+            }).encode(),
+        )
+
+        response = self.client.post(
+            "/echosos/poc-notfall-logobject",
+            json={"patientId": "p1"},
+            headers=self.headers,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["personal"]["firstName"], "Eva")
+        self.assertEqual(data["personal"]["lastName"], "Beispiel")
+        self.assertEqual(data["personal"]["dateOfBirth"], "1980-01-02")
+        self.assertEqual(data["personal"]["sex"], "W")
+        self.assertEqual(data["medical"]["preExistingConditions"], ["Asthma"])
+        patient_search.assert_not_called()
+        everything.assert_awaited_once()
+        self.assertEqual(everything.call_args.args[0], "Patient/p1/$everything")
+        self.assertEqual(everything.call_args.kwargs["query_params"], [("_count", "500")])
+
+    @patch("main._proxy_echosos_fhir_request", new_callable=AsyncMock)
+    def test_poc_notfall_logobject_rejects_invalid_selected_patient_id(self, everything):
+        response = self.client.post(
+            "/echosos/poc-notfall-logobject",
+            json={"patientId": "../Observation/1"},
+            headers=self.headers,
+        )
+
+        self.assertEqual(response.status_code, 400)
+        everything.assert_not_awaited()
+
+    @patch("main._proxy_echosos_fhir_request", new_callable=AsyncMock)
+    def test_poc_notfall_logobject_rejects_bundle_without_selected_patient(self, everything):
+        everything.return_value = Mock(
+            status_code=200,
+            body=b'{"resourceType":"Bundle","entry":[]}',
+        )
+
+        response = self.client.post(
+            "/echosos/poc-notfall-logobject",
+            json={"patientId": "p1"},
+            headers=self.headers,
+        )
+
+        self.assertEqual(response.status_code, 502)
+        self.assertIn("ausgewählten Patienten", response.json()["detail"])
+
+    @patch("main._patient_search", return_value=None)
+    def test_poc_notfall_logobject_endpoint_returns_target_json_without_fhir_match(
+        self, _patient_search,
+    ):
+        url = (
+            "https://eid.echosos.com/#b=1&f=Eva&g=fGBP&l=Beispiel"
+            "&n1=Max%20Beispiel&p1=%2B41000000000"
+        )
+
+        with (
+            patch("main.requests.post") as post,
+            patch("main.requests.put") as put,
+        ):
+            response = self.client.post(
+                "/echosos/poc-notfall-logobject",
+                content=url.encode(),
+                headers={**self.headers, "Content-Type": "text/plain"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(
+            set(data),
+            {
+                "createdAt",
+                "personal",
+                "emergencyContacts",
+                "medical",
+                "implants",
+                "provision",
+            },
+        )
+        self.assertEqual(data["personal"]["firstName"], "Eva")
+        self.assertEqual(data["emergencyContacts"][0]["lastName"], "Beispiel")
+        self.assertIsNone(data["personal"]["sex"])
+        post.assert_not_called()
+        put.assert_not_called()
+
+    @patch("main._proxy_echosos_fhir_request", new_callable=AsyncMock)
+    @patch("main._patient_search")
+    def test_poc_notfall_logobject_endpoint_enriches_from_fhir(
+        self, patient_search, everything,
+    ):
+        patient = {
+            "resourceType": "Patient",
+            "id": "p1",
+            "gender": "female",
+        }
+        patient_search.return_value = patient
+        everything.return_value = Mock(
+            status_code=200,
+            body=json.dumps({
+                "resourceType": "Bundle",
+                "entry": [
+                    {"resource": patient},
+                    {"resource": {
+                        "resourceType": "Condition",
+                        "code": {
+                            "coding": [{"code": "195967001", "display": "Asthma"}],
+                            "text": "Asthma",
+                        },
+                    }},
+                ],
+            }).encode(),
+        )
+        url = (
+            "https://eid.echosos.com/#b=1&f=Eva&g=fGBP&l=Beispiel"
+        )
+
+        with (
+            patch("main.requests.post") as post,
+            patch("main.requests.put") as put,
+        ):
+            response = self.client.post(
+                "/echosos/poc-notfall-logobject",
+                content=url.encode(),
+                headers={**self.headers, "Content-Type": "text/plain"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["personal"]["sex"], "W")
+        self.assertEqual(data["medical"]["preExistingConditions"], ["Asthma"])
+        everything.assert_awaited_once()
+        self.assertEqual(everything.call_args.args[0], "Patient/p1/$everything")
+        self.assertEqual(everything.call_args.kwargs["query_params"], [("_count", "500")])
+        post.assert_not_called()
+        put.assert_not_called()
+
     def test_preview_decodes_all_fields_without_network_or_fhir_writes(self):
         url = (
             "https://eid.echosos.com/#a=BHKL&b=1&d=BS&f=Max&g=fGBP&l=Beispiel"

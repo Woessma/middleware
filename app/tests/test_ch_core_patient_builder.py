@@ -63,9 +63,10 @@ def test_build_at_patient_includes_birthplace_religion_language_and_contact():
     assert patient["maritalStatus"]["coding"][0]["code"] == "M"
     assert patient["communication"][0]["language"]["coding"][0]["code"] == "de"
     assert patient["communication"][0]["preferred"] is True
+    assert len(patient["contact"]) == 1
     assert patient["contact"][0]["relationship"][0]["coding"][0]["code"] == "GUARD"
     assert patient["contact"][0]["name"]["family"] == "Sorgenvoll"
-    assert patient["contact"][0]["telecom"][0]["use"] == "mobile"
+    assert "telecom" not in patient["contact"][0]
     assert patient["name"][0]["prefix"] == ["Dipl.Ing.", "Hofrat"]
     assert patient["name"][0]["suffix"] == ["BSc", "MBA"]
     assert any(
@@ -85,7 +86,8 @@ def test_build_at_patient_includes_birthplace_religion_language_and_contact():
         if extension["url"] == "http://hl7.org/fhir/StructureDefinition/patient-religion"
     )
 
-    assert birth_place_extension["valueAddress"]["text"] == "Graz"
+    assert birth_place_extension["valueAddress"]["city"] == "Graz"
+    assert "text" not in birth_place_extension["valueAddress"]
     assert religion_extension["valueCodeableConcept"]["coding"][0]["code"] == "101"
 
 
@@ -113,7 +115,7 @@ def test_build_mwo_patient_maps_participant_to_contact_slice_shape():
     assert relationship_codings[1]["system"] == "http://terminology.hl7.org/CodeSystem/v3-RoleCode"
     assert relationship_codings[1]["code"] == "SPS"
     assert contact["relationship"][0]["text"] == "Ehepartner/-in"
-    assert contact["telecom"][0]["use"] == "mobile"
+    assert "telecom" not in contact
     assert contact["address"]["use"] == "home"
     assert contact["extension"][0]["url"] == "https://fhir.omnilink.ch/fhir/StructureDefinition/patient-contact-identifier"
     assert contact["extension"][0]["valueIdentifier"]["system"] == "urn:oid:1.2.840.114350.1.13.521.2.7.2.827665"

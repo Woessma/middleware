@@ -17,6 +17,8 @@ from services.echosos_service import (
     extract_echosos_url,
     import_echosos,
     parse_echosos_data,
+    to_poc_notfall_logobject,
+    enrich_poc_notfall_logobject,
 )
 from terminology.echosos import (
     ECHOSOS_ALLERGENS,
@@ -41,6 +43,153 @@ COMPACT_QR_URL = (
 
 
 class EchoSosServiceTests(unittest.TestCase):
+    def test_poc_notfall_logobject_maps_available_data_and_leaves_unknowns_null(self):
+        data = parse_echosos_data(
+            "https://eid.echosos.com/#a=B&b=1&d=B&f=Max&g=fGBP&r=A"
+            "&i=Behandlung%20in%20Spezialklinik&l=Mustermann"
+            "&m=B&n1=Max%20Mustermann&p1=%2B41000000000&o=0"
+        )
+
+        result = to_poc_notfall_logobject(data)
+
+        self.assertEqual(result["personal"]["firstName"], "Max")
+        self.assertEqual(result["personal"]["lastName"], "Mustermann")
+        self.assertEqual(result["personal"]["dateOfBirth"], data["birth_date"])
+        self.assertIsNone(result["personal"]["sex"])
+        self.assertEqual(result["emergencyContacts"], [{
+            "firstName": "Max",
+            "lastName": "Mustermann",
+            "phone": "+41000000000",
+            "relationship": None,
+            "isHealthcareProxy": None,
+            "isHearingImpairedOrRestricted": None,
+        }])
+        self.assertEqual(result["medical"]["bloodGroup"], "A+")
+        self.assertEqual(result["medical"]["preExistingConditions"], ["Asthma"])
+        self.assertEqual(result["medical"]["allergies"], [{
+            "substance": "Penizillin",
+            "reaction": "Hautrötung",
+        }])
+        self.assertEqual(result["medical"]["medications"], ["Antihypertensiva"])
+        self.assertEqual(result["medical"]["specialNotes"], "Behandlung in Spezialklinik")
+        self.assertIsNone(result["medical"]["pregnancy"])
+        self.assertIsNone(result["implants"]["pacemaker"])
+        self.assertTrue(result["provision"]["organDonor"])
+        self.assertIsNone(result["provision"]["hasDependents"])
+
+    def test_poc_notfall_logobject_does_not_infer_negative_organ_donation(self):
+        data = parse_echosos_data("https://eid.echosos.com/#s=1&o=2")
+
+        result = to_poc_notfall_logobject(data)
+
+        self.assertIsNone(result["provision"]["organDonor"])
+        self.assertEqual(result["emergencyContacts"], [])
+
+    def test_poc_notfall_logobject_enrichment_preserves_echo_values_and_adds_fhir_data(self):
+        data = parse_echosos_data(
+            "https://eid.echosos.com/#a=B&b=1&d=B&f=Eva&g=fGBP"
+            "&l=Beispiel&n1=Max%20Mustermann&o=2"
+        )
+        logobject = to_poc_notfall_logobject(data)
+        patient = {
+            "resourceType": "Patient",
+            "id": "p1",
+            "gender": "female",
+            "identifier": [{
+                "type": {"coding": [{"code": "MB"}]},
+                "value": "7788",
+            }],
+            "contact": [{
+                "relationship": [{
+                    "coding": [{"code": "ECON"}],
+                    "text": "Notfallkontakt",
+                }],
+                "name": {"given": ["Max"], "family": "Mustermann"},
+                "telecom": [{"system": "phone", "value": "+41000000000"}],
+            }],
+        }
+        bundle = {
+            "resourceType": "Bundle",
+            "entry": [
+                {"resource": patient},
+                {"resource": {
+                    "resourceType": "Condition",
+                    "code": {
+                        "coding": [{"code": "44054006", "display": "Diabetes mellitus"}],
+                        "text": "Diabetes mellitus",
+                    },
+                }},
+                {"resource": {
+                    "resourceType": "MedicationStatement",
+                    "status": "active",
+                    "medicationCodeableConcept": {"text": "Metformin"},
+                    "dosage": [{"text": "1000 mg 1-0-1"}],
+                }},
+                {"resource": {
+                    "resourceType": "MedicationStatement",
+                    "status": "completed",
+                    "medicationCodeableConcept": {"text": "Abgeschlossene Medikation"},
+                }},
+                {"resource": {
+                    "resourceType": "MedicationRequest",
+                    "status": "on-hold",
+                    "medicationCodeableConcept": {"text": "Pausierte Medikation"},
+                }},
+                {"resource": {
+                    "resourceType": "MedicationStatement",
+                    "medicationCodeableConcept": {"text": "Status unbekannt"},
+                }},
+                {"resource": {
+                    "resourceType": "AllergyIntolerance",
+                    "code": {"text": "Penizillin"},
+                    "reaction": [{
+                        "manifestation": [{"text": "Hautausschlag"}],
+                    }],
+                }},
+                {"resource": {
+                    "resourceType": "Observation",
+                    "code": {"coding": [{"code": "882-1"}]},
+                    "valueCodeableConcept": {"text": "B Rh-"},
+                }},
+                {"resource": {
+                    "resourceType": "Observation",
+                    "code": {"coding": [{"code": "82810-3"}]},
+                    "valueCodeableConcept": {
+                        "coding": [{"code": "60001007", "display": "Not pregnant"}],
+                    },
+                }},
+                {"resource": {
+                    "resourceType": "Consent",
+                    "status": "active",
+                    "category": [{"coding": [{"code": "42348-3"}]}],
+                    "provision": {"type": "permit"},
+                }},
+                {"resource": {
+                    "resourceType": "RelatedPerson",
+                    "relationship": {"coding": [{"code": "CHILD", "display": "Child"}]},
+                }},
+                {"resource": {
+                    "resourceType": "Device",
+                    "type": {"text": "Insulin pump"},
+                }},
+            ],
+        }
+
+        result = enrich_poc_notfall_logobject(logobject, patient, bundle)
+
+        self.assertEqual(result["personal"]["sex"], "W")
+        self.assertEqual(result["personal"]["memberNumber"], "7788")
+        self.assertEqual(result["emergencyContacts"][0]["phone"], "+41000000000")
+        self.assertEqual(result["emergencyContacts"][0]["relationship"], "Notfallkontakt")
+        self.assertEqual(result["medical"]["bloodGroup"], "A+")
+        self.assertIn("Diabetes mellitus", result["medical"]["preExistingConditions"])
+        self.assertEqual(result["medical"]["medications"], ["Metformin 1000 mg 1-0-1"])
+        self.assertEqual(result["medical"]["allergies"][0]["reaction"], "Hautausschlag")
+        self.assertFalse(result["medical"]["pregnancy"])
+        self.assertTrue(result["provision"]["organDonor"])
+        self.assertTrue(result["provision"]["hasDependents"])
+        self.assertTrue(result["implants"]["insulinPump"])
+
     @patch("services.echosos_service.warn_if_external_patient_duplicate")
     @patch("services.echosos_service.requests.get")
     def test_patient_search_checks_external_server_with_same_name_and_birthdate(

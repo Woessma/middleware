@@ -432,47 +432,40 @@ def build_ch_core_patient(patient: PatientData) -> dict:
             )
 
     if patient.contacts:
-        resource["contact"] = []
+        # CH Core allows one Patient.contact and does not permit telecom here.
+        contact = patient.contacts[0]
+        contact_entry = {}
 
-        for contact in patient.contacts:
-            contact_entry = {}
-
-            if contact.relationship:
-                contact_entry["relationship"] = [
-                    build_codeable_concept(
-                        contact.relationship
-                    )
-                ]
-
-            if contact.name:
-                contact_entry["name"] = build_human_name(
-                    contact.name
+        if contact.relationship:
+            contact_entry["relationship"] = [
+                build_codeable_concept(
+                    contact.relationship
                 )
+            ]
 
-            if contact.address:
-                contact_entry["address"] = build_address(
-                    contact.address
-                )
+        if contact.name:
+            contact_entry["name"] = build_human_name(
+                contact.name
+            )
 
-            if contact.telecoms:
-                contact_entry["telecom"] = [
-                    build_telecom(telecom)
-                    for telecom in contact.telecoms
-                ]
+        if contact.address:
+            contact_entry["address"] = build_address(
+                contact.address
+            )
 
-            if contact.identifiers:
-                contact_entry["extension"] = [
-                    {
-                        "url": PATIENT_CONTACT_IDENTIFIER_URL,
-                        "valueIdentifier": build_identifier(
-                            identifier
-                        ),
-                    }
-                    for identifier in contact.identifiers
-                ]
+        if contact.identifiers:
+            contact_entry["extension"] = [
+                {
+                    "url": PATIENT_CONTACT_IDENTIFIER_URL,
+                    "valueIdentifier": build_identifier(
+                        identifier
+                    ),
+                }
+                for identifier in contact.identifiers
+            ]
 
-            ensure_contact_address(contact_entry)
-            resource["contact"].append(contact_entry)
+        ensure_contact_address(contact_entry)
+        resource["contact"] = [contact_entry]
 
     if patient.active is not None:
         resource["active"] = patient.active
@@ -483,12 +476,29 @@ def build_ch_core_patient(patient: PatientData) -> dict:
     extensions = []
 
     if patient.place_of_birth:
+        birth_place_address = build_address(
+            patient.place_of_birth
+        )
+        birth_place_text = birth_place_address.pop(
+            "text",
+            None,
+        )
+        if birth_place_text and not any(
+            birth_place_address.get(field)
+            for field in (
+                "line",
+                "postalCode",
+                "city",
+                "state",
+                "country",
+            )
+        ):
+            birth_place_address["city"] = birth_place_text
+
         extensions.append(
             {
                 "url": PATIENT_BIRTH_PLACE_URL,
-                "valueAddress": build_address(
-                    patient.place_of_birth
-                )
+                "valueAddress": birth_place_address
             }
         )
 

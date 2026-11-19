@@ -136,10 +136,12 @@ Ohne Medikationsressourcen bleibt das bisherige Verhalten erhalten.
 `/fhir/convert` wendet dieselbe Pruefung auf Medikationsbundles an;
 reine Convert-/Stabilize-Endpunkte werden nicht zu Importen umgedeutet.
 
-**CDA-Gateway muss neu deployt werden:** Die lokalen OL_ROUTING-/Channel-XMLs
-wurden auf `/v1/cda/import -> /cda/prepare` umgestellt. Die bisher laufende
-Route `/cda/convert` ist noch keine Importsperre. Datei-Aenderung allein
-aendert den Live-Channel nicht. Siehe [BridgeLink](bridgelink/BridgeLink.md).
+**CDA-Gateway-Pfad noch abgleichen:** Die lokalen OL_ROUTING-/Channel-XMLs
+verwenden `/v1/cda/import -> /cda/prepare`. Die erfolgreiche
+`transaction-response` vom 2026-11-19 bestaetigt den HAPI-Import, aber nicht
+die genaue aktive Channel-Revision oder den internen Middleware-Pfad.
+Datei-Aenderungen allein deployen den Live-Channel nicht. Siehe
+[BridgeLink](bridgelink/BridgeLink.md).
 
 Importmapping: unzweideutige direkte CDA-Medikationsautoren werden mit
 Identifier und `dateAsserted` strukturiert erhalten; eigene Entry-Notizen
@@ -147,7 +149,12 @@ erhalten vorhandene Autoren-/Zeitangaben. Verschachtelte Kommentarautoren
 oder reine Therapiezeiten werden nicht als Assertion-Zeit ausgegeben.
 Fehlender/unbekannter CDA-Medikationsstatus wird als `unknown` gespeichert,
 nicht mehr automatisch `active`. Bestehende Dupletten-Identifier bleiben
-unveraendert. Keine automatische Migration vorhandener HAPI-Daten.
+unveraendert. Numerische Observationswerte ohne CDA-Einheit enthalten keine
+Nullfelder fuer Quantity-`unit`, `system` oder `code`. Der CH-Core-Patient
+enthaelt hoechstens einen `Patient.contact` ohne `telecom`; weitere Kontakte
+bleiben als `RelatedPerson` erhalten. Text-only-Geburtsorte werden als
+`Address.city` ausgegeben, nicht als unzulaessiges `Address.text`.
+Keine automatische Migration vorhandener HAPI-Daten.
 
 ### Zusaetzliche VACD-Pruefung mit Husky (2026-11-05)
 
@@ -180,6 +187,8 @@ HAPI-Pruefungen des Versands bleiben unveraendert. Kein BridgeLink-Redeploy.
 | CDA Convert | `POST /v1/cda/convert` | Transaction-Bundle, kein Write |
 | CDA Import | `POST /v1/cda/import` | HAPI `transaction-response` |
 | EchoSOS Import | `POST /v1/echosos/resolve` | HAPI `transaction-response` |
+| EchoSOS Notfall-Logobject | Middleware `POST /echosos/poc-notfall-logobject` | POC-JSON, ergänzende FHIR-Leseabfrage, keine FHIR-/BridgeLink-Schreibzugriffe |
+| EchoSOS POC-Testseite | `GET /echosos-poc-notfall-test.html` | Separate Testoberfläche für POC-JSON |
 | eMediplan JSON / CHMED16A Convert | `POST /v1/emediplan/convert` | Collection-Bundle, kein Write |
 | eMediplan JSON Import | `POST /v1/emediplan/import` | HAPI `transaction-response` |
 | eMediplan PDF/QR Convert | Middleware `POST /emediplan/qr/convert` | Collection-Bundle, kein Write |
@@ -316,6 +325,15 @@ Ohne gueltige BridgeLink-Authentifizierung antworten geschuetzte Endpunkte mit:
 
 - HTTP Status: 401 Unauthorized
 - Fehlerantwort von BridgeLink mit `401 Unauthorized` oder `403 Forbidden`
+
+### CDA-AT-Import (2026-11-19)
+
+Die schreibfreie lokale FHIR-Validierung lieferte HTTP 200 ohne Fehler/Fatal
+(196 Warnungen, 18 Informationen). Die bereitgestellte Importantwort war ein
+`transaction-response` mit 46 Eintraegen: 45 Antworten mit HTTP 200 und eine
+Neuanlage mit HTTP 201 (`PractitionerRole`); keine Error-/Fatal-Issues.
+Eine unabhaengige Folgeabfrage der gespeicherten Ressourcen wurde nicht
+durchgefuehrt. Details und Mappingregeln: [CDA-Use-Cases](docs/bridgelink-cda-usecases.md).
 
 ### Browser-Testclients und Keycloak
 
@@ -572,8 +590,21 @@ der Terminology-Service validiert zusaetzlich die von ihm unterstuetzten Codes.
 | Extern ueber BridgeLink | `POST` | `https://api.omnilink.ch/v1/echosos/resolve` | HAPI-Ergebnis als FHIR-Bundle mit `type: transaction-response` |
 | Browser-Import ueber Same-Origin-Proxy | `POST` | `/echosos/import` | Leitet den authentifizierten Request an den festen BridgeLink-Endpunkt weiter |
 | Lokale QR-Vorschau | `POST` | `/echosos/preview` | Dekodiert rohe URL-, Bild- oder PKPass-Daten mit Bearer-Header; alle erkannten Felder, kein BridgeLink-/FHIR-Zugriff und kein Write |
+| POC-Notfall-Logobject | `POST` | `/echosos/poc-notfall-logobject` | Erzeugt POC-JSON entweder aus `{"patientId":"<FHIR-ID>"}` und `$everything` oder aus EchoSOS-Rohdaten; keine Writes |
+| POC-Testseite | `GET` | `/echosos-poc-notfall-test.html` | Separate Keycloak-authentifizierte Oberfläche für lokale Patientensuche oder EchoSOS-Link/QR/PKPass |
 | Direkt an die Middleware | `POST` | `https://middleware.local.omnilink.ch/echosos/qr` | FHIR-Bundle mit `type: transaction`, noch ohne Write |
 | Same-Origin-FHIR-Leseproxy | `GET` | `/echosos/fhir/Patient`, `/echosos/fhir/Patient/{id}` oder `/echosos/fhir/Patient/{id}/$everything` | Leitet authentifizierte Patient-Lesezugriffe an `FHIR_BASE` weiter |
+
+Die POC-Testseite bietet zwei schreibfreie Wege: lokale FHIR-Patientensuche per
+Identifier oder Name/Geburtsdatum mit expliziter Auswahl; oder EchoSOS-Link,
+QR-Bild beziehungsweise PKPass. Der Patient-Weg liest
+`Patient/{id}/$everything`. Der EchoSOS-Weg erstellt das Logobject aus den
+EchoSOS-Daten und ergänzt bei eindeutiger Übereinstimmung optional lesend aus
+FHIR. FHIR-Medikationen werden nur mit `status: active` in die Medikamentenliste
+übernommen. Nicht ableitbare Einzelwerte bleiben `null`, nicht verfügbare
+Sammlungen leer. `createdAt` ist das UTC-Datum der Erzeugung. Es erfolgen keine
+FHIR- oder BridgeLink-Schreibzugriffe; der bestehende FHIR-Importvertrag über
+`/echosos/qr` bleibt unverändert.
 
 Die Middleware dekodiert den EchoSOS-QR beziehungsweise die PKPass-Datei,
 gleicht den Patienten ab und erstellt das Transaction-Bundle. BridgeLink

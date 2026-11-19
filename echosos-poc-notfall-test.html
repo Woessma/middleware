@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="cache-control" content="no-store">
+  <title>EchoSOS / POC-Notfall-Logobject</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #e8efef;
+      --paper: #fff;
+      --ink: #1a2323;
+      --muted: #576b6f;
+      --line: #d3dfe0;
+      --teal: #0d7d73;
+      --teal-dark: #0a645f;
+      --soft: #dfeeea;
+      --danger: #b42318;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 16px/1.5 system-ui, sans-serif;
+    }
+    main { max-width: 1100px; margin: auto; padding: 28px 20px; }
+    .eyebrow {
+      font: 700 12px/1.5 ui-monospace, monospace;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 6px 0 10px; font-size: clamp(2rem, 5vw, 4rem); line-height: 1.05; }
+    h2 { margin: 0 0 8px; font-size: 1.35rem; }
+    p { margin: 0; }
+    .muted, .hint { color: var(--muted); }
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(280px, .8fr) minmax(0, 1.2fr);
+      gap: 18px;
+      margin-top: 22px;
+      align-items: start;
+    }
+    .panel {
+      min-width: 0;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: 0 8px 24px rgba(22, 43, 48, .05);
+    }
+    .auth-row, .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .auth-row { margin: 16px 0 5px; }
+    .auth-status { color: var(--muted); font-size: 13px; }
+    label { display: block; margin: 18px 0 6px; font-weight: 700; }
+    input[type="text"], input[type="date"], select {
+      width: 100%;
+      min-height: 44px;
+      padding: 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }
+    input:focus { outline: 3px solid rgba(13, 125, 115, .18); border-color: var(--teal); }
+    .hint { margin-top: 7px; font-size: 13px; }
+    .actions { margin-top: 18px; }
+    .search-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 14px;
+    }
+    .search-grid .wide { grid-column: 1 / -1; }
+    .patient {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+    .patient h3 { margin: 0 0 6px; font-size: 1rem; }
+    .patient p { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+    .patient button { margin-top: 10px; }
+    .selected-patient { margin-top: 14px; padding: 12px; background: var(--soft); }
+    button {
+      min-height: 44px;
+      padding: 10px 15px;
+      border: 1px solid var(--teal);
+      border-radius: 6px;
+      background: var(--teal);
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:hover { background: var(--teal-dark); }
+    button.secondary { border-color: var(--line); background: #f0f4f3; color: var(--ink); }
+    button:disabled { opacity: .55; cursor: wait; }
+    .status { display: none; margin-top: 18px; padding: 12px 14px; border-left: 4px solid var(--teal); background: var(--soft); }
+    .status.show { display: block; }
+    .status.error { border-left-color: var(--danger); background: #fff0ee; color: var(--danger); }
+    pre {
+      min-height: 280px;
+      max-height: 72vh;
+      overflow: auto;
+      margin: 14px 0 0;
+      padding: 16px;
+      border-radius: 6px;
+      background: #172321;
+      color: #e4f0ed;
+      font: 13px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .page-link { display: inline-block; margin-top: 18px; color: var(--teal-dark); }
+    @media (max-width: 760px) {
+      main { padding: 20px 14px; }
+      .workspace { grid-template-columns: 1fr; }
+      .search-grid { grid-template-columns: 1fr; }
+      .search-grid .wide { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">EchoSOS / POC</div>
+    <h1>Notfall-Logobject testen</h1>
+    <p class="muted">Wahlweise einen Patienten im lokalen FHIR-Server suchen oder EchoSOS-Daten per Link, QR-Bild oder PKPass verarbeiten. Beide Wege erzeugen das POC_Notfall_Logobject ohne FHIR- oder BridgeLink-Schreibzugriffe.</p>
+
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+    <input id="keycloakClientId" type="hidden" value="app-omnilink-cardtest">
+    <div class="auth-row">
+      <button id="keycloakLoginBtn" type="button">Mit Keycloak anmelden</button>
+      <span id="keycloakStatus" class="auth-status" role="status">Kein Keycloak-Token aktiv.</span>
+    </div>
+
+    <div class="workspace">
+      <section class="panel">
+        <h2>Eingabe</h2>
+        <label for="inputMode">Use Case</label>
+        <select id="inputMode">
+          <option value="patient" selected>FHIR-Patient suchen und auswählen</option>
+          <option value="echosos">EchoSOS-Link oder QR-Code verwenden</option>
+        </select>
+
+        <section id="patientMode">
+          <h3>Patientensuche</h3>
+          <p class="hint">Lokalen HAPI wie im Dubletten-Test per Identifier oder mit Name und Geburtsdatum durchsuchen.</p>
+          <div class="search-grid">
+            <div class="wide">
+              <label for="searchType">Suchkriterium</label>
+              <select id="searchType">
+                <option value="identifier">Identifier (System + Wert)</option>
+                <option value="demographics" selected>Nachname, Vorname und Geburtsdatum</option>
+              </select>
+            </div>
+            <div id="identifierSystemField" hidden>
+              <label for="identifierSystem">Identifier-System (URI)</label>
+              <select id="identifierSystem">
+                <option value="">Bitte auswählen</option>
+                <option value="urn:oid:2.16.756.5.32">AHVN13 / NAVS13</option>
+                <option value="urn:oid:2.16.756.5.30.1.127.3.10.3">EPR-SPID</option>
+                <option value="urn:oid:2.16.756.5.30.1.123.100.1.1.1">Versicherungskartennummer</option>
+                <option value="custom">Eigene URI eingeben</option>
+              </select>
+            </div>
+            <div id="customIdentifierSystemField" hidden>
+              <label for="identifierSystemCustom">Eigene Identifier-System-URI</label>
+              <input id="identifierSystemCustom" type="text" autocomplete="off">
+            </div>
+            <div id="identifierValueField" hidden>
+              <label for="identifierValue">Identifier-Wert</label>
+              <input id="identifierValue" type="text" autocomplete="off">
+            </div>
+            <div id="familyField">
+              <label for="family">Nachname</label>
+              <input id="family" type="text" autocomplete="off">
+            </div>
+            <div id="givenField">
+              <label for="given">Vorname</label>
+              <input id="given" type="text" autocomplete="off">
+            </div>
+            <div id="birthdateField">
+              <label for="birthdate">Geburtsdatum</label>
+              <input id="birthdate" type="date">
+            </div>
+          </div>
+          <div class="actions">
+            <button id="searchPatients" type="button">Lokalen HAPI durchsuchen</button>
+          </div>
+          <div id="searchResults" aria-live="polite"></div>
+          <div id="selectedPatient" class="selected-patient" hidden></div>
+        </section>
+
+        <section id="echososMode" hidden>
+          <h3>EchoSOS-Eingabe</h3>
+          <p class="hint">Die Daten werden lokal verarbeitet. Eine optionale FHIR-Ergänzung ist nur lesend; es wird nichts in HAPI gespeichert.</p>
+          <label for="sourceUrl">EchoSOS-Link</label>
+          <input id="sourceUrl" type="url" autocomplete="off" placeholder="https://eid.echosos.com/#...">
+          <p class="hint">Alternativ einen QR-Code als Bild oder PKPass-Datei auswählen.</p>
+          <label for="sourceFile">QR-Bild oder PKPass-Datei</label>
+          <input id="sourceFile" type="file" accept=".pkpass,.png,.jpg,.jpeg,image/png,image/jpeg,application/vnd.apple.pkpass">
+        </section>
+
+        <div class="actions">
+          <button id="submit" type="button" disabled>POC-JSON erzeugen</button>
+          <button id="clear" class="secondary" type="button">Leeren</button>
+        </div>
+        <a class="page-link" href="/echosos-fhir-test.html">Zum bestehenden EchoSOS-FHIR-Usecase</a>
+      </section>
+
+      <section class="panel">
+        <h2>Antwort: POC_Notfall_Logobject</h2>
+        <p class="muted">Unbekannte Angaben erscheinen als <code>null</code>; nicht verfügbare Listen bleiben leer.</p>
+        <pre id="result" aria-label="JSON-Antwort">Noch keine Antwort.</pre>
+      </section>
+    </div>
+  </main>
+  <script src="keycloak-auth.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const endpoint = '/echosos/poc-notfall-logobject';
+    const patientSearchEndpoint = '/echosos/fhir/Patient';
+    let selectedPatient = null;
+
+    function show(message, error = false) {
+      $('status').textContent = message;
+      $('status').className = 'status show' + (error ? ' error' : '');
+    }
+
+    function updateSubmitState() {
+      $('submit').disabled = $('inputMode').value === 'patient'
+        ? !selectedPatient
+        : !$('sourceUrl').value.trim() && !$('sourceFile').files.length;
+    }
+
+    function isEchoSosUrl(value) {
+      try {
+        const parsed = new URL(value);
+        return ['http:', 'https:'].includes(parsed.protocol) && parsed.hostname === 'eid.echosos.com';
+      } catch {
+        return false;
+      }
+    }
+
+    function fileContentType(file) {
+      if (file.type) return file.type;
+      return file.name.toLowerCase().endsWith('.pkpass')
+        ? 'application/vnd.apple.pkpass'
+        : 'application/octet-stream';
+    }
+
+    function searchParameters() {
+      const params = new URLSearchParams({ _count: '20' });
+      if ($('searchType').value === 'identifier') {
+        const selectedSystem = $('identifierSystem').value;
+        const system = selectedSystem === 'custom'
+          ? $('identifierSystemCustom').value.trim()
+          : selectedSystem;
+        const value = $('identifierValue').value.trim();
+        if (!system || !value) throw new Error('Bitte Identifier-System und Identifier-Wert eingeben.');
+        params.set('identifier', system + '|' + value);
+      } else {
+        const family = $('family').value.trim();
+        const given = $('given').value.trim();
+        const birthdate = $('birthdate').value;
+        if (!family || !given || !birthdate) {
+          throw new Error('Bitte Nachname, Vorname und Geburtsdatum eingeben.');
+        }
+        params.set('family', family);
+        params.set('given', given);
+        params.set('birthdate', birthdate);
+      }
+      return params;
+    }
+
+    function patientName(patient) {
+      const names = Array.isArray(patient.name) ? patient.name : [];
+      return names.filter(name => name && typeof name === 'object').map(name => {
+        const given = Array.isArray(name.given) ? name.given.join(' ') : '';
+        return [given, name.family].filter(Boolean).join(' ') || name.text || '';
+      }).filter(Boolean).join('; ') || 'Name nicht angegeben';
+    }
+
+    function selectPatient(patient) {
+      selectedPatient = { id: patient.id };
+      const target = $('selectedPatient');
+      target.replaceChildren();
+      const heading = document.createElement('strong');
+      heading.textContent = 'Ausgewählt: ' + patientName(patient);
+      const details = document.createElement('p');
+      details.textContent = 'FHIR-ID: ' + patient.id
+        + (patient.birthDate ? ' · Geburtsdatum: ' + patient.birthDate : '');
+      target.append(heading, details);
+      target.hidden = false;
+      updateSubmitState();
+      $('result').textContent = 'Noch keine Antwort.';
+      show('Patient ausgewählt. Jetzt kann das POC-JSON erzeugt werden.');
+    }
+
+    function renderPatients(patients, total) {
+      const target = $('searchResults');
+      target.replaceChildren();
+      const summary = document.createElement('p');
+      summary.className = 'hint';
+      summary.textContent = total + ' FHIR-Treffer (maximal 20 angezeigt):';
+      target.append(summary);
+      if (!patients.length) {
+        const empty = document.createElement('p');
+        empty.className = 'hint';
+        empty.textContent = 'Keine Treffer.';
+        target.append(empty);
+        return;
+      }
+      patients.forEach(patient => {
+        const card = document.createElement('article');
+        card.className = 'patient';
+        const heading = document.createElement('h3');
+        heading.textContent = patientName(patient);
+        const details = document.createElement('p');
+        details.textContent = 'FHIR-ID: ' + (patient.id || 'nicht angegeben')
+          + ' · Geburtsdatum: ' + (patient.birthDate || 'nicht angegeben')
+          + ' · Geschlecht: ' + (patient.gender || 'nicht angegeben');
+        card.append(heading, details);
+        if (patient.id) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = 'Diesen Patienten auswählen';
+          button.addEventListener('click', () => selectPatient(patient));
+          card.append(button);
+        }
+        target.append(card);
+      });
+    }
+
+    async function searchPatients() {
+      const auth = window.keycloakAuthHeaders();
+      if (!auth.Authorization) throw new Error('Bitte zuerst mit Keycloak anmelden.');
+      const params = searchParameters();
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        try {
+          const response = await fetch(patientSearchEndpoint + '?' + params.toString(), {
+            headers: { ...auth, Accept: 'application/fhir+json, application/json' },
+            credentials: 'same-origin',
+            signal: controller.signal
+          });
+          const text = await response.text();
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch {
+            throw new Error(`HTTP ${response.status}: Antwort ist kein gültiges JSON.`);
+          }
+          if (!response.ok) throw new Error(`HTTP ${response.status}: ${data.detail || text}`);
+          if (data.resourceType !== 'Bundle' || !Array.isArray(data.entry)) {
+            throw new Error('Die Antwort ist kein gültiges FHIR-Bundle.');
+          }
+          const patients = data.entry
+            .map(entry => entry && entry.resource)
+            .filter(resource => resource && resource.resourceType === 'Patient');
+          renderPatients(patients, Number.isInteger(data.total) ? data.total : patients.length);
+          selectedPatient = null;
+          $('selectedPatient').hidden = true;
+          updateSubmitState();
+          show(patients.length ? 'Bitte einen Patienten aus den Treffern auswählen.' : 'Keine Patienten gefunden.');
+        } finally {
+          clearTimeout(timeout);
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') throw new Error('Zeitüberschreitung bei der Patientensuche.');
+        if (error instanceof TypeError) throw new Error('Netzwerkfehler bei der Patientensuche.');
+        throw error;
+      }
+    }
+
+    async function readLogobject() {
+      const auth = window.keycloakAuthHeaders();
+      if (!auth.Authorization) throw new Error('Bitte zuerst mit Keycloak anmelden.');
+      const patientMode = $('inputMode').value === 'patient';
+      let body;
+      let contentType;
+      if (patientMode) {
+        if (!selectedPatient) throw new Error('Bitte zuerst einen Patienten auswählen.');
+        body = JSON.stringify({ patientId: selectedPatient.id });
+        contentType = 'application/json';
+      } else {
+        const url = $('sourceUrl').value.trim();
+        const file = $('sourceFile').files[0];
+        if (url && file) throw new Error('Bitte entweder den EchoSOS-Link oder eine Datei verwenden.');
+        if (!url && !file) throw new Error('Bitte einen EchoSOS-Link eingeben oder eine Datei auswählen.');
+        if (url && !isEchoSosUrl(url)) throw new Error('Der Link muss von eid.echosos.com stammen.');
+        body = url || file;
+        contentType = url ? 'text/plain; charset=utf-8' : fileContentType(file);
+      }
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { ...auth, Accept: 'application/json', 'Content-Type': contentType },
+        body,
+        credentials: 'same-origin'
+      });
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`HTTP ${response.status}: Antwort ist kein gültiges JSON.`);
+      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${data.detail || text}`);
+      $('result').textContent = JSON.stringify(data, null, 2);
+      show(patientMode
+        ? 'POC-JSON aus dem ausgewählten FHIR-Patienten erzeugt. Es wurde nichts gespeichert.'
+        : 'POC-JSON aus EchoSOS-Daten erzeugt. FHIR wurde, falls möglich, nur lesend ergänzt; es wurde nichts gespeichert.');
+    }
+
+    $('submit').addEventListener('click', async () => {
+      $('submit').disabled = true;
+      try {
+        await readLogobject();
+      } catch (error) {
+        show(error.message, true);
+      } finally {
+        updateSubmitState();
+      }
+    });
+
+    $('searchPatients').addEventListener('click', async () => {
+      $('searchPatients').disabled = true;
+      $('searchResults').replaceChildren();
+      selectedPatient = null;
+      $('selectedPatient').replaceChildren();
+      $('selectedPatient').hidden = true;
+      updateSubmitState();
+      $('result').textContent = 'Noch keine Antwort.';
+      try {
+        await searchPatients();
+      } catch (error) {
+        show(error.message, true);
+      } finally {
+        $('searchPatients').disabled = false;
+      }
+    });
+
+    $('searchType').addEventListener('change', () => {
+      const identifierMode = $('searchType').value === 'identifier';
+      $('identifierSystemField').hidden = !identifierMode;
+      $('identifierValueField').hidden = !identifierMode;
+      $('familyField').hidden = identifierMode;
+      $('givenField').hidden = identifierMode;
+      $('birthdateField').hidden = identifierMode;
+      $('customIdentifierSystemField').hidden = !identifierMode
+        || $('identifierSystem').value !== 'custom';
+    });
+
+    $('identifierSystem').addEventListener('change', () => {
+      $('customIdentifierSystemField').hidden = $('identifierSystem').value !== 'custom'
+        || $('searchType').value !== 'identifier';
+    });
+    $('searchType').dispatchEvent(new Event('change'));
+
+    $('inputMode').addEventListener('change', () => {
+      const patientMode = $('inputMode').value === 'patient';
+      $('patientMode').hidden = !patientMode;
+      $('echososMode').hidden = patientMode;
+      $('result').textContent = 'Noch keine Antwort.';
+      $('status').className = 'status';
+      $('status').textContent = '';
+      updateSubmitState();
+    });
+    $('sourceUrl').addEventListener('input', updateSubmitState);
+    $('sourceFile').addEventListener('change', updateSubmitState);
+
+    $('clear').addEventListener('click', () => {
+      ['identifierSystem', 'identifierSystemCustom', 'identifierValue', 'family', 'given', 'birthdate']
+        .forEach(id => { $(id).value = ''; });
+      $('sourceUrl').value = '';
+      $('sourceFile').value = '';
+      $('searchType').value = 'demographics';
+      $('searchType').dispatchEvent(new Event('change'));
+      $('inputMode').value = 'patient';
+      $('inputMode').dispatchEvent(new Event('change'));
+      $('searchResults').replaceChildren();
+      $('selectedPatient').replaceChildren();
+      $('selectedPatient').hidden = true;
+      selectedPatient = null;
+      updateSubmitState();
+      $('result').textContent = 'Noch keine Antwort.';
+      $('status').className = 'status';
+      $('status').textContent = '';
+    });
+  </script>
+</body>
+</html>

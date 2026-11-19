@@ -1,6 +1,35 @@
 # BridgeLink - Project Memory
 
-Stand: 2026-11-18
+Stand: 2026-11-19
+
+## Tagesabschluss 2026-11-19: EchoSOS-POC und CDA-AT-Importkorrekturen
+
+- Separate `/echosos/poc-notfall-logobject`-Testseite mit zwei
+  schreibfreien Modi: lokale FHIR-Patientensuche plus `$everything` oder
+  EchoSOS-Link/QR/PKPass mit optionaler lesender FHIR-Anreicherung.
+  MedicationStatements werden nur bei `status: active` uebernommen; der
+  klinische EchoSOS-Import bleibt unveraendert. Testseite deployt,
+  50 EchoSOS-Regressions- und No-write-Tests bestanden.
+
+- CDA-Observations mit Zahlenwert, aber ohne CDA-Einheit geben keine
+  `null`-Felder fuer Quantity `unit`/`system`/`code` mehr aus. Dieselbe
+  Guard-Logik gilt fuer Fallback-, Labor- und Vitalzeichenmapper.
+- CH-Core-Patient begrenzt `Patient.contact` auf einen Eintrag und laesst
+  dort `telecom` weg; die vollstaendigen Kontakte bleiben als RelatedPerson
+  erhalten. Text-only-Geburtsorte werden als `city` statt `Address.text`
+  ausgegeben.
+- Middleware-Image neu gebaut und gestartet. Health und lokale
+  `/cda/convert`-Antwort geprueft: keine null-Quantity-Felder, ein
+  `Patient.contact`, Geburtsort nur mit `city`.
+- Read-only `/cda/validate`: HTTP 200, null Error/Fatal, 196 Warnungen und
+  18 Informationen. 28 CDA-/Mapper-Unittests im Container bestanden.
+- Die vom Nutzer bereitgestellte Live-Antwort auf `/v1/cda/import` war ein
+  `transaction-response` mit 46 erfolgreichen Eintraegen (45x HTTP 200,
+  1x HTTP 201 fuer `PractitionerRole`), ohne Error/Fatal-Issues. Keine
+  unabhaengige Folgeabfrage der gespeicherten Ressourcen.
+- Ein vorheriger Regex-Timeout auf dem gueltigen
+  `ch-core-practitionerrole`-Canonical trat in der erfolgreichen
+  Transaktionsantwort nicht mehr auf; Profilangabe blieb erhalten.
 
 ## Tagesabschluss 2026-11-18: Automatisierter Refdata-Partner-Refresh
 

@@ -1,5 +1,27 @@
 # BridgeLink: CDA-Use-Cases und Channel-Einstellungen
 
+## CDA-AT-Mapping und Importnachweis (2026-11-19)
+
+Die CDA-AT-Konvertierung laesst bei numerischen Observationswerten ohne
+Quell-Einheit die optionalen Quantity-Felder `unit`, `system` und `code`
+weg, statt JSON-Nullwerte auszugeben. Der CH-Core-Patient enthaelt maximal
+einen `Patient.contact` ohne `telecom`; vollstaendige Kontaktangaben werden
+weiterhin als `RelatedPerson` ausgegeben. Ein Text-only-Geburtsort wird als
+`Address.city` abgebildet, da das CH-Core-Geburtsortprofil `Address.text`
+nicht zulaesst.
+
+Die schreibfreie lokale `/cda/validate`-Pruefung lieferte HTTP 200 ohne
+Error-/Fatal-Issues (196 Warnungen, 18 Informationen). Die bereitgestellte
+Live-Importantwort vom 2026-11-19 war ein `transaction-response` mit
+46 Eintraegen: 45x HTTP 200 und 1x HTTP 201 fuer eine neu angelegte
+`PractitionerRole`, ohne Error-/Fatal-Issues. Eine unabhaengige
+Folgeabfrage des gespeicherten Bundles wurde nicht ausgefuehrt.
+
+Ein vorheriger Validatorlauf meldete einen Regex-Timeout beim Pruefen des
+70 Zeichen langen `PractitionerRole.meta.profile`-Canonicals. Der Wert ist
+der gueltige CH-Core-Canonical; der Fehler trat in der erfolgreichen
+Transaktionsantwort nicht mehr auf. Das Profil wurde deshalb nicht entfernt.
+
 ## Aktuelle FHIR-R4-Korrekturen und Profilpruefung (2026-11-04)
 
 Die lokale CDA-EPIC-Testdatei wurde gegen den internen HAPI-Validator geprueft,
@@ -94,7 +116,7 @@ noch produktive Konfiguration wurden fuer diese Diagnose geaendert.
 
 | BridgeLink-Komponente | Einstellung / Pruefpunkt |
 |---|---|
-| HTTP Listener | Extern `POST /v1/cda/convert` ueber `https://api.omnilink.ch`; keine weiteren CDA-Pfade oder Port `8081` als externe API dokumentieren. |
+| HTTP Listener | Extern `POST /v1/cda/convert` und `POST /v1/cda/import` ueber `https://api.omnilink.ch`; keine weiteren CDA-Pfade oder Port `8081` als externe API dokumentieren. |
 | Authenticator | Eingehendes Keycloak-Bearer-JWT pruefen (Signatur, Issuer, Ablaufzeit, erforderliche Realm-Rolle und zugelassener Client). Die Client-Allowlist des Channels muss den tatsaechlichen `azp`/`client_id` enthalten. |
 | Request | Raw CDA-XML (`application/xml`) oder Multipart (`multipart/form-data`, Feld `file`) unveraendert mit passendem `Content-Type` inklusive Boundary an die Middleware weitergeben. `/cda/debug` akzeptiert ausschliesslich Multipart. |
 | HTTP Sender: Middleware | Internes, vom BridgeLink-Container erreichbares Ziel `POST /cda/<use-case>` konfigurieren. Ziel-URL im aktiven Channel pruefen; weder den Browser-Relay `/_proxy/bridge/cda` noch einen historischen Hostnamen als Ziel uebernehmen. |
@@ -121,7 +143,7 @@ bleibt der externe Einstieg auf den bisherigen Import beschraenkt.
 |---|---|---|---|---|
 | Diagnose (nur Debug-Modus) | `POST /cda/debug` | Multipart `file` | JSON mit CDA-Diagnose | Kein HAPI-Write; nicht produktiv exponieren (`DEBUG_MODE` erforderlich). |
 | Standard-Konvertierung ohne HAPI-Write (extern `/v1/cda/convert`) | `POST /cda/convert` | Raw XML oder Multipart `file` | FHIR-Bundle JSON, standardmaessig `transaction`; optional `bundle_type=document` | `responseTarget='none'`: Bundle direkt an den Client zurueckgeben, kein HAPI-Write. |
-| Standard-Import mit HAPI-Write (extern `/v1/cda/import`) | `POST /cda/convert` | Raw XML oder Multipart `file` | FHIR-Bundle JSON (`transaction`) | `responseTarget='hapi'`: Nur bei erfolgreicher Konvertierung das Transaction-Bundle als `application/fhir+json` an HAPI senden; dessen `transaction-response` an den Client geben. |
+| Standard-Import mit HAPI-Write (extern `/v1/cda/import`) | `POST /cda/prepare` | Raw XML oder Multipart `file` | FHIR-Bundle JSON (`transaction`) | `responseTarget='hapi'`: Nur bei erfolgreicher Vorbereitung das Transaction-Bundle als `application/fhir+json` an HAPI senden; dessen `transaction-response` an den Client geben. |
 | CH-VACD-Konvertierung | `POST /cda/vacd/convert` | Raw XML oder Multipart `file` | CH-VACD-Dokumentbundle JSON | Bundle direkt zurueckgeben; kein automatischer HAPI-Write. |
 | CH-VACD-Versand | `POST /cda/vacd/send` | Raw XML oder Multipart `file`; Zielkonfiguration erforderlich | JSON mit `convert` und `send`, Patientenaktion, Impfzaehlern und externer Antwort | **Keinen** zusaetzlichen HAPI-/VACD-Sender aktivieren: Die Middleware gleicht Patienten und Impfungen ab und sendet nur neue Impfungen. `skipped` ist kein erneuter Versand. Ziel per `VACD_SEND_BASE_URL` oder kontrolliertem `destination_base_url` festlegen. |
 | UMZH-Konvertierung | `POST /cda/umzh/convert` | Raw XML oder Multipart `file`; optional `workflow_stage`, `target` | UMZH-FHIR-Bundle JSON | Bundle direkt zurueckgeben; kein automatischer HAPI-Write. |

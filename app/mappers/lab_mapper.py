@@ -233,14 +233,21 @@ def build_lab_observation(
  
         if value.get("value") is not None:
  
-            observation["valueQuantity"] = {
+            quantity = {
                 "value": to_number_or_string(
                     value.get("value")
-                ),
-                "unit": value.get("unit"),
-                "system": "http://unitsofmeasure.org",
-                "code": value.get("unit")
+                )
             }
+            unit = value.get("unit")
+            if isinstance(unit, str) and unit.strip():
+                unit = unit.strip()
+                quantity.update({
+                    "unit": unit,
+                    "system": "http://unitsofmeasure.org",
+                    "code": unit,
+                })
+
+            observation["valueQuantity"] = quantity
  
         elif value.get("code"):
  

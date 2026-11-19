@@ -87,7 +87,15 @@ from services.fhir_duplicate_service import (
     find_existing_resource_by_identifier,
 )
 from services.emediplan_qr_service import extract_emediplan_payload_from_file, resolve_emediplan_payload
-from services.echosos_service import import_echosos, extract_echosos_url, parse_echosos_data
+from services.echosos_service import (
+    import_echosos,
+    extract_echosos_url,
+    parse_echosos_data,
+    to_poc_notfall_logobject,
+    enrich_poc_notfall_logobject,
+    EchoSosPatientMatchConflictError,
+    _patient_search,
+)
 from services.card_analysis_service import analyze_card
 from services.terminology_service import (
     call_terminology_operation,
@@ -534,6 +542,11 @@ def test_client():
 @app.get("/echosos-fhir-test.html", response_class=FileResponse)
 def echosos_fhir_test():
     return FileResponse(_app_file("echosos-fhir-test.html"), media_type="text/html")
+
+
+@app.get("/echosos-poc-notfall-test.html", response_class=FileResponse)
+def echosos_poc_notfall_test():
+    return FileResponse(_app_file("echosos-poc-notfall-test.html"), media_type="text/html")
 
 
 @app.get("/qr-reader.html", response_class=FileResponse, include_in_schema=False)
@@ -992,6 +1005,94 @@ async def echosos_preview(request: Request):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@app.post("/echosos/poc-notfall-logobject")
+async def echosos_poc_notfall_logobject(request: Request):
+    authorization = request.headers.get("authorization", "")
+    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
+        raise HTTPException(status_code=401, detail="Bitte zuerst mit Keycloak anmelden.")
+    is_patient_selection = (
+        request.headers.get("content-type", "").split(";", maxsplit=1)[0].strip().lower()
+        == "application/json"
+    )
+    if is_patient_selection:
+        try:
+            body = await request.json()
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Ungültiger Request") from exc
+        patient_id = body.get("patientId") if isinstance(body, dict) else None
+        if (
+            not isinstance(patient_id, str)
+            or not 1 <= len(patient_id) <= 64
+            or not all(
+                character in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-"
+                for character in patient_id
+            )
+        ):
+            raise HTTPException(status_code=400, detail="Ungültige Patient-ID")
+        logobject = to_poc_notfall_logobject({})
+        patient = {"resourceType": "Patient", "id": patient_id}
+    else:
+        raw_bytes = await request.body()
+        if not raw_bytes:
+            raise HTTPException(status_code=400, detail="Keine QR-Daten vorhanden.")
+        try:
+            url = await run_in_threadpool(
+                extract_echosos_url, raw_bytes, request.headers.get("content-type"),
+            )
+            data = parse_echosos_data(url)
+        except (ValueError, OSError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        logobject = to_poc_notfall_logobject(data)
+        if not all(data.get(field) for field in ("given", "family", "birth_date")):
+            return logobject
+
+        try:
+            patient = await run_in_threadpool(_patient_search, data, False)
+        except EchoSosPatientMatchConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except requests.RequestException as exc:
+            logger.warning("EchoSOS FHIR patient search failed: %s", exc)
+            raise HTTPException(status_code=502, detail="FHIR-Patientensuche nicht verfügbar") from exc
+        except (ValueError, TypeError, KeyError, AttributeError) as exc:
+            logger.warning("EchoSOS FHIR patient search response is invalid: %s", exc)
+            raise HTTPException(status_code=502, detail="FHIR-Patientensuche lieferte eine ungültige Antwort") from exc
+
+        if patient is None:
+            return logobject
+        patient_id = patient.get("id")
+        if not patient_id:
+            raise HTTPException(status_code=502, detail="FHIR-Patient ohne ID gefunden")
+
+    response = await _proxy_echosos_fhir_request(
+        f"Patient/{patient_id}/$everything",
+        request,
+        query_params=[("_count", "500")],
+    )
+    if response.status_code != 200:
+        logger.warning("EchoSOS FHIR $everything returned HTTP %s", response.status_code)
+        raise HTTPException(status_code=502, detail="FHIR-Patientendaten nicht verfügbar")
+    try:
+        bundle = json.loads(response.body)
+        if not isinstance(bundle, dict) or bundle.get("resourceType") != "Bundle":
+            raise ValueError("$everything did not return a Bundle")
+        if is_patient_selection and not any(
+            isinstance(entry, dict)
+            and isinstance(entry.get("resource"), dict)
+            and entry["resource"].get("resourceType") == "Patient"
+            and entry["resource"].get("id") == patient_id
+            for entry in bundle.get("entry", [])
+        ):
+            raise HTTPException(
+                status_code=502,
+                detail="FHIR-Gesamtabfrage enthält den ausgewählten Patienten nicht",
+            )
+        return enrich_poc_notfall_logobject(logobject, patient, bundle)
+    except (ValueError, TypeError, KeyError, AttributeError) as exc:
+        logger.warning("EchoSOS FHIR data could not be merged: %s", exc)
+        raise HTTPException(status_code=502, detail="FHIR-Patientendaten ungültig") from exc
+
+
 @app.post("/echosos/import")
 async def echosos_import_proxy(request: Request):
     headers = {"Authorization": _bridge_link_authorization(request)}
@@ -1028,8 +1129,7 @@ async def echosos_import_proxy(request: Request):
     )
 
 
-@app.get("/echosos/fhir/{patient_path:path}")
-async def echosos_fhir_proxy(patient_path: str, request: Request):
+async def _proxy_echosos_fhir_request(patient_path: str, request: Request, query_params=None):
     authorization = request.headers.get("authorization", "")
     if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
         raise HTTPException(
@@ -1063,7 +1163,11 @@ async def echosos_fhir_proxy(patient_path: str, request: Request):
         upstream = await run_in_threadpool(
             requests.get,
             f"{FHIR_BASE.rstrip('/')}/{patient_path}",
-            params=list(request.query_params.multi_items()),
+            params=(
+                list(request.query_params.multi_items())
+                if query_params is None
+                else query_params
+            ),
             headers=headers,
             timeout=30,
         )
@@ -1146,6 +1250,11 @@ async def echosos_fhir_proxy(patient_path: str, request: Request):
         status_code=upstream.status_code,
         media_type=upstream.headers.get("Content-Type"),
     )
+
+
+@app.get("/echosos/fhir/{patient_path:path}")
+async def echosos_fhir_proxy(patient_path: str, request: Request):
+    return await _proxy_echosos_fhir_request(patient_path, request)
 
 
 @app.post("/fhir/stabilize")
