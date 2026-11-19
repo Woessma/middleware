@@ -8,8 +8,8 @@ Stand: 2026-11-19
   schreibfreien Modi: lokale FHIR-Patientensuche plus `$everything` oder
   EchoSOS-Link/QR/PKPass mit optionaler lesender FHIR-Anreicherung.
   MedicationStatements werden nur bei `status: active` uebernommen; der
-  klinische EchoSOS-Import bleibt unveraendert. Testseite deployt,
-  50 EchoSOS-Regressions- und No-write-Tests bestanden.
+  klinische EchoSOS-Import bleibt unveraendert. Testseite deployt;
+  EchoSOS-Auswahl-, FHIR-Lese- und No-write-Regressionspruefungen bestanden.
 
 - CDA-Observations mit Zahlenwert, aber ohne CDA-Einheit geben keine
   `null`-Felder fuer Quantity `unit`/`system`/`code` mehr aus. Dieselbe
