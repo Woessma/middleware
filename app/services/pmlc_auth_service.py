@@ -61,16 +61,25 @@ def _signing_key(kid, issuer):
 
 
 def authorize_pmlc(authorization: str) -> None:
+    authorize_keycloak(
+        authorization, issuer=PMLC_KEYCLOAK_ISSUER, audience=PMLC_KEYCLOAK_AUDIENCE,
+        clients=PMLC_KEYCLOAK_ALLOWED_CLIENTS, required_role=PMLC_KEYCLOAK_REQUIRED_ROLE,
+        purpose="PMLC",
+    )
+
+
+def authorize_keycloak(authorization: str, *, issuer: str, audience: str, clients: str,
+                       required_role: str, purpose: str) -> dict:
     if not isinstance(authorization, str) or not authorization.lower().startswith("bearer ") \
             or not authorization[7:].strip():
         raise PmlcAuthError(401, "A Keycloak Bearer token is required")
-    issuer = PMLC_KEYCLOAK_ISSUER.rstrip("/")
+    issuer = issuer.rstrip("/")
     parts = urlsplit(issuer)
-    audience = PMLC_KEYCLOAK_AUDIENCE.strip()
-    allowed_clients = {client.strip() for client in PMLC_KEYCLOAK_ALLOWED_CLIENTS.split(",") if client.strip()}
+    audience = audience.strip()
+    allowed_clients = {client.strip() for client in clients.split(",") if client.strip()}
     if not (audience or allowed_clients) or parts.scheme != "https" or not parts.netloc \
             or parts.query or parts.fragment or parts.username or parts.password:
-        raise PmlcAuthError(503, "PMLC access disabled: configure the Keycloak issuer and API audience or allowed clients")
+        raise PmlcAuthError(503, f"{purpose} access disabled: configure the Keycloak issuer and API audience or allowed clients")
     token = authorization[7:].strip()
     if len(token) > 16384:
         raise PmlcAuthError(401, "Invalid Keycloak token")
@@ -94,9 +103,10 @@ def authorize_pmlc(authorization: str) -> None:
     if allowed_clients:
         client = claims.get("azp")
         if not isinstance(client, str) or client not in allowed_clients:
-            raise PmlcAuthError(403, "Keycloak client not permitted for PMLC access")
-    if PMLC_KEYCLOAK_REQUIRED_ROLE:
+            raise PmlcAuthError(403, f"Keycloak client not permitted for {purpose} access")
+    if required_role:
         realm_access = claims.get("realm_access")
         roles = realm_access.get("roles") if isinstance(realm_access, dict) else None
-        if not isinstance(roles, list) or PMLC_KEYCLOAK_REQUIRED_ROLE not in roles:
+        if not isinstance(roles, list) or required_role not in roles:
             raise PmlcAuthError(403, "Required Keycloak realm role missing")
+    return claims

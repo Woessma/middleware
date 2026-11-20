@@ -15,6 +15,7 @@ import requests
 from config import FHIR_BASE
 from fhir.narrative import ensure_resource_narrative
 from services.patient_service import warn_if_external_patient_duplicate
+from services.fhir_mdm_service import find_mdm_match
 from services.terminology_service import validate_coding
 from terminology.echosos import (
     ECHOSOS_ALLERGENS,
@@ -1094,31 +1095,31 @@ def import_echosos(raw_bytes, content_type=None, author="unknown"):
     data = parse_echosos_data(url)
     if not data["given"] or not data["family"] or not data["birth_date"]:
         raise ValueError("EchoSOS-Daten enthalten keinen vollständigen Namen und kein Geburtsdatum")
-    existing = _patient_search(data)
-    patient = _patient_resource(data, existing)
+    warn_if_external_patient_duplicate(
+        {
+            "family": data["family"],
+            "given": data["given"],
+            "birthdate": data["birth_date"],
+        },
+        "family-given-birthdate",
+    )
+    patient = _patient_resource(data)
     ensure_resource_narrative(patient)
+    existing = find_mdm_match(patient)
+    return build_echosos_transaction(data, patient, existing, author)
+
+
+def build_echosos_transaction(data, patient, existing, author):
     if existing:
         patient_id = existing["id"]
         patient_reference = f"Patient/{patient_id}"
-        patient_entry = {
-            "fullUrl": f"{FHIR_BASE.rstrip('/')}/Patient/{patient_id}",
-            "resource": patient,
-            "request": {"method": "PUT", "url": f"Patient/{patient_id}"},
-        }
+        patient_entry = None
     else:
         patient_reference = f"urn:uuid:{uuid4()}"
         patient_entry = {
             "fullUrl": patient_reference,
             "resource": patient,
-            "request": {
-                "method": "POST",
-                "url": "Patient",
-                "ifNoneExist": (
-                    f"family={quote(data['family'], safe='')}&"
-                    f"given={quote(data['given'], safe='')}&"
-                    f"birthdate={quote(data['birth_date'], safe='')}"
-                ),
-            },
+            "request": {"method": "POST", "url": "Patient"},
         }
 
     resources = _blood_observations(data, patient_reference, author)
@@ -1126,8 +1127,11 @@ def import_echosos(raw_bytes, content_type=None, author="unknown"):
     resources.extend(_echosos_condition_resources(data, patient_reference))
     resources.extend(_echosos_organ_donation_consents(data, patient_reference))
 
+    entries = [_transaction_entry(item) for item in resources]
+    if patient_entry:
+        entries.insert(0, patient_entry)
     return {
         "resourceType": "Bundle",
         "type": "transaction",
-        "entry": [patient_entry] + [_transaction_entry(item) for item in resources],
+        "entry": entries,
     }

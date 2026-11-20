@@ -1,6 +1,9 @@
 # EchoSOS zu FHIR
 
-Stand: 2026-11-19
+Stand: 2026-11-20
+
+Siehe [HAPI FHIR: Master Data Management](./hapi-mdm.md) für Regeln,
+Golden Records und das Verhalten bei Importkonflikten.
 
 ## POC-Notfall-Logobject (2026-11-19)
 
@@ -8,12 +11,21 @@ Der separate, schreibfreie POC besteht aus
 `POST /echosos/poc-notfall-logobject` und
 `GET /echosos-poc-notfall-test.html`. Die Testseite bietet zwei Eingabewege:
 
-- FHIR-Patienten suchen (Identifier oder Name/Geburtsdatum), einen Treffer
-  explizit auswaehlen und das Logobject aus `Patient/{id}/$everything`
-  erzeugen.
+- FHIR-Patienten über `GET /echosos/poc-notfall-patients` suchen (Identifier
+  oder Name/Geburtsdatum). Bestätigte `MATCH`-Quellen erscheinen in der
+  Trefferliste nur einmal unter dem Golden Patient; unverknüpfte Treffer
+  bleiben getrennt. Nach expliziter Auswahl entsteht das Logobject aus der
+  gemeinsamen MDM-Akte.
 - EchoSOS-Link, QR-Bild oder PKPass uebermitteln; der Endpoint dekodiert die
   EchoSOS-Daten und ergaenzt bei eindeutiger Patientenuebereinstimmung
-  optional lesend aus FHIR.
+  lesend aus derselben MDM-Akte. Bei mehrdeutiger Suche zeigt ein Dialog
+  passende Golden Patients an. Die Auswahl erfordert eine unabhängige
+  Identitätsprüfung und ist fünf Minuten gültig, einmalig und an Scan und
+  Keycloak-Identität gebunden. Abbrechen lädt keine Akte. Ohne Treffer
+  bleiben die EchoSOS-Daten unverändert.
+
+Der Endpoint prüft dieselbe Keycloak-Berechtigung wie die EchoSOS-Aktenansicht.
+Das POC-JSON-Schema bleibt unverändert und enthält keine Impfungen.
 
 FHIR-Medikationen werden nur mit `MedicationStatement.status: active`
 uebernommen. Beide Wege erzeugen POC-JSON und schreiben weder nach HAPI noch
@@ -78,15 +90,25 @@ POST https://middleware.local.omnilink.ch/echosos/qr
 Sie liefert nur das FHIR-Bundle mit `type: transaction` zurueck und schreibt
 nicht selbst nach HAPI. Der externe Pfad `/v1/echosos/resolve`
 wird von BridgeLink bereitgestellt, nicht von FastAPI.
+Die direkte Route gleicht den Patienteneintrag vorab mit HAPI MDM ab: Bei
+einem sicheren Treffer entfaellt der Patienteneintrag und die klinischen
+Referenzen zeigen auf die Golden Resource. Ein moeglicher Treffer wird mit
+HTTP `409` zur manuellen Pruefung gestoppt; ohne Treffer bleibt der Patient
+im Transaction-Bundle.
 
 Der Browserclient `echosos-fhir-test.html` verwendet den Same-Origin-Proxy
 `POST /echosos/import`, der den festen BridgeLink-Endpunkt aufruft. Er sendet
 keinen zusaetzlichen FHIR-POST, prueft die Eintragsstatus und Fehler-Issues
 der Transaction-Antwort und liest die Patient-ID aus `response.location`.
-Patientensuche und `$everything` laufen ueber die Same-Origin-Middleware-Route
+Patientensuche und Aktenansicht laufen ueber die Same-Origin-Middleware-Route
 `/echosos/fhir/Patient/...`. Die Middleware leitet ausschliesslich
-Patienten-Lesezugriffe und `$everything` an den konfigurierten FHIR-Server
-weiter. Beide Proxy-Routen uebertragen das Keycloak-Bearer-Token; damit
+Patienten-Lesezugriffe an den konfigurierten FHIR-Server weiter. Für die
+Aktenansicht fasst `GET /echosos/fhir/Patient/{id}/$mdm-everything` den Golden
+Patient und die `$everything`-Ergebnisse seiner bestätigten `MATCH`-Quellen
+zusammen. Mögliche Treffer werden nicht geladen. Dieselbe Ressourcen-ID wird
+nur einmal angezeigt; vorhandene Referenzen und der Import bleiben unverändert.
+Der Endpunkt prüft die EchoSOS-Keycloak-Berechtigung. Beide Proxy-Routen
+uebertragen das Keycloak-Bearer-Token; damit
 entfallen Browser-CORS-Abhaengigkeiten fuer Import und FHIR-Abfrage.
 
 Der Import fordert ausdruecklich `Accept: application/json` an. Die Ansicht
@@ -99,11 +121,23 @@ Vor jedem Import sendet der Browser den Kamera-Link oder die Bild-/PKPass-Datei
 an `POST /echosos/preview`. Dateien werden dabei als binaerer Body mit ihrem
 Content-Type uebertragen, nicht als Multipart-Upload. Die Middleware dekodiert
 den QR-Inhalt ohne FHIR-Schreibzugriff und liefert ihn als `source_url` zurueck.
-Nach erfolgreicher Vorschau prueft der Browser den EchoSOS-Link und sendet
-ausschliesslich diesen Link als `text/plain; charset=utf-8` an
-`POST /echosos/import`. BridgeLink erhaelt somit auch bei Dateieingaben keine
+Nach erfolgreicher Vorschau sendet der Browser den Link mit der JSON-Aktion
+`review` an `POST /echosos/import`. BridgeLink erhaelt somit auch bei Dateieingaben keine
 Bild- oder PKPass-Bytes. Bei fehlgeschlagener Vorschau oder ungueltigem Link
 wird kein Import gestartet; die Middleware validiert den Link erneut.
+BridgeLink ruft `/echosos/qr` zur MDM-Vorpruefung auf. Ein `409` mit
+`code: patient_review_required` öffnet den Dialog. Quell- und Golden-Treffer
+mit bestätigtem MDM-Link werden als ein Vorschlag angezeigt. Nach unabhängiger
+Identitätsprüfung sendet **Zuordnung bestätigen** die JSON-Aktion `confirm`
+mit `reviewId`, `patientId`, `sourceUrl` und `identityVerified: true` an denselben
+Importpfad. **Abbrechen** sendet keinen Schreibauftrag.
+
+Die `reviewId` gilt fünf Minuten, ist an Nutzer, Client und Scan gebunden
+und kann einmal verwendet werden. Die Vorschläge werden vor dem Import erneut
+geprüft. Ein Neustart verwirft offene Zuordnungen; der Browser muss dann neu
+scannen. Die Prüfung ist für die einzelne Middleware-Instanz ausgelegt.
+Die `ECHOSOS_KEYCLOAK_*`-Einstellungen müssen der bestehenden
+BridgeLink-Importberechtigung entsprechen; es gibt keine neue Rolle.
 Ein `OperationOutcome` wird auch bei HTTP 200 als nicht bestaetigter Import
 behandelt; die Issue-Details werden angezeigt und `$everything` nicht gestartet.
 

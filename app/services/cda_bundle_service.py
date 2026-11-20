@@ -87,10 +87,18 @@ from services.practitioner_service import (
 from services.organization_service import (
     resolve_organization_id
 )
+from services.fhir_duplicate_service import (
+    FhirDuplicateLookupError,
+    FhirResourceMatchConflictError,
+    find_existing_resource_by_identifier,
+)
+from services.fhir_mdm_service import find_linked_golden_id, find_mdm_match
 
 from fhir.bundle import (
     build_bundle_entry,
+    rewrite_bundle_references,
 )
+from fhir.narrative import ensure_resource_narrative
 
 from parser.cda.section_parser import (
     extract_sections,
@@ -103,6 +111,68 @@ from utils.fhir_utils import cda_ts_to_fhir_datetime
 CH_CORE_DOCUMENT_PROFILE = (
     "http://fhir.ch/ig/ch-core/StructureDefinition/ch-core-document"
 )
+CDA_PROVIDER_IDENTIFIER_SYSTEMS = {
+    "Practitioner": "urn:oid:1.2.840.114350.1.13.521.3.7.2.836982",
+    "Organization": "urn:oid:1.2.840.114350.1.13.521.3.7.2.688879",
+}
+GLN_IDENTIFIER_SYSTEM = "urn:oid:2.51.1.3"
+
+
+def _cda_provider_identifiers(resource: dict) -> list[dict]:
+    allowed_system = CDA_PROVIDER_IDENTIFIER_SYSTEMS.get(resource["resourceType"])
+    return [
+        item for item in resource.get("identifier", [])
+        if item.get("system") and item["system"] == allowed_system and item.get("value")
+    ]
+
+
+def _resolve_cda_import_entity(resource: dict) -> str | None:
+    match = find_mdm_match(resource)
+    if match is not None:
+        return match["id"]
+
+    resource_type = resource["resourceType"]
+    identifiers = _cda_provider_identifiers(resource)
+    if not identifiers:
+        return None
+
+    try:
+        existing = find_existing_resource_by_identifier({
+            "resourceType": resource_type, "identifier": identifiers,
+        })
+    except FhirResourceMatchConflictError as exc:
+        raise FhirResourceMatchConflictError(
+            f"{resource_type} CDA identifier matches multiple existing resources."
+        ) from exc
+    if existing is None:
+        return None
+    stored_identifiers = {
+        (item.get("system"), item.get("value"))
+        for item in existing.get("identifier", [])
+    }
+    if not any((item["system"], item["value"]) in stored_identifiers for item in identifiers):
+        raise FhirDuplicateLookupError(f"{resource_type} CDA identifier search returned no exact identifier")
+    return find_linked_golden_id(resource_type, existing["id"]) or existing["id"]
+
+
+def _cda_document_resource_id(resource_type: str, document_hash: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"cda-import:{resource_type}:{document_hash}"))
+
+
+def _cda_role_import_key(practitioner: dict, organization: dict) -> str:
+    def provider_key(resource):
+        identifiers = _cda_provider_identifiers(resource)
+        if not identifiers:
+            identifiers = [
+                item for item in resource.get("identifier", [])
+                if item.get("system") == GLN_IDENTIFIER_SYSTEM and item.get("value")
+            ]
+        if identifiers:
+            return sorted({(item["system"], item["value"]) for item in identifiers})
+        return resource["id"]
+
+    identity = [provider_key(practitioner), provider_key(organization)]
+    return hashlib.sha256(json.dumps(identity, separators=(",", ":")).encode()).hexdigest()
 
 
 def _dedupe_bundle_entries(bundle_entries):
@@ -269,6 +339,7 @@ def _append_clinical_note_entries(
     patient_ref,
     encounter_ref,
     document_datetime,
+    resolve_existing=True,
 ):
     binary_full_url_by_payload = {}
     note_references = []
@@ -300,7 +371,10 @@ def _append_clinical_note_entries(
                 ] = binary_full_url_by_payload[payload_key]
                 continue
 
-            binary_entry = build_bundle_entry(binary_resource)
+            binary_entry = build_bundle_entry(
+                binary_resource,
+                check_existing=resolve_existing,
+            )
 
             binary_entries.append(binary_entry)
 
@@ -321,7 +395,8 @@ def _append_clinical_note_entries(
 
         bundle_entries.extend(binary_entries)
         document_reference_entry = build_bundle_entry(
-            document_reference
+            document_reference,
+            check_existing=resolve_existing,
         )
         bundle_entries.append(document_reference_entry)
 
@@ -339,9 +414,20 @@ def _append_clinical_note_entries(
     return note_references
 
 
-def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
-
+def cda_to_fhir_bundle(
+    xml_content,
+    bundle_type="transaction",
+    resolve_existing=True,
+    *,
+    prepare_import=False,
+):
     root = ET.fromstring(xml_content)
+    if prepare_import and (resolve_existing or bundle_type != "transaction"):
+        raise ValueError("CDA import preparation requires a transaction without legacy entity lookups")
+    document_hash = (
+        hashlib.sha256(xml_content if isinstance(xml_content, bytes) else xml_content.encode()).hexdigest()
+        if prepare_import else None
+    )
 
     if DEBUG_MODE:
 
@@ -376,6 +462,7 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
     #
     practitioner_resource = None
     practitioner_id = None
+    existing_practitioner = False
 
     practitioner_data = parse_practitioner(root)
 
@@ -398,16 +485,19 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
             )
         )
 
-        practitioner_id = (
-            resolve_practitioner_id(
-                practitioner_resource
-            )
-        )
+        if prepare_import:
+            practitioner_id = _resolve_cda_import_entity(practitioner_resource)
+            existing_practitioner = practitioner_id is not None
+        elif resolve_existing:
+            practitioner_id = resolve_practitioner_id(practitioner_resource)
 
         if practitioner_id is None:
             # Noch nicht in HAPI: ID lokal vergeben, die Anlage
             # erfolgt erst beim Import ueber das Bundle.
-            practitioner_id = str(uuid.uuid4())
+            practitioner_id = (
+                _cda_document_resource_id("Practitioner", document_hash)
+                if document_hash is not None else str(uuid.uuid4())
+            )
 
         practitioner_resource["id"] = practitioner_id
 
@@ -418,6 +508,7 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
     #
     organization_resource = None
     organization_id = None
+    existing_organization = False
 
     org_node = root.find(
         ".//hl7:custodian/"
@@ -438,23 +529,25 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
             )
         )
 
-        params = (
-            organization_to_fhir_params(
-                org
-            )
-        )
-
-        organization_id = (
-            resolve_organization_id(
+        if prepare_import:
+            organization_id = _resolve_cda_import_entity(organization_resource)
+            existing_organization = organization_id is not None
+        elif resolve_existing:
+            params = organization_to_fhir_params(org)
+            organization_id = resolve_organization_id(
                 params["identifier_system"],
-                params["identifier_value"]
+                params["identifier_value"],
             )
-        )
+        else:
+            organization_id = None
 
         if organization_id is None:
             # Noch nicht in HAPI: ID lokal vergeben, die Anlage
             # erfolgt erst beim Import ueber das Bundle.
-            organization_id = str(uuid.uuid4())
+            organization_id = (
+                _cda_document_resource_id("Organization", document_hash)
+                if document_hash is not None else str(uuid.uuid4())
+            )
 
         organization_resource["id"] = organization_id
 
@@ -475,7 +568,11 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
         practitioner_role_resource = (
             build_ch_core_practitioner_role(
                 practitioner_id,
-                organization_id
+                organization_id,
+                import_key=(
+                    _cda_role_import_key(practitioner_resource, organization_resource)
+                    if prepare_import else None
+                ),
             )
         )
 
@@ -488,17 +585,25 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
         patient_data
     )
 
-    existing_patient_id = resolve_patient_id(
-        patient
+    existing_patient_id = (
+        _resolve_cda_import_entity(patient) if prepare_import else
+        resolve_patient_id(patient) if resolve_existing else None
     )
+    existing_patient = prepare_import and existing_patient_id is not None
 
     if existing_patient_id is None:
         # Noch nicht in HAPI: ID lokal vergeben, die Anlage
         # erfolgt erst beim Import ueber das Bundle (PUT Patient/{id}).
-        existing_patient_id = str(uuid.uuid4())
+        existing_patient_id = (
+            _cda_document_resource_id("Patient", document_hash)
+            if document_hash is not None else str(uuid.uuid4())
+        )
 
+    actual_patient_ref = f"Patient/{existing_patient_id}"
+    # Keep mapper fingerprints stable even if MDM later links the source to a Golden Patient.
     patient_ref = (
-        f"Patient/{existing_patient_id}"
+        f"Patient/{_cda_document_resource_id('Patient', document_hash)}"
+        if document_hash is not None else actual_patient_ref
     )
 
     document_datetime = _extract_document_datetime(root)
@@ -519,11 +624,13 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
 
     patient["id"] = existing_patient_id
     set_patient_narrative(patient)
-    bundle_entries.append(
-        build_bundle_entry(
-            patient
+    if not existing_patient:
+        bundle_entries.append(
+            build_bundle_entry(
+                patient,
+                check_existing=resolve_existing,
+            )
         )
-    )
 
     related_person_resources = build_ch_core_related_persons(
         patient_reference=patient_ref,
@@ -533,23 +640,26 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
     for related_person in related_person_resources:
         bundle_entries.append(
             build_bundle_entry(
-                related_person
+                related_person,
+                check_existing=resolve_existing,
             )
         )
 
-    if practitioner_resource is not None:
+    if practitioner_resource is not None and not existing_practitioner:
 
         bundle_entries.append(
             build_bundle_entry(
-                practitioner_resource
+                practitioner_resource,
+                check_existing=resolve_existing,
             )
         )
 
-    if organization_resource is not None:
+    if organization_resource is not None and not existing_organization:
 
         bundle_entries.append(
             build_bundle_entry(
-                organization_resource
+                organization_resource,
+                check_existing=resolve_existing,
             )
         )
 
@@ -557,7 +667,8 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
 
         bundle_entries.append(
             build_bundle_entry(
-                practitioner_role_resource
+                practitioner_role_resource,
+                check_existing=resolve_existing,
             )
         )
     
@@ -582,7 +693,8 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
 
         bundle_entries.append(
             build_bundle_entry(
-                encounter_resource
+                encounter_resource,
+                check_existing=resolve_existing,
             )
         )
 
@@ -599,6 +711,7 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
         patient_ref,
         encounter_ref,
         document_datetime,
+        resolve_existing=resolve_existing,
     )
 
     mapping_context = {
@@ -645,7 +758,10 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
             )
 
             for resource in mapped_resources:
-                resource_entry = build_bundle_entry(resource)
+                resource_entry = build_bundle_entry(
+                    resource,
+                    check_existing=resolve_existing,
+                )
 
                 bundle_entries.append(
                     resource_entry
@@ -681,7 +797,10 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
             )
 
             if observation:
-                observation_entry = build_bundle_entry(observation)
+                observation_entry = build_bundle_entry(
+                    observation,
+                    check_existing=resolve_existing,
+                )
 
                 bundle_entries.append(
                     observation_entry
@@ -769,9 +888,19 @@ def cda_to_fhir_bundle(xml_content, bundle_type="transaction"):
 
     deduped_entries.append(
         build_bundle_entry(
-            composition_resource
+            composition_resource,
+            check_existing=resolve_existing,
         )
     )
+
+    if patient_ref != actual_patient_ref:
+        rewrite_bundle_references(deduped_entries, {patient_ref: actual_patient_ref})
+        for entry in deduped_entries:
+            resource = entry["resource"]
+            text = resource.get("text") or {}
+            if text.get("status") == "generated" and patient_ref in text.get("div", ""):
+                resource.pop("text")
+                ensure_resource_narrative(resource)
 
     if bundle_type == "document":
         document_entries = [

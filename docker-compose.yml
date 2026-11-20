@@ -23,6 +23,10 @@ services:
       - PMLC_KEYCLOAK_AUDIENCE=${PMLC_KEYCLOAK_AUDIENCE:-}
       - PMLC_KEYCLOAK_ALLOWED_CLIENTS=${PMLC_KEYCLOAK_ALLOWED_CLIENTS-app-omnilink-cardtest}
       - PMLC_KEYCLOAK_REQUIRED_ROLE=${PMLC_KEYCLOAK_REQUIRED_ROLE:-}
+      - ECHOSOS_KEYCLOAK_ISSUER=${ECHOSOS_KEYCLOAK_ISSUER:-https://idp.omnilink.ch/realms/omnilink}
+      - ECHOSOS_KEYCLOAK_AUDIENCE=${ECHOSOS_KEYCLOAK_AUDIENCE:-}
+      - ECHOSOS_KEYCLOAK_ALLOWED_CLIENTS=${ECHOSOS_KEYCLOAK_ALLOWED_CLIENTS-app-omnilink-cardtest}
+      - ECHOSOS_KEYCLOAK_REQUIRED_ROLE=${ECHOSOS_KEYCLOAK_REQUIRED_ROLE:-}
     volumes:
       - vacd-import-state:/var/lib/omnilink/vacd
       - refdata-data:/var/lib/omnilink/refdata

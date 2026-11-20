@@ -528,16 +528,19 @@ ausdruecklich vom bereits erfolgreichen Import unterschieden.
 Die separate Testoberflaeche `echosos-poc-notfall-test.html` bietet zwei
 getrennte Wege:
 
-- **FHIR-Patient suchen:** `GET /echosos/fhir/Patient` durchsucht den lokalen
+- **FHIR-Patient suchen:** `GET /echosos/poc-notfall-patients` durchsucht den lokalen
   HAPI wie im Dubletten-Test per Identifier-System/Wert oder Nachname,
-  Vorname und Geburtsdatum. Nach expliziter Auswahl sendet die Seite
+  Vorname und Geburtsdatum. Bestätigt verknüpfte Treffer erscheinen einmal
+  unter ihrem Golden Patient. Nach expliziter Auswahl sendet die Seite
   `{"patientId":"<FHIR-ID>"}` an `POST /echosos/poc-notfall-logobject`; das
-  Logobject entsteht aus `Patient/{id}/$everything`.
+  Logobject entsteht aus der MDM-Akte des Golden Patient und seiner
+  bestätigten Quellen.
 - **EchoSOS verwenden:** EchoSOS-Link, QR-Bild oder PKPass werden direkt an
   `POST /echosos/poc-notfall-logobject` gesendet. Der Endpoint dekodiert die
   EchoSOS-Daten und ergänzt sie bei eindeutiger Übereinstimmung optional
-  lesend aus FHIR. Ohne Treffer bleiben die EchoSOS-Daten Grundlage; bei
-  mehrdeutiger Suche oder FHIR-Fehler wird ein Fehler angezeigt.
+  lesend aus derselben MDM-Akte. Ohne Treffer bleiben die EchoSOS-Daten Grundlage; bei
+  mehrdeutiger Suche können prüfbare Golden Patients im Dialog ausgewählt und
+  nach unabhängiger Identitätsprüfung bestätigt werden. FHIR-Fehler werden angezeigt.
 
 Beide Wege sind schreibfrei: Es gibt keinen HAPI- oder BridgeLink-Write.
 FHIR-Medikationen werden nur bei `status: active` ausgegeben; abgeschlossene,

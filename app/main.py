@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import traceback
 import uuid
 import xml.etree.ElementTree as ET
@@ -26,6 +27,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from starlette.concurrency import run_in_threadpool
 
+from fhir.bundle import (
+    build_bundle_entry,
+    rewrite_bundle_references as _rewrite_bundle_references,
+)
 from parser.cda.constants import NS
 
 from parser.cda.section_parser import (
@@ -78,13 +83,20 @@ from services.patient_service import (
     get_or_create_patient,
     PatientMatchConflictError,
     PatientLookupError,
-    find_matching_patient,
     find_patient_by_id,
 )
 from services.fhir_duplicate_service import (
     FhirDuplicateLookupError,
     FhirResourceMatchConflictError,
     find_existing_resource_by_identifier,
+)
+from services.fhir_mdm_service import (
+    FhirMdmLookupError,
+    FhirMdmMatchConflictError,
+    MDM_RESOURCE_TYPES,
+    find_linked_golden_id,
+    find_confirmed_patient_source_ids,
+    reconcile_mdm_resources,
 )
 from services.emediplan_qr_service import extract_emediplan_payload_from_file, resolve_emediplan_payload
 from services.echosos_service import (
@@ -95,6 +107,9 @@ from services.echosos_service import (
     enrich_poc_notfall_logobject,
     EchoSosPatientMatchConflictError,
     _patient_search,
+)
+from services.echosos_review_service import (
+    authorize_echosos, confirm_patient_review, review_echosos, start_patient_review,
 )
 from services.card_analysis_service import analyze_card
 from services.terminology_service import (
@@ -218,7 +233,7 @@ def _bundle_resource_identity(resource):
     return ("payload", resource.get("resourceType"), digest)
 
 
-def _stabilize_bundle(bundle):
+def _stabilize_bundle(bundle, *, use_mdm=False):
     if not isinstance(bundle, dict) or not bundle.get("resourceType"):
         raise ValueError("FHIR Bundle or FHIR resource expected")
 
@@ -272,7 +287,14 @@ def _stabilize_bundle(bundle):
             if resource.get("id")
             else identity
         )
-        if method == "POST" and identity[0] == "identifier":
+        if (
+            method == "POST"
+            and identity[0] == "identifier"
+            and (
+                not use_mdm
+                or resource.get("resourceType") not in MDM_RESOURCE_TYPES
+            )
+        ):
             if "ifNoneExist" not in request:
                 identifier_values = [
                     (system, value)
@@ -299,57 +321,18 @@ def _stabilize_bundle(bundle):
     return stabilized
 
 
-def _rewrite_bundle_references(value, reference_map):
-    if isinstance(value, dict):
-        for key, child in value.items():
-            if key == "reference" and isinstance(child, str):
-                value[key] = reference_map.get(child, child)
-            else:
-                _rewrite_bundle_references(child, reference_map)
-    elif isinstance(value, list):
-        for child in value:
-            _rewrite_bundle_references(child, reference_map)
-
-
-def _reconcile_emediplan_patients(bundle):
-    patient_entries = [
-        entry
-        for entry in bundle.get("entry", [])
-        if (entry.get("resource") or {}).get("resourceType") == "Patient"
-    ]
-    entries_to_remove = set()
-
-    for entry in patient_entries:
-        patient = entry["resource"]
-        existing = find_matching_patient(patient)
-        if not existing:
-            continue
-
-        existing_id = existing.get("id")
-        if not existing_id:
-            raise PatientLookupError("Gefundener FHIR Patient enthält keine ID.")
-        target_reference = f"Patient/{existing_id}"
-        reference_map = {}
-        if patient.get("id"):
-            reference_map[f"Patient/{patient['id']}"] = target_reference
-        if entry.get("fullUrl"):
-            reference_map[entry["fullUrl"]] = target_reference
-
-        _rewrite_bundle_references(bundle, reference_map)
-        entries_to_remove.add(id(entry))
-        logger.info("eMediplan Patient wiederverwendet: %s", existing_id)
-
-    if entries_to_remove:
-        bundle["entry"] = [
-            entry for entry in bundle.get("entry", [])
-            if id(entry) not in entries_to_remove
-        ]
-
+def _reconcile_mdm_import_bundle(bundle):
+    matched_references = reconcile_mdm_resources(bundle)
     included_patient_refs = {
         f"Patient/{(entry.get('resource') or {}).get('id')}"
         for entry in bundle.get("entry", [])
         if (entry.get("resource") or {}).get("resourceType") == "Patient"
         and (entry.get("resource") or {}).get("id")
+    }
+    known_patient_refs = {
+        target
+        for target in matched_references.values()
+        if target.startswith("Patient/")
     }
     patient_refs = set()
 
@@ -365,7 +348,7 @@ def _reconcile_emediplan_patients(bundle):
                 collect_patient_references(child)
 
     collect_patient_references(bundle)
-    for patient_reference in patient_refs - included_patient_refs:
+    for patient_reference in patient_refs - included_patient_refs - known_patient_refs:
         patient_id = patient_reference.split("/", 1)[1]
         if not find_patient_by_id(patient_id):
             raise ValueError(
@@ -375,12 +358,52 @@ def _reconcile_emediplan_patients(bundle):
     return bundle
 
 
+def _resolve_existing_bundle_resources(bundle, *, match_procedure_patients=False):
+    source_to_golden = {}
+
+    def same_procedure_patient(source, target):
+        if not re.fullmatch(r"Patient/[A-Za-z0-9.-]{1,64}", source):
+            return False
+        if source not in source_to_golden:
+            golden_id = find_linked_golden_id("Patient", source.split("/", 1)[1])
+            source_to_golden[source] = f"Patient/{golden_id}" if golden_id else None
+        return source_to_golden[source] == target
+
+    reference_map = {}
+    for entry in bundle.get("entry", []):
+        if not isinstance(entry, dict):
+            continue
+        resource = entry.get("resource")
+        if not isinstance(resource, dict):
+            continue
+        resource_type = resource.get("resourceType")
+        if resource_type in MDM_RESOURCE_TYPES:
+            continue
+
+        previous_id = resource.get("id")
+        if match_procedure_patients and resource_type == "Procedure":
+            resolved_entry = build_bundle_entry(
+                resource, same_procedure_patient=same_procedure_patient,
+            )
+        else:
+            resolved_entry = build_bundle_entry(resource)
+        entry["request"] = resolved_entry["request"]
+        current_id = resource.get("id")
+        if previous_id and current_id and previous_id != current_id:
+            reference_map[f"{resource_type}/{previous_id}"] = (
+                f"{resource_type}/{current_id}"
+            )
+
+    _rewrite_bundle_references(bundle, reference_map)
+    return bundle
+
+
 def _reconcile_existing_emediplan_resources(bundle):
     reference_map = {}
     for entry in bundle.get("entry", []):
         resource = entry.get("resource") or {}
         resource_type = resource.get("resourceType")
-        if resource_type not in {"Medication", "MedicationStatement", "Practitioner"}:
+        if resource_type not in {"Medication", "MedicationStatement"}:
             continue
 
         existing = find_existing_resource_by_identifier(resource)
@@ -408,12 +431,14 @@ def _reconcile_existing_emediplan_resources(bundle):
 
 
 def _prepare_emediplan_import_bundle(bundle):
-    bundle = _stabilize_bundle(bundle)
+    bundle = _stabilize_bundle(bundle, use_mdm=True)
     bundle["type"] = "transaction"
     bundle = enrich_emediplan_bundle(bundle)
-    bundle = _reconcile_emediplan_patients(bundle)
+    bundle = _reconcile_mdm_import_bundle(bundle)
     bundle = _reconcile_existing_emediplan_resources(bundle)
-    return validate_medication_import(_validate_bundle(_stabilize_bundle(bundle)))
+    return validate_medication_import(
+        _validate_bundle(_stabilize_bundle(bundle, use_mdm=True))
+    )
 
 
 app = FastAPI(
@@ -1007,9 +1032,7 @@ async def echosos_preview(request: Request):
 
 @app.post("/echosos/poc-notfall-logobject")
 async def echosos_poc_notfall_logobject(request: Request):
-    authorization = request.headers.get("authorization", "")
-    if not authorization.lower().startswith("bearer ") or not authorization[7:].strip():
-        raise HTTPException(status_code=401, detail="Bitte zuerst mit Keycloak anmelden.")
+    claims = await _authorize_echosos_read(request)
     is_patient_selection = (
         request.headers.get("content-type", "").split(";", maxsplit=1)[0].strip().lower()
         == "application/json"
@@ -1030,7 +1053,6 @@ async def echosos_poc_notfall_logobject(request: Request):
         ):
             raise HTTPException(status_code=400, detail="Ungültige Patient-ID")
         logobject = to_poc_notfall_logobject({})
-        patient = {"resourceType": "Patient", "id": patient_id}
     else:
         raw_bytes = await request.body()
         if not raw_bytes:
@@ -1044,50 +1066,47 @@ async def echosos_poc_notfall_logobject(request: Request):
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
         logobject = to_poc_notfall_logobject(data)
-        if not all(data.get(field) for field in ("given", "family", "birth_date")):
-            return logobject
+        review_id = request.headers.get("x-echosos-review-id")
+        candidate_id = request.headers.get("x-echosos-patient-id")
+        verified = request.headers.get("x-echosos-identity-verified")
+        if any(value is not None for value in (review_id, candidate_id, verified)):
+            try:
+                patient_id = await run_in_threadpool(
+                    confirm_patient_review,
+                    {"reviewId": review_id, "patientId": candidate_id, "identityVerified": verified == "true"},
+                    data, url, claims, purpose="notfall",
+                )
+            except FhirMdmMatchConflictError as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
+            except (FhirMdmLookupError, requests.RequestException, TypeError, KeyError, AttributeError) as exc:
+                logger.warning("EchoSOS Notfall review could not be verified: %s", type(exc).__name__)
+                raise HTTPException(status_code=502, detail="Patientenvorschlag konnte nicht geprüft werden.") from exc
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+        else:
+            if not all(data.get(field) for field in ("given", "family", "birth_date")):
+                return logobject
+            try:
+                try:
+                    patient = await run_in_threadpool(_patient_search, data, False)
+                except EchoSosPatientMatchConflictError:
+                    review = await run_in_threadpool(start_patient_review, data, url, claims, purpose="notfall")
+                    return JSONResponse(review, status_code=409, headers={"Cache-Control": "no-store"})
+            except FhirMdmMatchConflictError as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
+            except (FhirMdmLookupError, requests.RequestException, ValueError, TypeError, KeyError, AttributeError) as exc:
+                logger.warning("EchoSOS Notfall patient search failed: %s", type(exc).__name__)
+                raise HTTPException(status_code=502, detail="FHIR-Patientensuche nicht verfügbar") from exc
 
-        try:
-            patient = await run_in_threadpool(_patient_search, data, False)
-        except EchoSosPatientMatchConflictError as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
-        except requests.RequestException as exc:
-            logger.warning("EchoSOS FHIR patient search failed: %s", exc)
-            raise HTTPException(status_code=502, detail="FHIR-Patientensuche nicht verfügbar") from exc
-        except (ValueError, TypeError, KeyError, AttributeError) as exc:
-            logger.warning("EchoSOS FHIR patient search response is invalid: %s", exc)
-            raise HTTPException(status_code=502, detail="FHIR-Patientensuche lieferte eine ungültige Antwort") from exc
+            if patient is None:
+                return logobject
+            patient_id = patient.get("id")
+            if not isinstance(patient_id, str) or not re.fullmatch(r"[A-Za-z0-9.-]{1,64}", patient_id):
+                raise HTTPException(status_code=502, detail="FHIR-Patient ohne gültige ID gefunden")
 
-        if patient is None:
-            return logobject
-        patient_id = patient.get("id")
-        if not patient_id:
-            raise HTTPException(status_code=502, detail="FHIR-Patient ohne ID gefunden")
-
-    response = await _proxy_echosos_fhir_request(
-        f"Patient/{patient_id}/$everything",
-        request,
-        query_params=[("_count", "500")],
-    )
-    if response.status_code != 200:
-        logger.warning("EchoSOS FHIR $everything returned HTTP %s", response.status_code)
-        raise HTTPException(status_code=502, detail="FHIR-Patientendaten nicht verfügbar")
+    bundle = await _load_echosos_mdm_chart(patient_id, request)
     try:
-        bundle = json.loads(response.body)
-        if not isinstance(bundle, dict) or bundle.get("resourceType") != "Bundle":
-            raise ValueError("$everything did not return a Bundle")
-        if is_patient_selection and not any(
-            isinstance(entry, dict)
-            and isinstance(entry.get("resource"), dict)
-            and entry["resource"].get("resourceType") == "Patient"
-            and entry["resource"].get("id") == patient_id
-            for entry in bundle.get("entry", [])
-        ):
-            raise HTTPException(
-                status_code=502,
-                detail="FHIR-Gesamtabfrage enthält den ausgewählten Patienten nicht",
-            )
-        return enrich_poc_notfall_logobject(logobject, patient, bundle)
+        return enrich_poc_notfall_logobject(logobject, {}, bundle)
     except (ValueError, TypeError, KeyError, AttributeError) as exc:
         logger.warning("EchoSOS FHIR data could not be merged: %s", exc)
         raise HTTPException(status_code=502, detail="FHIR-Patientendaten ungültig") from exc
@@ -1122,6 +1141,7 @@ async def echosos_import_proxy(request: Request):
         for header_name in ("Content-Type", "WWW-Authenticate", "Retry-After", "Location")
         if header_name in upstream.headers
     }
+    response_headers["Cache-Control"] = "no-store"
     return Response(
         content=upstream.content,
         status_code=upstream.status_code,
@@ -1252,6 +1272,129 @@ async def _proxy_echosos_fhir_request(patient_path: str, request: Request, query
     )
 
 
+async def _authorize_echosos_read(request: Request):
+    try:
+        return await run_in_threadpool(authorize_echosos, request.headers.get("authorization", ""))
+    except PmlcAuthError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+
+
+@app.get("/echosos/poc-notfall-patients")
+async def echosos_poc_notfall_patients(request: Request):
+    await _authorize_echosos_read(request)
+    criteria = request.query_params
+    fields = set(criteria)
+    if fields not in ({"identifier"}, {"family", "given", "birthdate"}) or any(
+        len(criteria.getlist(field)) != 1 or not criteria[field].strip() for field in fields
+    ):
+        raise HTTPException(status_code=400, detail="Ungültige Suchkriterien")
+
+    try:
+        response = await _proxy_echosos_fhir_request(
+            "Patient", request, query_params=[*criteria.items(), ("_count", "20")],
+        )
+        if response.status_code != 200:
+            raise FhirMdmLookupError("FHIR patient search failed")
+        bundle = json.loads(response.body)
+        if bundle["resourceType"] != "Bundle":
+            raise ValueError("Invalid FHIR patient search bundle")
+        entries = bundle.get("entry", [])
+        links = bundle.get("link", [])
+        if not isinstance(entries, list) or not isinstance(links, list):
+            raise ValueError("Invalid FHIR patient search page")
+        matches = {}
+        for entry in entries[:20]:
+            resource = entry["resource"]
+            if resource["resourceType"] != "Patient":
+                continue
+            patient_id = resource["id"]
+            if not re.fullmatch(r"[A-Za-z0-9.-]{1,64}", patient_id) or patient_id in {".", ".."}:
+                raise ValueError("Invalid FHIR patient ID")
+            matches[patient_id] = resource
+
+        patients = {}
+        for patient_id, resource in matches.items():
+            golden_id = await run_in_threadpool(find_linked_golden_id, "Patient", patient_id)
+            primary_id = golden_id or patient_id
+            if primary_id in patients:
+                continue
+            primary = matches.get(primary_id)
+            if primary is None:
+                if primary_id in {".", ".."}:
+                    raise ValueError("Invalid Golden Patient ID")
+                response = await _proxy_echosos_fhir_request(
+                    f"Patient/{primary_id}", request, query_params=[],
+                )
+                if response.status_code != 200:
+                    raise FhirMdmLookupError("Golden Patient could not be loaded")
+                primary = json.loads(response.body)
+                if primary["resourceType"] != "Patient" or primary["id"] != primary_id:
+                    raise ValueError("Invalid Golden Patient response")
+            patients[primary_id] = {
+                field: primary[field] for field in ("id", "name", "birthDate", "gender") if field in primary
+            }
+        truncated = len(entries) > 20 or any(link["relation"] == "next" for link in links)
+    except FhirMdmMatchConflictError as exc:
+        raise HTTPException(status_code=409, detail="MDM-Patientenzuordnung ist nicht eindeutig.") from exc
+    except (FhirMdmLookupError, requests.RequestException, ValueError, KeyError, TypeError) as exc:
+        logger.warning("EchoSOS MDM patient search unavailable: %s", type(exc).__name__)
+        raise HTTPException(status_code=502, detail="Verknüpfte Patientensuche konnte nicht abgeschlossen werden.") from exc
+
+    return JSONResponse(
+        {"patients": list(patients.values()), "truncated": truncated},
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+async def _load_echosos_mdm_chart(patient_id: str, request: Request) -> dict:
+    try:
+        golden_id = await run_in_threadpool(find_linked_golden_id, "Patient", patient_id)
+        primary_id = golden_id or patient_id
+        source_ids = await run_in_threadpool(find_confirmed_patient_source_ids, primary_id)
+        entries = {}
+        for selected_id in [primary_id, *source_ids]:
+            response = await _proxy_echosos_fhir_request(
+                f"Patient/{selected_id}/$everything", request, query_params=[("_count", "500")],
+            )
+            if selected_id == patient_id == primary_id and response.status_code == 404:
+                raise HTTPException(status_code=404, detail="FHIR-Patient nicht gefunden.")
+            if response.status_code != 200:
+                raise FhirMdmLookupError("FHIR patient chart could not be loaded")
+            bundle = json.loads(response.body)
+            if bundle["resourceType"] != "Bundle" or not isinstance(bundle["entry"], list):
+                raise FhirMdmLookupError("FHIR patient chart did not return a Bundle")
+            selected_patient_found = False
+            for entry in bundle["entry"]:
+                resource = entry["resource"]
+                key = resource["resourceType"], resource["id"]
+                if not all(isinstance(part, str) and part for part in key):
+                    raise FhirMdmLookupError("FHIR patient chart entry has no resource identity")
+                if key[0] == "Patient":
+                    selected_patient_found |= key[1] == selected_id
+                    if key[1] != primary_id:
+                        continue
+                entries.setdefault(key, entry)
+            if not selected_patient_found:
+                raise FhirMdmLookupError("FHIR patient chart did not contain the selected patient")
+    except FhirMdmMatchConflictError as exc:
+        raise HTTPException(status_code=409, detail="MDM-Patientenzuordnung ist nicht eindeutig.") from exc
+    except (FhirMdmLookupError, requests.RequestException, ValueError, KeyError, TypeError) as exc:
+        logger.warning("EchoSOS MDM patient chart unavailable: %s", type(exc).__name__)
+        raise HTTPException(status_code=502, detail="Verknüpfte Patientendaten konnten nicht vollständig geladen werden.") from exc
+
+    return {"resourceType": "Bundle", "type": "searchset", "entry": list(entries.values())}
+
+
+@app.get("/echosos/fhir/Patient/{patient_id}/$mdm-everything")
+async def echosos_mdm_everything(patient_id: str, request: Request):
+    if not re.fullmatch(r"[A-Za-z0-9.-]{1,64}", patient_id):
+        raise HTTPException(status_code=404, detail="FHIR-Abfrage nicht verfügbar")
+
+    await _authorize_echosos_read(request)
+    bundle = await _load_echosos_mdm_chart(patient_id, request)
+    return JSONResponse(bundle, media_type="application/fhir+json", headers={"Cache-Control": "no-store"})
+
+
 @app.get("/echosos/fhir/{patient_path:path}")
 async def echosos_fhir_proxy(patient_path: str, request: Request):
     return await _proxy_echosos_fhir_request(patient_path, request)
@@ -1261,10 +1404,16 @@ async def echosos_fhir_proxy(patient_path: str, request: Request):
 async def fhir_stabilize(request: Request):
     try:
         payload = await request.json()
-        stabilized = _stabilize_bundle(payload)
+        stabilized = _stabilize_bundle(payload, use_mdm=True)
+        await run_in_threadpool(_reconcile_mdm_import_bundle, stabilized)
         return stabilized
+    except FhirMdmMatchConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except (FhirMdmLookupError, PatientLookupError, requests.RequestException) as exc:
+        logger.exception("FHIR MDM preflight failed during bundle stabilization")
+        raise HTTPException(status_code=502, detail="FHIR MDM preflight unavailable") from exc
     except Exception as exc:
         logger.exception("Bundle stabilization failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -1274,13 +1423,17 @@ async def fhir_stabilize(request: Request):
 async def fhir_convert(request: Request):
     try:
         payload = await request.json()
-        stabilized = _validate_bundle(_stabilize_bundle(payload))
+        stabilized = _stabilize_bundle(payload, use_mdm=True)
+        await run_in_threadpool(_reconcile_mdm_import_bundle, stabilized)
+        stabilized = _validate_bundle(stabilized)
         return await run_in_threadpool(validate_medication_import, stabilized)
     except MedicationImportRejected:
         raise
+    except FhirMdmMatchConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except requests.RequestException as exc:
+    except (FhirMdmLookupError, PatientLookupError, requests.RequestException) as exc:
         logger.exception("FHIR convert/send failed")
         raise HTTPException(status_code=502, detail="FHIR server unavailable") from exc
     except Exception as exc:
@@ -1365,11 +1518,15 @@ async def hl7v2_import(
         raise HTTPException(status_code=400, detail="No HL7v2 message provided")
 
     try:
-        bundle = _validate_bundle(to_transaction_bundle(parse_oru_r01(message)))
+        bundle = to_transaction_bundle(parse_oru_r01(message))
+        await run_in_threadpool(_reconcile_mdm_import_bundle, bundle)
+        bundle = _validate_bundle(bundle)
         return bundle
+    except FhirMdmMatchConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except requests.RequestException as exc:
+    except (FhirMdmLookupError, PatientLookupError, requests.RequestException) as exc:
         logger.exception("HL7v2 FHIR import failed")
         raise HTTPException(status_code=502, detail="FHIR server unavailable") from exc
     except Exception as exc:
@@ -1999,56 +2156,56 @@ def _normalize_epic_vacd_bundle(bundle):
     return bundle
 
 
-@app.post("/cda/convert")
+async def _read_cda_xml_content(
+    request: Request,
+    file: Optional[UploadFile],
+    raw_xml: Optional[str],
+):
+    if file is not None:
+        xml_content = await file.read()
+    elif raw_xml:
+        xml_content = raw_xml.encode("utf-8")
+    else:
+        xml_content = await request.body()
+        if not xml_content:
+            raise HTTPException(
+                status_code=400,
+                detail="No CDA content provided",
+            )
 
+    return xml_content
+
+
+@app.post("/cda/convert")
 async def cda_convert(
     request: Request,
     bundle_type: str = "transaction",
     file: Optional[UploadFile] = File(None),
-    raw_xml: Optional[str] = Form(None)
+    raw_xml: Optional[str] = Form(None),
 ):
-
-    
-    if file is not None:
-
-        xml_content = await file.read()
-
-    elif raw_xml:
-
-        xml_content = raw_xml.encode("utf-8")
-
-    else:
-
-        xml_content = await request.body()
-
-        if not xml_content:
-            raise HTTPException(
-                status_code=400,
-                detail="No CDA content provided"
-            )
- 
     try:
+        xml_content = await _read_cda_xml_content(request, file, raw_xml)
         normalized_bundle_type = bundle_type.strip().lower()
-
         if normalized_bundle_type not in {"transaction", "document"}:
             raise HTTPException(
                 status_code=400,
                 detail="bundle_type must be 'transaction' or 'document'",
             )
-
         bundle = cda_to_fhir_bundle(
             xml_content,
             bundle_type=normalized_bundle_type,
         )
         _warn_duplicate_observation_identifiers(bundle)
         return _validate_bundle(bundle)
- 
+    except HTTPException:
+        raise
+    except FhirResourceMatchConflictError as ex:
+        raise HTTPException(status_code=409, detail=str(ex)) from ex
     except ET.ParseError as ex:
         raise HTTPException(
             status_code=400,
-            detail=f"XML Parse Error: {str(ex)}"
+            detail=f"XML Parse Error: {str(ex)}",
         )
- 
     except Exception as ex:
         traceback.print_exc()
         raise HTTPException(
@@ -2471,8 +2628,31 @@ async def cda_prepare(
     raw_xml: Optional[str] = Form(None),
 ):
     _bridge_link_authorization(request)
-    bundle = await cda_convert(request, bundle_type="transaction", file=file, raw_xml=raw_xml)
-    return await run_in_threadpool(validate_medication_import, bundle)
+    try:
+        xml_content = await _read_cda_xml_content(request, file, raw_xml)
+        bundle = await run_in_threadpool(
+            cda_to_fhir_bundle,
+            xml_content,
+            bundle_type="transaction",
+            resolve_existing=False,
+            prepare_import=True,
+        )
+        _warn_duplicate_observation_identifiers(bundle)
+        bundle = _validate_bundle(bundle)
+        await run_in_threadpool(
+            _resolve_existing_bundle_resources, bundle, match_procedure_patients=True,
+        )
+        return await run_in_threadpool(validate_medication_import, bundle)
+    except ET.ParseError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"XML Parse Error: {str(exc)}",
+        ) from exc
+    except (FhirMdmMatchConflictError, FhirResourceMatchConflictError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except (FhirMdmLookupError, FhirDuplicateLookupError, PatientLookupError, requests.RequestException) as exc:
+        logger.exception("FHIR lookup failed during CDA preparation")
+        raise HTTPException(status_code=502, detail="FHIR lookup unavailable") from exc
 
 
 @app.post("/emediplan/convert")
@@ -2548,11 +2728,20 @@ async def emediplan_prepare(
         return _prepare_emediplan_import_bundle(bundle)
     except HTTPException:
         raise
-    except (PatientMatchConflictError, FhirResourceMatchConflictError) as ex:
+    except (
+        PatientMatchConflictError,
+        FhirResourceMatchConflictError,
+        FhirMdmMatchConflictError,
+    ) as ex:
         raise HTTPException(status_code=409, detail=str(ex)) from ex
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex)) from ex
-    except (requests.RequestException, PatientLookupError, FhirDuplicateLookupError) as ex:
+    except (
+        requests.RequestException,
+        PatientLookupError,
+        FhirDuplicateLookupError,
+        FhirMdmLookupError,
+    ) as ex:
         logger.exception("FHIR preflight failed during eMediplan preparation")
         raise HTTPException(status_code=502, detail="FHIR preflight lookup unavailable") from ex
     except Exception as ex:
@@ -2600,9 +2789,16 @@ async def emediplan_import(
         raise HTTPException(status_code=409, detail=str(ex)) from ex
     except FhirResourceMatchConflictError as ex:
         raise HTTPException(status_code=409, detail=str(ex)) from ex
+    except FhirMdmMatchConflictError as ex:
+        raise HTTPException(status_code=409, detail=str(ex)) from ex
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
-    except (requests.RequestException, PatientLookupError, FhirDuplicateLookupError) as ex:
+    except (
+        requests.RequestException,
+        PatientLookupError,
+        FhirDuplicateLookupError,
+        FhirMdmLookupError,
+    ) as ex:
         logger.exception("FHIR preflight failed during eMediplan import")
         raise HTTPException(status_code=502, detail="FHIR preflight lookup unavailable") from ex
     except Exception as ex:
@@ -2655,9 +2851,16 @@ async def emediplan_import_bundle(
         raise HTTPException(status_code=409, detail=str(ex)) from ex
     except FhirResourceMatchConflictError as ex:
         raise HTTPException(status_code=409, detail=str(ex)) from ex
+    except FhirMdmMatchConflictError as ex:
+        raise HTTPException(status_code=409, detail=str(ex)) from ex
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
-    except (requests.RequestException, PatientLookupError, FhirDuplicateLookupError) as ex:
+    except (
+        requests.RequestException,
+        PatientLookupError,
+        FhirDuplicateLookupError,
+        FhirMdmLookupError,
+    ) as ex:
         logger.exception("FHIR preflight failed during eMediplan bundle import")
         raise HTTPException(status_code=502, detail="FHIR preflight lookup unavailable") from ex
     except Exception as ex:
@@ -2729,9 +2932,16 @@ async def emediplan_qr_import(
         raise HTTPException(status_code=409, detail=str(ex)) from ex
     except FhirResourceMatchConflictError as ex:
         raise HTTPException(status_code=409, detail=str(ex)) from ex
+    except FhirMdmMatchConflictError as ex:
+        raise HTTPException(status_code=409, detail=str(ex)) from ex
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
-    except (requests.RequestException, PatientLookupError, FhirDuplicateLookupError) as ex:
+    except (
+        requests.RequestException,
+        PatientLookupError,
+        FhirDuplicateLookupError,
+        FhirMdmLookupError,
+    ) as ex:
         logger.exception("FHIR preflight failed during eMediplan QR import")
         raise HTTPException(status_code=502, detail="FHIR preflight lookup unavailable") from ex
     except Exception as ex:
@@ -2758,10 +2968,26 @@ async def echosos_qr_import(
         )
 
     try:
+        if file is None and (
+            (content_type or "").split(";", 1)[0].strip().lower() == "application/json"
+            or raw_bytes.lstrip().startswith(b"{")
+        ):
+            payload = json.loads(raw_bytes)
+            status, result = await run_in_threadpool(
+                review_echosos, payload, request.headers.get("authorization", ""),
+            )
+            return JSONResponse(status_code=status, content=result, headers={"Cache-Control": "no-store"})
         author = request.headers.get("x-authenticated-user", "unknown").strip() or "unknown"
         return import_echosos(raw_bytes, content_type, author=author)
+    except PmlcAuthError as ex:
+        raise HTTPException(status_code=ex.status_code, detail=str(ex)) from ex
+    except FhirMdmMatchConflictError as ex:
+        raise HTTPException(status_code=409, detail=str(ex)) from ex
     except ValueError as ex:
         raise HTTPException(status_code=400, detail=str(ex))
+    except (FhirMdmLookupError, requests.RequestException) as ex:
+        logger.exception("FHIR MDM preflight failed during EchoSOS import")
+        raise HTTPException(status_code=502, detail="FHIR MDM preflight unavailable") from ex
     except Exception as ex:
         traceback.print_exc()
         raise HTTPException(status_code=502, detail=f"EchoSOS/FHIR request failed: {ex}")

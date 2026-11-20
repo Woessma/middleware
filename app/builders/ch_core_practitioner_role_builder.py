@@ -11,10 +11,13 @@ PRACTITIONER_ROLE_IDENTIFIER_SYSTEM = (
 
 def build_ch_core_practitioner_role(
     practitioner_id: str,
-    organization_id: str
+    organization_id: str,
+    *,
+    import_key: str | None = None,
 ) -> dict:
 
     role_identifier = (
+        f"cda-{import_key}" if import_key is not None else
         f"{practitioner_id}-{organization_id}"
     )
 

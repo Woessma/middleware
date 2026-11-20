@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from main import app
 from services.fhir_validation_service import FhirValidationError, validate_fhir_bundle
+from services.fhir_mdm_service import FhirMdmMatchConflictError
 
 
 BUNDLE = {"resourceType": "Bundle", "type": "collection", "entry": []}
@@ -77,6 +78,19 @@ class FhirValidationServiceTests(unittest.TestCase):
 class CdaValidationEndpointTests(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
+
+    def test_fhir_stabilize_blocks_possible_mdm_match(self):
+        with (
+            patch("main._stabilize_bundle", return_value=BUNDLE) as stabilize,
+            patch(
+                "main._reconcile_mdm_import_bundle",
+                side_effect=FhirMdmMatchConflictError("possible MDM match"),
+            ),
+        ):
+            response = self.client.post("/fhir/stabilize", json=BUNDLE)
+
+        self.assertEqual(response.status_code, 409)
+        stabilize.assert_called_once_with(BUNDLE, use_mdm=True)
 
     def test_existing_bundle_validation_returns_original_outcome_without_import(self):
         with (

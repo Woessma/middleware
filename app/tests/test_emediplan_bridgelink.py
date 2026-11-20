@@ -15,11 +15,16 @@ from services.fhir_duplicate_service import (
     FhirDuplicateLookupError,
     FhirResourceMatchConflictError,
 )
+from services.fhir_mdm_service import (
+    FhirMdmLookupError,
+    FhirMdmMatchConflictError,
+)
 from services.patient_service import (
     PatientLookupError,
     PatientMatchConflictError,
     find_matching_patient,
 )
+from services.fhir_mdm_service import reconcile_mdm_resources
 
 
 class EmediplanBridgeLinkImportTests(unittest.TestCase):
@@ -32,11 +37,11 @@ class EmediplanBridgeLinkImportTests(unittest.TestCase):
             "entry": [],
         }
         for target in (
-            "main.find_matching_patient",
             "main.find_patient_by_id",
             "main.find_existing_resource_by_identifier",
+            "main.reconcile_mdm_resources",
         ):
-            patcher = patch(target, return_value=None)
+            patcher = patch(target, return_value={})
             patcher.start()
             self.addCleanup(patcher.stop)
         gate = patch("main.validate_medication_import", side_effect=lambda bundle: bundle)
@@ -126,8 +131,10 @@ class EmediplanBridgeLinkImportTests(unittest.TestCase):
         for error, expected in (
             (PatientMatchConflictError("ambiguous"), 409),
             (FhirResourceMatchConflictError("ambiguous"), 409),
+            (FhirMdmMatchConflictError("possible MDM match"), 409),
             (PatientLookupError("unavailable"), 502),
             (FhirDuplicateLookupError("unavailable"), 502),
+            (FhirMdmLookupError("unavailable"), 502),
         ):
             with self.subTest(error=type(error).__name__):
                 prepare.side_effect = error
@@ -324,8 +331,16 @@ class EmediplanBridgeLinkImportTests(unittest.TestCase):
         with (
             patch("main.enrich_emediplan_bundle", side_effect=lambda value: value),
             patch(
-                "main.find_matching_patient",
-                return_value={"resourceType": "Patient", "id": "patient-existing"},
+                "main.reconcile_mdm_resources",
+                side_effect=reconcile_mdm_resources,
+            ),
+            patch(
+                "services.fhir_mdm_service.find_mdm_match",
+                side_effect=lambda resource: (
+                    {"resourceType": "Patient", "id": "patient-existing"}
+                    if resource["resourceType"] == "Patient"
+                    else None
+                ),
             ),
             patch(
                 "main.find_existing_resource_by_identifier",

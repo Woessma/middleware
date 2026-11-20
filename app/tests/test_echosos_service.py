@@ -5,6 +5,9 @@ import unittest
 import zipfile
 from unittest.mock import Mock, patch
 
+from fastapi.testclient import TestClient
+
+from main import app
 from services.echosos_service import (
     _blood_observations,
     _clinical_identity,
@@ -28,6 +31,8 @@ from terminology.echosos import (
     ECHOSOS_MEDICAL_HISTORY,
     SNOMED_SYSTEM,
 )
+from services.fhir_mdm_service import FhirMdmMatchConflictError, MDM_RECORD_STATUS_SYSTEM
+from services.pmlc_auth_service import PmlcAuthError
 
 
 URL = (
@@ -40,6 +45,70 @@ COMPACT_QR_URL = (
     "&n2=Kontakt%202&p2=%2B41000000002"
     "&n3=Kontakt%203&p3=%2B41000000003&o=0&r=ACAE"
 )
+
+
+class EchoSosReviewTests(unittest.TestCase):
+    def test_review_groups_candidates_and_requires_bound_single_use_confirmation(self):
+        source = {"resourceType": "Patient", "id": "source"}
+        golden = {
+            "resourceType": "Patient", "id": "golden", "birthDate": "1980-01-01",
+            "meta": {"tag": [{"system": MDM_RECORD_STATUS_SYSTEM, "code": "GOLDEN_RECORD"}]},
+        }
+        app_client = TestClient(app)
+        claims = {"iss": "issuer", "sub": "reviewer", "azp": "client"}
+        prefix = "services.echosos_review_service."
+        qr = {"sourceUrl": URL}
+
+        def post(data):
+            return app_client.post("/echosos/qr", json={**qr, **data},
+                                   headers={"Authorization": "Bearer synthetic"})
+
+        with (
+            patch(prefix + "authorize_keycloak", return_value=claims) as auth,
+            patch(prefix + "import_echosos", side_effect=FhirMdmMatchConflictError("possible")),
+            patch(prefix + "find_mdm_matches", return_value=[
+                {"resource": record, "grade": "possible"} for record in (source, golden)
+            ]),
+            patch(prefix + "find_linked_golden_id", return_value="golden"),
+            patch(prefix + "requests.get", return_value=Mock(**{"json.return_value": golden})),
+            patch("services.echosos_service._blood_observations", side_effect=lambda _, ref, __: [
+                {"resourceType": "Observation", "subject": {"reference": ref}},
+            ]),
+            patch("services.echosos_service._existing_resource_id", return_value=None),
+        ):
+            review = app_client.post(
+                "/echosos/qr", content=json.dumps({**qr, "action": "review"}),
+                headers={"Authorization": "Bearer synthetic", "Content-Type": "text/plain"},
+            )
+            self.assertEqual(review.status_code, 409)
+            self.assertEqual(review.headers["cache-control"], "no-store")
+            data = review.json()
+            self.assertEqual(data["code"], "patient_review_required")
+            self.assertEqual([x["patientId"] for x in data["candidates"]], ["golden"])
+            confirm = {"action": "confirm", "reviewId": data["reviewId"],
+                       "patientId": "golden", "identityVerified": True}
+            self.assertEqual(post({**confirm, "identityVerified": False}).status_code, 400)
+            self.assertEqual(post({**confirm, "patientId": "source"}).status_code, 409)
+            self.assertEqual(post({**confirm, "sourceUrl": COMPACT_QR_URL}).status_code, 409)
+            auth.return_value = {**claims, "sub": "someone-else"}
+            self.assertEqual(post(confirm).status_code, 409)
+            auth.return_value = claims
+            result = post(confirm)
+            self.assertEqual(result.status_code, 200)
+            entries = result.json()["entry"]
+            self.assertEqual([e["resource"]["resourceType"] for e in entries], ["Observation"])
+            self.assertEqual(entries[0]["resource"]["subject"]["reference"], "Patient/golden")
+            self.assertEqual(post(confirm).status_code, 409)
+
+    def test_unauthorized_review_does_not_read_mdm_candidates(self):
+        with (
+            patch("services.echosos_review_service.authorize_keycloak",
+                  side_effect=PmlcAuthError(403, "denied")),
+            patch("services.echosos_review_service.import_echosos") as importer,
+        ):
+            response = TestClient(app).post("/echosos/qr", json={"action": "review", "sourceUrl": URL})
+            self.assertEqual(response.status_code, 403)
+            importer.assert_not_called()
 
 
 class EchoSosServiceTests(unittest.TestCase):
@@ -715,7 +784,7 @@ class EchoSosServiceTests(unittest.TestCase):
         with (
             patch("services.echosos_service.extract_echosos_url", return_value=URL),
             patch("services.echosos_service.parse_echosos_data", return_value=data),
-            patch("services.echosos_service._patient_search", return_value=None),
+            patch("services.echosos_service.find_mdm_match", return_value=None),
             patch("services.echosos_service._existing_resource_id", return_value=None),
             patch("services.echosos_service.validate_coding", return_value={"status": "validated"}),
             patch("services.echosos_service.requests.post") as post,
@@ -729,14 +798,14 @@ class EchoSosServiceTests(unittest.TestCase):
         self.assertEqual(bundle["type"], "transaction")
         self.assertEqual(patient_entry["request"]["method"], "POST")
         self.assertEqual(patient_entry["request"]["url"], "Patient")
-        self.assertIn("ifNoneExist", patient_entry["request"])
+        self.assertNotIn("ifNoneExist", patient_entry["request"])
         self.assertEqual(bundle["entry"][1]["resource"]["subject"]["reference"], patient_reference)
         for entry in bundle["entry"]:
             self.assertEqual(entry["resource"]["text"]["status"], "generated")
         post.assert_not_called()
         put.assert_not_called()
 
-    def test_import_updates_existing_patient_in_transaction_bundle(self):
+    def test_import_reuses_existing_mdm_golden_patient(self):
         data = {
             "given": "Max",
             "family": "Beispiel",
@@ -758,15 +827,21 @@ class EchoSosServiceTests(unittest.TestCase):
         with (
             patch("services.echosos_service.extract_echosos_url", return_value=COMPACT_QR_URL),
             patch("services.echosos_service.parse_echosos_data", return_value=data),
-            patch("services.echosos_service._patient_search", return_value=existing),
+            patch("services.echosos_service.find_mdm_match", return_value=existing),
             patch("services.echosos_service._existing_resource_id", return_value=None),
             patch("services.echosos_service.requests.post") as post,
             patch("services.echosos_service.requests.put") as put,
         ):
             bundle = import_echosos(b"qr")
 
-        self.assertEqual(bundle["entry"][0]["request"], {"method": "PUT", "url": "Patient/123"})
-        self.assertEqual(bundle["entry"][1]["resource"]["patient"]["reference"], "Patient/123")
+        self.assertFalse(any(
+            entry["resource"].get("resourceType") == "Patient"
+            for entry in bundle["entry"]
+        ))
+        self.assertTrue(any(
+            entry["resource"].get("patient", {}).get("reference") == "Patient/123"
+            for entry in bundle["entry"]
+        ))
         post.assert_not_called()
         put.assert_not_called()
 

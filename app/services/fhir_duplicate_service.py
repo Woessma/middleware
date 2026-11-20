@@ -14,6 +14,10 @@ class FhirDuplicateLookupError(RuntimeError):
     pass
 
 
+def _escape_search_token(part: str) -> str:
+    return "".join(f"\\{char}" if char in "\\$|," else char for char in part)
+
+
 def find_existing_resource_by_identifier(resource: dict, fhir_base: str = FHIR_BASE):
     resource_type = resource.get("resourceType")
     if not resource_type:
@@ -56,12 +60,20 @@ def find_existing_resource_by_identifier(resource: dict, fhir_base: str = FHIR_B
 
         response = requests.get(
             f"{fhir_base.rstrip('/')}/{resource_type}",
-            params={parameter: f"{system}|{value}", "_count": "2"},
+            params={
+                parameter: f"{_escape_search_token(system)}|{_escape_search_token(value)}",
+                "_count": "2",
+            },
             headers={"Accept": "application/fhir+json"},
             timeout=60,
         )
         response.raise_for_status()
-        bundle = response.json()
+        try:
+            bundle = response.json()
+        except ValueError as exc:
+            raise FhirDuplicateLookupError(
+                f"{resource_type} identifier search returned invalid JSON"
+            ) from exc
         if not isinstance(bundle, dict) or bundle.get("resourceType") != "Bundle":
             raise FhirDuplicateLookupError(
                 f"{resource_type} identifier search returned no FHIR Bundle"
@@ -82,7 +94,9 @@ def find_existing_resource_by_identifier(resource: dict, fhir_base: str = FHIR_B
         total = bundle.get("total", len(found))
         if not isinstance(total, int):
             total = len(found)
-        if total > 1 or len(found) > 1:
+        if total > 1 or len(found) > 1 or any(
+            link.get("relation") == "next" for link in bundle.get("link", [])
+        ):
             raise FhirResourceMatchConflictError(
                 f"{resource_type} identifier {system}|{value} is not unique"
             )

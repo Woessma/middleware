@@ -123,18 +123,28 @@ ungueltiger Eingabe, 502 bei Validatorausfall.
 ### Verpflichtende Medikations-Importpruefung (2026-11-05)
 
 Getrennt von der EPR-Ausgabe: CDA-Importe verwenden `/cda/prepare`;
-eMediplan (Text, FHIR-JSON, QR) verwendet wie bisher `/emediplan/prepare`
-bzw. die entsprechenden Middleware-Importfunktionen. Der letzte Schritt
-nach Terminologie-, Patienten-/Dublettenabgleich prueft das tatsaechlich
-zurueckgegebene Transaction-Bundle intern mit HAPI. Medikationsressourcen
+eMediplan (Text, FHIR-JSON, QR) verwendet `/emediplan/prepare` bzw. die
+entsprechenden Middleware-Importfunktionen. Vor der Medikationspruefung
+gleichen die lokalen Bundle-Importpfade Patient, Practitioner und Organization
+mit HAPI MDM ab. Eindeutige `MATCH`-Treffer werden als Golden-Resource-
+Referenzen verwendet; `POSSIBLE_MATCH` stoppt mit HTTP `409`. Bei keinem
+Treffer bleibt die eingehende Ressource fuer den normalen Import erhalten.
+Das tatsaechlich zurueckgegebene Transaction-Bundle prueft die Middleware
+intern mit HAPI. Medikationsressourcen
 erhalten mindestens ihr CH-Core-Profil; vorhandene Profile bleiben erhalten
 und werden ebenfalls geprueft. Unbekannte deklarierte Profile blockieren.
 422 bei error/fatal (auch wenn HAPI HTTP 200 liefert), 502 bei Pruefausfall,
 kein BridgeLink-/HAPI-Write im abgewiesenen Schritt. Warnungen allein
 blockieren nicht; ihre Anzahl wird protokolliert.
 Ohne Medikationsressourcen bleibt das bisherige Verhalten erhalten.
-`/fhir/convert` wendet dieselbe Pruefung auf Medikationsbundles an;
-reine Convert-/Stabilize-Endpunkte werden nicht zu Importen umgedeutet.
+`/fhir/stabilize` und `/fhir/convert` fuehren ebenfalls die MDM-Vorpruefung
+auf Importbundles aus; reine Konvertierungsendpunkte ohne Importvorbereitung
+bleiben schreibfrei und fragen MDM nicht ab.
+
+Die Rohdaten-Proxys `/cda/import` und `/echosos/import` fuehren selbst keine
+MDM-Vorpruefung aus. CDA erhaelt sie nur, wenn BridgeLink wie dokumentiert
+`/cda/prepare` als Callback verwendet. `/echosos/import` leitet direkt an
+BridgeLink weiter; dessen Import braucht eine eigene MDM-Integration.
 
 **CDA-Gateway-Pfad noch abgleichen:** Die lokalen OL_ROUTING-/Channel-XMLs
 verwenden `/v1/cda/import -> /cda/prepare`. Die erfolgreiche
@@ -482,8 +492,8 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/cda/vacd/send` | Konvertiert CDA und versendet an den VACD-Zielserver | CH-VACD-Sendefluss |
 | `POST` | `/emediplan/convert` | Konvertiert Text, PDF oder QR-Bild in ein FHIR-Bundle | eMediplan -> FHIR |
 | `POST` | `/emediplan/validate` | Konvertiert eMediplan-Daten (Text, PDF oder QR-Bild) und prueft das Bundle beratend gegen deklarierte Profile plus striktes CH-EMED-MedicationStatement; keine Speicherung | eMediplan -> FHIR -> HAPI `$validate` |
-| `POST` | `/emediplan/prepare` | Bereitet eMediplan oder FHIR-JSON mit Importpruefungen als Transaction-Bundle vor; kein Write | BridgeLink -> Middleware -> BridgeLink |
-| `POST` | `/cda/prepare` | CDA-Transaction fuer Import vorbereiten; Medikationen verpflichtend mit HAPI pruefen | Kein Write; CDA-Gateway-Routingupdate erforderlich |
+| `POST` | `/emediplan/prepare` | Bereitet eMediplan oder FHIR-JSON mit MDM- und Medikationspruefungen als Transaction-Bundle vor; kein Write | BridgeLink -> Middleware -> BridgeLink |
+| `POST` | `/cda/prepare` | CDA-Transaction fuer Import vorbereiten; MDM- und Medikationspruefung | Kein Write; CDA-Gateway-Routingupdate erforderlich |
 | `POST` | `/emediplan/import` | Konvertiert eMediplan-Daten und importiert das FHIR-Bundle über BridgeLink | eMediplan -> FHIR -> BridgeLink -> HAPI |
 | `POST` | `/emediplan/import-bundle` | Validiert ein FHIR-Resource-Objekt oder Bundle und importiert es über BridgeLink | FHIR-JSON -> BridgeLink -> HAPI |
 | `POST` | `/emediplan/qr/convert` | Liest einen eMediplan-QR-Code und konvertiert ihn | eMediplan-QR -> FHIR |
@@ -492,10 +502,10 @@ Das ist der relevante Produktionsfluss, wenn wir Daten in den FHIR-Server import
 | `POST` | `/fhir/medications/epic-cda` | Konvertiert ein FHIR-Bundle in Epic-CDA-XML | FHIR -> Epic CDA |
 | `GET` | `/fhir/medications/epic-cda/from-server` | Liest Medikamente aus FHIR und liefert Epic-CDA-XML | FHIR -> Epic CDA |
 | `POST` | `/hl7v2/convert` | Konvertiert ORU^R01 in ein FHIR-Bundle | HL7v2 -> FHIR |
-| `POST` | `/hl7v2/import` | Konvertiert ORU^R01 und importiert das Bundle | HL7v2 -> BridgeLink -> HAPI |
-| `POST` | `/echosos/qr` | Dekodiert EchoSOS-QR/PKPass und liefert ein Transaction-Bundle; BridgeLink schreibt nach HAPI | EchoSOS -> BridgeLink -> HAPI |
-| `POST` | `/fhir/stabilize` | Stabilisiert ein FHIR-Resource-Objekt oder Bundle | FHIR-Importvorbereitung |
-| `POST` | `/fhir/convert` | Stabilisiert, validiert und verarbeitet ein FHIR-Bundle | FHIR-Import |
+| `POST` | `/hl7v2/import` | Konvertiert ORU^R01, gleicht MDM-Ressourcen ab und liefert ein Transaction-Bundle | HL7v2 -> Middleware -> aufrufender Importdienst |
+| `POST` | `/echosos/qr` | Dekodiert EchoSOS-QR/PKPass, gleicht Patient per MDM ab und liefert ein Transaction-Bundle | EchoSOS -> Middleware -> aufrufender Importdienst |
+| `POST` | `/fhir/stabilize` | Stabilisiert ein FHIR-Resource-Objekt oder Bundle mit MDM-Vorpruefung | FHIR-Importvorbereitung; kein Write |
+| `POST` | `/fhir/convert` | Stabilisiert, gleicht per MDM ab und validiert ein FHIR-Bundle | FHIR-Importvorbereitung; kein Write |
 | `POST` | `/terminology/{resource_type}/{operation}` | Leitet Terminologieoperationen an TX weiter | Terminologie |
 
 ### eMediplan-Import ueber BridgeLink
@@ -546,7 +556,8 @@ Testlab geprueft. Details und Grenzen der Abnahme:
 [TEST-CLIENT.md](TEST-CLIENT.md#emediplan-abnahme-2026-11-04).
 
 `POST /emediplan/import` konvertiert Text/PDF-eMediplan-Daten in der Middleware,
-validiert das FHIR-Transaction-Bundle und sendet das FHIR-JSON mit dem
+prueft Patient, Practitioner und Organization per HAPI MDM, validiert das
+FHIR-Transaction-Bundle und sendet das FHIR-JSON mit dem
 Keycloak-Bearer-Token an BridgeLink. `POST /emediplan/qr/import` liest
 zunaechst den QR-Code aus dem PDF/Bild und nutzt denselben Importpfad.
 Der QR-Inhalt wird gemaess dem offiziellen
@@ -567,14 +578,15 @@ Body und relevante Antwortheader unveraendert weiter. `/emediplan/convert`
 und `/emediplan/qr/convert` bleiben reine Konvertierungsendpunkte ohne Write.
 
 Vor jedem eMediplan-Write stabilisiert die Middleware das Bundle und entfernt
-in-Bundle-Duplikate. Patientinnen und Patienten werden auf dem Ziel-FHIR-Server
-zuerst per Identifier und ersatzweise per exakt abgeglichenem Namen und
-Geburtsdatum gesucht. Ein bereits vorhandener Patient wird nicht erneut
-geschrieben; Referenzen werden auf dessen FHIR-ID umgestellt. Medication,
-MedicationStatement und Practitioner werden ebenfalls per Identifier
-abgeglichen und bei einem Treffer unter der bestehenden FHIR-ID aktualisiert.
-Mehrdeutige Treffer brechen mit HTTP `409` ab; nicht erreichbare FHIR-Patienten-
-oder Identifier-Suchen brechen mit HTTP `502` ab.
+in-Bundle-Duplikate. Patient, Practitioner und Organization werden mit den
+konfigurierten HAPI-MDM-Regeln abgeglichen. Bei einem eindeutigen `MATCH`
+wird der eingehende Eintrag nicht geschrieben; interne Referenzen zeigen
+stattdessen auf die vorhandene Golden Resource. Ein `POSSIBLE_MATCH` oder
+mehrere sichere Treffer brechen mit HTTP `409` zur manuellen Prüfung ab. Bei
+keinem MDM-Treffer wird die Ressource normal importiert. Medication und
+MedicationStatement behalten ihren Identifier-Abgleich und werden bei einem
+Treffer unter der bestehenden FHIR-ID aktualisiert. Nicht erreichbare oder
+ungueltige MDM-Antworten brechen mit HTTP `502` ab.
 
 Pharmacode und GTIN werden gegen die mit der Middleware ausgelieferten
 Swissmedic-Zuordnungsdateien abgeglichen. Bekannte Pharmacodes erhalten die
@@ -590,7 +602,8 @@ der Terminology-Service validiert zusaetzlich die von ihm unterstuetzten Codes.
 | Extern ueber BridgeLink | `POST` | `https://api.omnilink.ch/v1/echosos/resolve` | HAPI-Ergebnis als FHIR-Bundle mit `type: transaction-response` |
 | Browser-Import ueber Same-Origin-Proxy | `POST` | `/echosos/import` | Leitet den authentifizierten Request an den festen BridgeLink-Endpunkt weiter |
 | Lokale QR-Vorschau | `POST` | `/echosos/preview` | Dekodiert rohe URL-, Bild- oder PKPass-Daten mit Bearer-Header; alle erkannten Felder, kein BridgeLink-/FHIR-Zugriff und kein Write |
-| POC-Notfall-Logobject | `POST` | `/echosos/poc-notfall-logobject` | Erzeugt POC-JSON entweder aus `{"patientId":"<FHIR-ID>"}` und `$everything` oder aus EchoSOS-Rohdaten; keine Writes |
+| POC-Notfall-Logobject | `POST` | `/echosos/poc-notfall-logobject` | Erzeugt POC-JSON aus der bestätigten MDM-Akte zu `{"patientId":"<FHIR-ID>"}` oder aus EchoSOS-Rohdaten mit optionaler MDM-Ergänzung; EchoSOS-Keycloak-Berechtigung, keine Writes |
+| POC-Patientensuche | `GET` | `/echosos/poc-notfall-patients` | Sucht per `identifier` oder `family`, `given`, `birthdate`; zeigt bestätigte MDM-Quellen unter ihrer Golden ID, mit Hinweis auf weitere Treffer; EchoSOS-Keycloak-Berechtigung |
 | POC-Testseite | `GET` | `/echosos-poc-notfall-test.html` | Separate Keycloak-authentifizierte Oberfläche für lokale Patientensuche oder EchoSOS-Link/QR/PKPass |
 | Direkt an die Middleware | `POST` | `https://middleware.local.omnilink.ch/echosos/qr` | FHIR-Bundle mit `type: transaction`, noch ohne Write |
 | Same-Origin-FHIR-Leseproxy | `GET` | `/echosos/fhir/Patient`, `/echosos/fhir/Patient/{id}` oder `/echosos/fhir/Patient/{id}/$everything` | Leitet authentifizierte Patient-Lesezugriffe an `FHIR_BASE` weiter |
@@ -1023,8 +1036,9 @@ Erwartung:
 
 - `200 OK` mit Import-Status, falls das CDA valid ist und der FHIR-Server akzeptiert
 - `400 Bad Request` bei ungültigem XML oder fehlenden Input
+- `409 Conflict` bei einem mehrdeutigen MDM- oder Identifier-Treffer, der eine manuelle Prüfung benötigt
+- `502 Bad Gateway` wenn eine notwendige FHIR-Abfrage oder der FHIR-Write fehlschlägt
 - `500 Internal Server Error` bei internen Fehlern
-- `502`/Fehler aus dem FHIR-Server, falls der Import dort fehlschlägt
 
 ---
 

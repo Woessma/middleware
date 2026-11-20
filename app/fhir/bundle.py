@@ -1,10 +1,13 @@
-import uuid
-import requests
+from collections.abc import Callable
 from urllib.parse import urlsplit
+import uuid
+
+import requests
 
 from config import FHIR_BASE
 from fhir.identifiers import import_resource_identity
 from fhir.narrative import ensure_resource_narrative
+from services.fhir_duplicate_service import FhirResourceMatchConflictError
 
 
 def _preserve_existing_careteam_participants(resource, resource_id):
@@ -23,6 +26,7 @@ def _preserve_existing_careteam_participants(resource, resource_id):
 
 def _find_existing_resource_id(
     resource_type: str, system: str, value: str, resource: dict,
+    same_procedure_patient: Callable[[str, str], bool] | None = None,
 ):
 
     identifier_tokens = [f"{system}|{value}"]
@@ -53,6 +57,34 @@ def _find_existing_resource_id(
         return None
 
     candidates = [entry.get("resource", {}) for entry in entries]
+    if resource_type == "Procedure" and same_procedure_patient is not None:
+        if any(link.get("relation") == "next" for link in bundle.get("link", [])):
+            raise FhirResourceMatchConflictError(
+                "Ambiguous Procedure import identifier; refusing to overwrite"
+            )
+        incoming_reference = (resource.get("subject") or {}).get("reference")
+        identity = import_resource_identity(resource)
+        matches = set()
+        for candidate in candidates:
+            subject = candidate.get("subject") or {}
+            existing_reference = subject.get("reference")
+            if not existing_reference or not incoming_reference:
+                continue
+            if existing_reference != incoming_reference and not same_procedure_patient(
+                existing_reference, incoming_reference
+            ):
+                continue
+            normalized = {**candidate, "subject": {**subject, "reference": incoming_reference}}
+            if candidate.get("id") and (
+                len(candidates) == 1 or import_resource_identity(normalized) == identity
+            ):
+                matches.add(candidate["id"])
+        if len(matches) == 1:
+            return matches.pop()
+        raise FhirResourceMatchConflictError(
+            "Ambiguous Procedure import identifier; refusing to overwrite"
+        )
+
     if len(candidates) == 1:
         return candidates[0].get("id")
 
@@ -74,7 +106,9 @@ def _find_existing_resource_id(
             matches[0],
         )
         return preferred.get("id")
-    raise ValueError(f"Ambiguous {resource_type} import identifier; refusing to overwrite")
+    raise FhirResourceMatchConflictError(
+        f"Ambiguous {resource_type} import identifier; refusing to overwrite"
+    )
 
 
 def _find_existing_consent_id(resource: dict) -> str | None:
@@ -329,7 +363,22 @@ def _find_existing_document_reference_id(resource: dict) -> str | None:
     return None
 
 
-def build_bundle_entry(resource: dict) -> dict:
+def rewrite_bundle_references(value, reference_map: dict):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key == "reference" and isinstance(child, str):
+                value[key] = reference_map.get(child, child)
+            else:
+                rewrite_bundle_references(child, reference_map)
+    elif isinstance(value, list):
+        for child in value:
+            rewrite_bundle_references(child, reference_map)
+
+
+def build_bundle_entry(
+    resource: dict, check_existing: bool = True, *,
+    same_procedure_patient: Callable[[str, str], bool] | None = None,
+) -> dict:
 
     full_url_id = str(uuid.uuid4())
 
@@ -363,7 +412,7 @@ def build_bundle_entry(resource: dict) -> dict:
     if isinstance(identifiers, dict):
         identifiers = [identifiers]
 
-    if identifiers:
+    if check_existing and identifiers:
 
         identifier = identifiers[0]
 
@@ -381,6 +430,7 @@ def build_bundle_entry(resource: dict) -> dict:
                 system,
                 value,
                 resource,
+                same_procedure_patient,
             )
 
             if not existing_resource_id:
@@ -406,7 +456,7 @@ def build_bundle_entry(resource: dict) -> dict:
                 # re-imports of the same source data update instead of duplicating.
                 request["method"] = "PUT"
                 request["url"] = f"{resource['resourceType']}/{resource['id']}"
-    else:
+    elif check_existing:
         existing_resource_id_by_code = _find_existing_resource_id_by_code(
             resource
         )
@@ -422,6 +472,9 @@ def build_bundle_entry(resource: dict) -> dict:
             # built from eMediplan payloads) still carry a stable builder-assigned id.
             request["method"] = "PUT"
             request["url"] = f"{resource['resourceType']}/{resource['id']}"
+    else:
+        request["method"] = "PUT"
+        request["url"] = f"{resource['resourceType']}/{resource['id']}"
 
     ensure_resource_narrative(resource)
 

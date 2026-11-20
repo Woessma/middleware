@@ -411,6 +411,7 @@
 
       <aside class="panel right-panel">
         <h2>FHIR Visualisierung</h2>
+        <p>Die Ansicht umfasst den Golden Patient und die Daten seiner bestätigten MDM-Quellpatienten.</p>
         <div id="overview" class="empty">Noch keine Daten geladen.</div>
         <details id="patientSection" class="result-section" hidden open>
           <summary>Patient</summary>
@@ -430,6 +431,18 @@
 <dialog id="cameraDialog" class="camera-dialog">
   <div class="camera-head"><h2>QR mit Kamera lesen</h2><button id="closeCamera" class="quiet" type="button">Schliessen</button></div>
   <div class="camera-body"><video id="cameraVideo" class="camera-video" autoplay playsinline muted></video><p id="cameraHelp" class="camera-help">Kamera wird gestartet. Halte den EchoSOS-QR-Code vor die Kamera.</p><div class="camera-actions"><button id="stopCamera" class="secondary" type="button">Abbrechen</button></div></div>
+</dialog>
+<dialog id="patientReview" class="camera-dialog" aria-labelledby="patientReviewTitle">
+  <div class="camera-head"><h2 id="patientReviewTitle">Patientenzuordnung prüfen</h2></div>
+  <form method="dialog" class="camera-body">
+    <p>Der QR-Code passt möglicherweise zu einem bestehenden Patienten. Prüfe die Identität anhand einer unabhängigen Quelle, z. B. anhand der Patientenakte oder eines Ausweises. Name und Geburtsdatum aus dem QR-Code allein genügen nicht.</p>
+    <fieldset id="reviewCandidates"><legend>Vorgeschlagene Patienten</legend></fieldset>
+    <label><input id="reviewVerified" type="checkbox"> Ich habe die Identität unabhängig geprüft.</label>
+    <div class="camera-actions">
+      <button value="cancel" class="secondary" type="submit">Abbrechen</button>
+      <button id="reviewConfirm" value="confirm" type="submit" disabled>Zuordnung bestätigen</button>
+    </div>
+  </form>
 </dialog>
 <script src="keycloak-auth.js"></script>
 <script>
@@ -565,7 +578,12 @@ async function request(url,options={}){
     if(!r.ok)throw new Error('HTTP '+r.status+': '+text);
     throw new Error('HTTP '+r.status+': Antwort ist kein gültiges JSON (Content-Type: '+(r.headers.get('Content-Type')||'fehlt')+', Länge: '+text.length+').');
   }
-  if(!r.ok)throw new Error('HTTP '+r.status+': '+(data?.detail||text));
+  if(!r.ok){
+    const error=new Error('HTTP '+r.status+': '+(data?.detail||text));
+    error.status=r.status;
+    error.data=data;
+    throw error;
+  }
   if(data?.resourceType==='OperationOutcome'){
     const detail=(data.issue||[]).map(issue=>[issue.severity,issue.code,issue.diagnostics||issue.details?.text].filter(Boolean).join(': ')).join('; ');
     throw new Error('OperationOutcome (HTTP '+r.status+'): '+(detail||'Keine Fehlerdetails vorhanden.'));
@@ -574,10 +592,41 @@ async function request(url,options={}){
 }
 $('import').onclick=importEcho;
 async function echososPatientRequest(path){return request('/echosos/fhir/Patient'+path)}
-async function loadPatientEverything(id){const data=await echososPatientRequest('/'+encodeURIComponent(id)+'/$everything?_count=500');render(data);return data}
+async function loadPatientEverything(id){const data=await echososPatientRequest('/'+encodeURIComponent(id)+'/$mdm-everything');const patient=data.entry?.find(e=>e.resource?.resourceType==='Patient')?.resource;if(patient?.id)$('patientId').value=patient.id;render(data);return data}
 $('find').onclick=async()=>{try{const id=$('patientId').value.trim();if(id){let patient;try{patient=await echososPatientRequest('/'+encodeURIComponent(id))}catch(error){if(!error.message.startsWith('HTTP 404'))throw error;const identifierBundle=await echososPatientRequest('?identifier='+encodeURIComponent(id));const identifierEntries=identifierBundle.entry||[];if(!identifierEntries.length)throw new Error('Kein Patient mit dieser ID oder diesem Identifier gefunden.');if((identifierBundle.total??identifierEntries.length)!==1)throw new Error((identifierBundle.total??identifierEntries.length)+' Patienten haben diesen Identifier. Bitte den Identifier mit System angeben.');patient=identifierEntries[0].resource}$('patientId').value=patient.id;await loadPatientEverything(patient.id);show('Patient '+patient.id+' über ID oder Identifier und alle Daten geladen.');return}const p=new URLSearchParams();if($('family').value.trim())p.set('family',$('family').value.trim());if($('given').value.trim())p.set('given',$('given').value.trim());if($('birthDate').value)p.set('birthdate',$('birthDate').value);if(!p.toString())throw new Error('Bitte Patient-ID, Identifier oder Suchkriterien eingeben.');const data=await echososPatientRequest('?'+p);const entries=data.entry||[];if(!entries.length){show('Kein Patient gefunden.',true);render({resourceType:'Bundle',entry:[]});return}if((data.total??entries.length)!==1){show((data.total??entries.length)+' Patienten gefunden. Bitte die Suche mit Patient-ID, Identifier oder Geburtsdatum eindeutig machen.',true);render({resourceType:'Bundle',entry:entries});return}const patient=entries[0].resource;$('patientId').value=patient.id;await loadPatientEverything(patient.id);show('Eindeutiger Patient '+patient.id+' und alle Daten geladen.')}catch(e){show(e.message,true)}};
 $('everything').onclick=async()=>{try{const id=$('patientId').value.trim();if(!id)throw new Error('Bitte zuerst eine Patient-ID eingeben oder einen eindeutigen Patienten suchen.');await loadPatientEverything(id);show('Alle Patientendaten geladen.')}catch(e){show(e.message,true)}};
+function chooseEchoPatient(candidates){
+  const dialog=$('patientReview'), list=$('reviewCandidates'), verified=$('reviewVerified'), confirm=$('reviewConfirm');
+  if(!Array.isArray(candidates)||!candidates.length||!candidates.every(c=>/^[A-Za-z0-9.-]{1,64}$/.test(c?.patientId||''))){
+    throw new Error('Keine gültigen Patientenvorschläge verfügbar.');
+  }
+  const selected=()=>list.querySelector('input:checked')?.value;
+  const update=()=>{confirm.disabled=!verified.checked||!selected()};
+  list.querySelectorAll('label').forEach(label=>label.remove());
+  for(const candidate of candidates){
+    const label=document.createElement('label');
+    label.style.display='block';
+    const radio=document.createElement('input');
+    radio.type='radio'; radio.name='echoPatient'; radio.value=candidate.patientId;
+    label.append(radio, ' '+[candidate.name, candidate.birthDate, 'FHIR-ID '+candidate.patientId].filter(Boolean).join(' · '));
+    list.append(label);
+  }
+  verified.checked=false;
+  list.onchange=verified.onchange=update;
+  update();
+  dialog.returnValue='cancel';
+  return new Promise(resolve=>{
+    dialog.addEventListener('close',()=>{
+      const patientId=dialog.returnValue==='confirm'&&verified.checked?selected():null;
+      list.querySelectorAll('label').forEach(label=>label.remove());
+      verified.checked=false;
+      resolve(patientId||null);
+    },{once:true});
+    dialog.showModal();
+  });
+}
 async function importEcho(){
+  if($('import').disabled)return;
   const file=$('qrFile').files[0];
   if(cameraValue&&!isEchoSosUrl(cameraValue)){cameraValue='';$('qrPreview').classList.remove('show');show('Kein EchoSOS-QR-Code. Import abgebrochen.',true);return}
   if(!file&&!cameraValue){show('Bitte QR mit der Kamera lesen oder eine Datei auswaehlen.',true);return}
@@ -592,13 +641,21 @@ async function importEcho(){
       throw new Error('Die QR-Vorschau enthält keinen gültigen EchoSOS-Link. Import abgebrochen.');
     }
     renderEchoPreview(preview);
-    let result;
+    let result, confirmedPatientId;
+    const submit=payload=>request(base('importUrl'),{method:'POST',body:JSON.stringify(payload),headers:{Accept:'application/json','Content-Type':'application/json'}});
     try{
-      result=await request(base('importUrl'),{method:'POST',body:preview.source_url,headers:{Accept:'application/json','Content-Type':'text/plain; charset=utf-8'}});
+      result=await submit({action:'review',sourceUrl:preview.source_url});
     }catch(error){
-      throw new Error('EchoSOS-Import über BridgeLink fehlgeschlagen: '+error.message);
+      if(error.status!==409||error.data?.code!=='patient_review_required'||typeof error.data.reviewId!=='string')throw error;
+      confirmedPatientId=await chooseEchoPatient(error.data.candidates);
+      if(!confirmedPatientId){
+        cameraValue='';
+        show('Zuordnung abgebrochen. Es wurde nichts gespeichert.');
+        return;
+      }
+      result=await submit({action:'confirm',sourceUrl:preview.source_url,reviewId:error.data.reviewId,patientId:confirmedPatientId,identityVerified:true});
     }
-    patientId=transactionPatientId(result);
+    patientId=transactionPatientId(result,confirmedPatientId);
     cameraValue='';
     $('patientId').value=patientId;
     await loadPatientEverything(patientId);
@@ -609,7 +666,7 @@ async function importEcho(){
     $('import').disabled=false;
   }
 }
-function transactionPatientId(result){
+function transactionPatientId(result,confirmedPatientId){
   if(result?.resourceType!=='Bundle'||result.type!=='transaction-response'||!Array.isArray(result.entry)||!result.entry.length){
     const shape={
       jsonType:result===null?'null':Array.isArray(result)?'array':typeof result,
@@ -629,6 +686,10 @@ function transactionPatientId(result){
     }
     const match=response.location?.match(/(?:^|\/)Patient\/([A-Za-z0-9.-]+)(?:\/_history\/[^/?#]+)?\/?$/);
     if(match)patientIds.add(match[1]);
+  }
+  if(confirmedPatientId){
+    if(patientIds.size)throw new Error('Unerwarteter Patientenschreibvorgang in der Importantwort.');
+    return confirmedPatientId;
   }
   if(patientIds.size!==1)throw new Error('BridgeLink hat keine eindeutige Patient-ID in response.location geliefert.');
   return [...patientIds][0];

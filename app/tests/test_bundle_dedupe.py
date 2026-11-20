@@ -174,6 +174,27 @@ class BundleDedupeTests(unittest.TestCase):
             "identifier=same",
         )
 
+    def test_stabilize_leaves_mdm_identifier_matching_to_mdm(self):
+        bundle = {
+            "resourceType": "Bundle",
+            "type": "transaction",
+            "entry": [
+                {
+                    "resource": {
+                        "resourceType": "Patient",
+                        "identifier": [
+                            {"system": "urn:test:patient", "value": "patient-1"},
+                        ],
+                    },
+                    "request": {"method": "POST", "url": "Patient"},
+                },
+            ],
+        }
+
+        stabilized = _stabilize_bundle(bundle, use_mdm=True)
+
+        self.assertNotIn("ifNoneExist", stabilized["entry"][0]["request"])
+
     def test_stabilize_wraps_single_resource_as_idempotent_transaction(self):
         stabilized = _stabilize_bundle(
             {"resourceType": "MedicationStatement", "id": "med-1"}

@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: 2026-11-04
+Stand: 2026-11-20
 
 ## Zielarchitektur
 
@@ -31,7 +31,7 @@ EPIC CDA
 - Python Middleware: Parsing, Transformation, Mapping, Bundle-Erzeugung
 - HAPI FHIR: FHIR Repository, Source of Truth, Ressourcenverwaltung
 - Refdata.ch Partner-XML-Dateien und optionale Partner-API: Anreicherung von GLN-Daten
-- Lokale HAPI-Patientensuche mit zusätzlicher read-only Dublettenprüfung auf `fhir.woess.ch`
+- [HAPI-MDM-Vorprüfung](./hapi-mdm.md) in lokal erzeugten Importbundles fuer Patient, Practitioner und Organization; moegliche Treffer erfordern Klärung vor dem Write
 - Matrix Import Bot: geschuetzter Dateiimport fuer eMediplan und CDA
 
 ## Software-Architektur
@@ -50,8 +50,14 @@ EPIC CDA
 - Interner Browser-Relay: `POST /_proxy/bridge/cda` (aelterer Alias von `/cda/import`) leitet CDA-Requests mit Bearer-Token an den festen BridgeLink-Endpunkt weiter; dies ist kein zusaetzlicher externer CDA-Endpunkt.
 - Weitere CDA-Funktionen intern: `/cda/debug`, `/cda/convert`, `/cda/etoc/convert`, `/cda/umzh/convert`, `/cda/umzh/send`, `/cda/vacd/convert`, `/cda/vacd/send` (in Konstruktion)
 - CH-VACD-API: `/cda/vacd/convert` fuer CH-VACD Immunization Administration Documents
-- eMediplan-API: `/emediplan/convert` und `/emediplan/qr/convert` liefern FHIR-Bundles ohne Write; Importpfade gleichen Patient, Medication, MedicationStatement und Practitioner gegen FHIR ab, stabilisieren Duplikate, reichern GLNs sowie Pharmacode/GTIN an und schreiben ueber BridgeLink (`BRIDGELINK_EMEDIPLAN_IMPORT_URL`)
+- Lokale Bundle-Importpfade und -vorbereitungen: `/cda/prepare`, `/emediplan/prepare` und -Importe, `/hl7v2/import`, `/echosos/qr`, `/fhir/stabilize` und `/fhir/convert` fragen HAPI MDM fuer Patient, Practitioner und Organization ab. Sichere Treffer werden auf Golden-Resources umgeschrieben, moegliche Treffer blockieren mit HTTP 409. Beim CDA-Pfad laeuft dieser MDM-Abgleich vor den bisherigen Identifier-Abgleichen fuer andere Ressourcentypen; mehrdeutige Treffer dort blockieren weiterhin mit HTTP 409. Medikamenten-Dubletten behalten den eigenen Identifier-Abgleich.
+- eMediplan-API: `/emediplan/convert` und `/emediplan/qr/convert` liefern FHIR-Bundles ohne Write; Importpfade reichern GLNs sowie Pharmacode/GTIN an und schreiben ueber BridgeLink (`BRIDGELINK_EMEDIPLAN_IMPORT_URL`)
 - Externer eMediplan-Import: BridgeLink `/v1/emediplan/import` ruft Middleware `/emediplan/prepare` auf. Dieser Endpunkt nimmt eMediplan-Rohdaten oder FHIR-JSON entgegen und liefert nach Importpruefungen ein Transaction-Bundle ohne Write und ohne BridgeLink-Rueckaufruf. Destination 02 schreibt nach HAPI. `/emediplan/import` darf hier nicht als Rueckrufziel verwendet werden (Schleife).
+- `/cda/import` und `/echosos/import` leiten Anfragen an BridgeLink weiter. Die MDM-Prüfung findet im jeweiligen Middleware-Callback statt: `/cda/prepare` bzw. `/echosos/qr`. Bei EchoSOS kann der Client eine prüfbare Zuordnung bestätigen, bevor BridgeLink schreibt. Die Notfall-Ansicht bleibt schreibfrei.
+- Die Middleware nutzt fuer alle drei Ressourcentypen die serverweite HAPI-Operation `POST /$mdm-match` mit den Parametern `resource` und `resourceType`.
+- Sichere MDM-Treffer auf Quellressourcen werden ueber bestaetigte `MATCH`-Links (`GET /$mdm-query-links`) auf ihre Golden Records aufgeloest. Quell- und Golden-Treffer fuer denselben Golden Record zaehlen einmal. Fehlende oder mehrdeutige Zuordnungen sowie unterschiedliche Golden Records blockieren mit HTTP 409.
+- Beim CDA-Procedure-Abgleich gilt eine gespeicherte Quellpatienten-Referenz als gleichwertig, wenn ein bestaetigter MDM-Link zum Golden Patient aus dem Bundle besteht. Bei einem geteilten Procedure-Identifier wird nur ein eindeutig inhaltsgleicher Treffer aktualisiert; sonst bleibt es bei HTTP 409.
+- `/cda/prepare` klaert die Identitaet der drei Stammdatentypen vor dem klinischen Mapping. Ohne MDM-Treffer nutzt es fuer Practitioner (`urn:oid:1.2.840.114350.1.13.521.3.7.2.836982`) und Organization (`urn:oid:1.2.840.114350.1.13.521.3.7.2.688879`) ausschliesslich den je freigegebenen EPIC-Identifier: exakter System-Wert-Treffer, bei Mehrdeutigkeit HTTP 409. Wiederholungen derselben CDA-Datei behalten stabile klinische Import-Identifier, auch wenn MDM die Patientenreferenz spaeter auf den Golden Record umstellt. Bereits vorhandene Dubletten werden dadurch nicht zusammengefuehrt.
 - EPIC-CDA-API: `/fhir/medications/epic-cda`, `/fhir/medications/epic-cda/from-server` (Default `count=100`)
 - Medication-Lookup fuer angereicherte Produktdaten: `_include=MedicationStatement:medication`
 - UMZH Convert: `workflow_stage=initial|updated|completed`, optional `target=default|sandbox-placer`

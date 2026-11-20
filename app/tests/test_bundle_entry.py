@@ -6,6 +6,22 @@ from fhir.bundle import build_bundle_entry
 
 class BundleEntryTests(unittest.TestCase):
     @patch("fhir.bundle.requests.get")
+    def test_build_bundle_entry_can_skip_identifier_lookup_for_mdm_resources(self, mock_get):
+        resource = {
+            "resourceType": "Patient",
+            "id": "source-patient",
+            "identifier": [{"system": "urn:test", "value": "patient-1"}],
+        }
+
+        entry = build_bundle_entry(resource, check_existing=False)
+
+        self.assertEqual(
+            entry["request"],
+            {"method": "PUT", "url": "Patient/source-patient"},
+        )
+        mock_get.assert_not_called()
+
+    @patch("fhir.bundle.requests.get")
     def test_shared_identifier_matches_after_hapi_omits_null_fields(self, mock_get):
         resource = {
             "resourceType": "Procedure",
@@ -26,6 +42,34 @@ class BundleEntryTests(unittest.TestCase):
         entry = build_bundle_entry(resource)
 
         self.assertEqual(entry["request"]["url"], "Procedure/same-procedure")
+
+    @patch("fhir.bundle.requests.get")
+    def test_cda_procedure_matches_only_unique_equivalent_candidate_for_linked_patient(self, mock_get):
+        resource = {
+            "resourceType": "Procedure",
+            "identifier": [{"system": "urn:test", "value": "same-procedure"}],
+            "subject": {"reference": "Patient/golden"},
+            "performer": [{"actor": {"display": "Author A"}}],
+        }
+        source = {**resource, "subject": {"reference": "Patient/source"}}
+        equivalent = {**source, "id": "equivalent"}
+        other = {**source, "id": "other", "performer": [{"actor": {"display": "Author B"}}]}
+        entries = [{"resource": other}, {"resource": equivalent}]
+        mock_get.return_value.json.return_value = {"entry": entries}
+
+        def linked(source_reference, target_reference):
+            return (source_reference, target_reference) == ("Patient/source", "Patient/golden")
+
+        entry = build_bundle_entry(dict(resource), same_procedure_patient=linked)
+        self.assertEqual(entry["request"], {"method": "PUT", "url": "Procedure/equivalent"})
+        self.assertEqual(equivalent["subject"]["reference"], "Patient/source")
+
+        with self.assertRaisesRegex(ValueError, "refusing to overwrite"):
+            build_bundle_entry(dict(resource), same_procedure_patient=lambda *_: False)
+
+        entries.append({"resource": {**equivalent, "id": "also-equivalent"}})
+        with self.assertRaisesRegex(ValueError, "refusing to overwrite"):
+            build_bundle_entry(dict(resource), same_procedure_patient=linked)
 
     @patch("fhir.bundle.requests.get")
     def test_shared_identifier_selects_matching_clinical_resource(self, mock_get):

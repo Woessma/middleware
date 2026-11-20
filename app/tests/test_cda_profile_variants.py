@@ -9,6 +9,7 @@ from mappers.organization_mapper import organization_to_fhir_params
 from parser.cda.encounter_parser import parse_encounters
 from parser.cda.organization_parser import parse_organization
 from services import cda_bundle_service
+from services.fhir_duplicate_service import FhirResourceMatchConflictError
 
 
 class CdaVariantImportTests(unittest.TestCase):
@@ -43,6 +44,83 @@ class CdaVariantImportTests(unittest.TestCase):
         self.assertEqual(at_bundle["resourceType"], "Bundle")
         self.assertGreaterEqual(len(epic_bundle.get("entry", [])), 1)
         self.assertGreaterEqual(len(at_bundle.get("entry", [])), 1)
+
+    def test_mdm_preparation_skips_existing_resource_lookups(self):
+        with patch(
+            "fhir.bundle.requests.get",
+            side_effect=AssertionError("pre-MDM FHIR lookup was attempted"),
+        ):
+            bundle = cda_bundle_service.cda_to_fhir_bundle(
+                self.epic_path.read_bytes(),
+                resolve_existing=False,
+            )
+
+        self.assertEqual(bundle["resourceType"], "Bundle")
+        self.assertTrue(bundle.get("entry"))
+
+    def test_import_identity_is_stable_when_mdm_promotes_the_cda_entities(self):
+        source = self.epic_path.read_bytes()
+        options = {"resolve_existing": False, "prepare_import": True}
+
+        with patch.object(cda_bundle_service, "_resolve_cda_import_entity", return_value=None):
+            first = cda_bundle_service.cda_to_fhir_bundle(source, **options)
+            repeated = cda_bundle_service.cda_to_fhir_bundle(source, **options)
+
+        master_types = {"Patient", "Practitioner", "Organization"}
+        with patch.object(
+            cda_bundle_service, "_resolve_cda_import_entity",
+            side_effect=lambda r: f"golden-{r['resourceType'].lower()}",
+        ):
+            canonical = cda_bundle_service.cda_to_fhir_bundle(source, **options)
+
+        def identifiers(bundle):
+            return [
+                (r["resourceType"], r["identifier"])
+                for e in bundle["entry"] if (r := e["resource"])["resourceType"] not in master_types
+            ]
+
+        def master_targets(bundle):
+            return [
+                e["request"]["url"]
+                for e in bundle["entry"] if e["resource"]["resourceType"] in master_types
+            ]
+
+        self.assertEqual(len(master_targets(first)), 3)
+        self.assertEqual(master_targets(repeated), master_targets(first))
+        self.assertEqual(master_targets(canonical), [])
+        self.assertEqual(identifiers(first), identifiers(repeated))
+        self.assertEqual(identifiers(first), identifiers(canonical))
+        role = next(e["resource"] for e in canonical["entry"] if e["resource"]["resourceType"] == "PractitionerRole")
+        self.assertEqual(role["practitioner"]["reference"], "Practitioner/golden-practitioner")
+        self.assertEqual(role["organization"]["reference"], "Organization/golden-organization")
+        procedure = next(e["resource"] for e in canonical["entry"] if e["resource"]["resourceType"] == "Procedure")
+        self.assertEqual(procedure["subject"]["reference"], "Patient/golden-patient")
+
+    def test_cda_provider_fallback_only_uses_approved_identifier_and_blocks_ambiguity(self):
+        system = cda_bundle_service.CDA_PROVIDER_IDENTIFIER_SYSTEMS["Practitioner"]
+        approved = {"system": system, "value": "provider"}
+        resource = {"resourceType": "Practitioner", "identifier": [
+            {"system": "urn:oid:1.2.3", "value": "unapproved"}, approved,
+        ]}
+        with (
+            patch.object(cda_bundle_service, "find_mdm_match", return_value=None),
+            patch.object(cda_bundle_service, "find_existing_resource_by_identifier") as lookup,
+            patch.object(cda_bundle_service, "find_linked_golden_id", return_value="golden-123"),
+        ):
+            lookup.return_value = {"id": "source-123", "identifier": [approved]}
+            self.assertEqual(cda_bundle_service._resolve_cda_import_entity(resource), "golden-123")
+            lookup.assert_called_once_with({"resourceType": "Practitioner", "identifier": [approved]})
+
+            lookup.reset_mock(side_effect=True)
+            lookup.side_effect = FhirResourceMatchConflictError("ambiguous")
+            with self.assertRaisesRegex(FhirResourceMatchConflictError, "multiple existing resources"):
+                cda_bundle_service._resolve_cda_import_entity(resource)
+
+            lookup.reset_mock()
+            self.assertIsNone(cda_bundle_service._resolve_cda_import_entity({
+                "resourceType": "Organization", "identifier": [approved],
+            }))
+            lookup.assert_not_called()
 
     def test_at_encounter_parser_uses_encompassing_encounter_fallback(self):
         root = ET.parse(self.at_path).getroot()

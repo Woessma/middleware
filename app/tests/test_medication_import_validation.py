@@ -6,9 +6,11 @@ from xml.etree import ElementTree as ET
 import requests
 from fastapi.testclient import TestClient
 
+import main
 from main import app
 from mappers.medication_mapper import map_medication_section
 from parser.cda.section_parser import extract_sections
+from services.fhir_duplicate_service import FhirResourceMatchConflictError
 from services.medication_import_validation_service import MedicationImportRejected, validate_medication_import
 
 
@@ -79,13 +81,34 @@ class MedicationImportValidationTests(unittest.TestCase):
 
     def test_cda_prepare_and_emediplan_paths_block_without_bridge_write(self):
         client = TestClient(app)
-        with patch("main.cda_convert", return_value=BUNDLE), \
+        reconciliation_order = []
+        with patch("main._read_cda_xml_content", return_value=b"<ClinicalDocument/>"), \
+             patch(
+                 "main.cda_to_fhir_bundle",
+                 side_effect=lambda *args, **kwargs: reconciliation_order.append("build") or BUNDLE,
+             ) as convert, \
+             patch("main._validate_bundle", side_effect=lambda bundle: bundle), \
+             patch(
+                 "main._reconcile_mdm_import_bundle",
+             ) as late_mdm, \
+             patch(
+                 "main._resolve_existing_bundle_resources",
+                 side_effect=lambda bundle, **kwargs: reconciliation_order.append("legacy") or bundle,
+             ), \
              patch("main.validate_medication_import", side_effect=MedicationImportRejected(422, ERROR)), \
              patch("main._bridge_link_post") as bridge:
             response = client.post("/cda/prepare", content=b"<ClinicalDocument/>",
                                    headers={"Authorization": "Bearer synthetic"})
             self.assertEqual(response.status_code, 422)
             self.assertEqual(response.json(), ERROR)
+            convert.assert_called_once_with(
+                b"<ClinicalDocument/>",
+                bundle_type="transaction",
+                resolve_existing=False,
+                prepare_import=True,
+            )
+            self.assertEqual(reconciliation_order, ["build", "legacy"])
+            late_mdm.assert_not_called()
             bridge.assert_not_called()
         for path, body in (
             ("/emediplan/prepare", {"json": BUNDLE}),
@@ -94,9 +117,9 @@ class MedicationImportValidationTests(unittest.TestCase):
             ("/emediplan/qr/import", {"content": b"synthetic-image"}),
         ):
             with self.subTest(path=path), \
-                 patch("main._stabilize_bundle", side_effect=lambda bundle: bundle), \
+                 patch("main._stabilize_bundle", side_effect=lambda bundle, **kwargs: bundle), \
                  patch("main.enrich_emediplan_bundle", side_effect=lambda bundle: bundle), \
-                 patch("main._reconcile_emediplan_patients", side_effect=lambda bundle: bundle), \
+                 patch("main._reconcile_mdm_import_bundle", side_effect=lambda bundle: bundle), \
                  patch("main._reconcile_existing_emediplan_resources", side_effect=lambda bundle: bundle), \
                  patch("main._validate_bundle", side_effect=lambda bundle: bundle), \
                  patch("main.emediplan_to_fhir_bundle", return_value=BUNDLE), \
@@ -107,6 +130,66 @@ class MedicationImportValidationTests(unittest.TestCase):
                 self.assertEqual(response.status_code, 422, response.text)
                 self.assertEqual(response.json(), ERROR)
                 bridge.assert_not_called()
+
+    def test_existing_resource_resolution_skips_mdm_resources_and_rewrites_references(self):
+        patient = {"resourceType": "Patient", "id": "local-patient"}
+        procedure = {"resourceType": "Procedure", "id": "local-procedure"}
+        bundle = {
+            "resourceType": "Bundle",
+            "entry": [
+                {"resource": patient, "request": {"method": "PUT", "url": "Patient/local-patient"}},
+                {"resource": procedure, "request": {"method": "PUT", "url": "Procedure/local-procedure"}},
+                {"resource": {
+                    "resourceType": "Observation",
+                    "id": "observation-1",
+                    "subject": {"reference": "Procedure/local-procedure"},
+                }},
+            ],
+        }
+
+        def find_existing(resource):
+            if resource["resourceType"] == "Procedure":
+                resource["id"] = "existing-procedure"
+            return {
+                "request": {
+                    "method": "PUT",
+                    "url": f"{resource['resourceType']}/{resource['id']}",
+                }
+            }
+
+        with patch("main.build_bundle_entry", side_effect=find_existing) as build:
+            main._resolve_existing_bundle_resources(bundle)
+
+        build.assert_has_calls([
+            unittest.mock.call(procedure),
+            unittest.mock.call(bundle["entry"][2]["resource"]),
+        ])
+        self.assertEqual(patient["id"], "local-patient")
+        self.assertEqual(procedure["id"], "existing-procedure")
+        self.assertEqual(
+            bundle["entry"][2]["resource"]["subject"]["reference"],
+            "Procedure/existing-procedure",
+        )
+
+    def test_cda_prepare_reports_ambiguous_resource_identifier_as_conflict(self):
+        client = TestClient(app)
+        conflict = FhirResourceMatchConflictError(
+            "Ambiguous Procedure import identifier; refusing to overwrite"
+        )
+        with (
+            patch("main._read_cda_xml_content", return_value=b"<ClinicalDocument/>"),
+            patch("main.cda_to_fhir_bundle", side_effect=conflict),
+            patch("main._validate_bundle") as validate,
+        ):
+            response = client.post(
+                "/cda/prepare",
+                content=b"<ClinicalDocument/>",
+                headers={"Authorization": "Bearer synthetic"},
+            )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("Ambiguous Procedure", response.json()["detail"])
+        validate.assert_not_called()
 
     def test_contained_unknown_profile_and_invalid_registry_responses_block(self):
         source = copy.deepcopy(BUNDLE)
