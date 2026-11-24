@@ -1,6 +1,6 @@
 # Endpunkte und erwartetes Verhalten
 
-Stand: 2026-11-05
+Stand: 2026-11-19
 
 ## Basis-URLs
 
@@ -43,7 +43,7 @@ error/fatal ergibt 422 mit Dokument und Bericht; Engine-/Quellfehler 502.
 Die vorgeschriebene PDF/A-Originaldarstellung fehlt im ersten Ausbau
 bewusst. Damit ist die Ausgabe noch nicht profilkonform; dies wird
 ausdruecklich als Validierungsfehler angezeigt, nicht als Erfolg.
-[Quelle, Abdeckung und Antwortvertrag](docs/ch-emed-epr-pmlc.md).
+[Quelle, Abdeckung und Antwortvertrag](ch-emed-epr-pmlc.md).
 
 ### CDA-Eingangsvalidierung mit Husky
 
@@ -64,7 +64,7 @@ CDA-Pruefgruppen fuer die Werkbank. HTTP 200 bedeutet nicht Fehlerfreiheit.
 Leere Eingabe liefert 400, uebergrosse Eingabe 413, Dienst-/Enginefehler 502.
 Bestehende Convert-/Importwege und HAPI-Validierungen bleiben unveraendert.
 Abdeckung, Herkunft, Isolation und Betrieb:
-[Husky-Dienst](husky-validator/README.md).
+[Husky-Dienst](../husky-validator/README.md).
 
 ### Separate Validierung ohne Speicherung
 
@@ -151,7 +151,7 @@ verwenden `/v1/cda/import -> /cda/prepare`. Die erfolgreiche
 `transaction-response` vom 2026-11-19 bestaetigt den HAPI-Import, aber nicht
 die genaue aktive Channel-Revision oder den internen Middleware-Pfad.
 Datei-Aenderungen allein deployen den Live-Channel nicht. Siehe
-[BridgeLink](bridgelink/BridgeLink.md).
+[BridgeLink](../bridgelink/BridgeLink.md).
 
 Importmapping: unzweideutige direkte CDA-Medikationsautoren werden mit
 Identifier und `dateAsserted` strukturiert erhalten; eigene Entry-Notizen
@@ -240,7 +240,7 @@ Die Werkbank verbirgt interne Middleware-Pfade in der Anzeige; Browser-
 Netzwerkdetails und originale FHIR-Antworten bleiben davon unberuehrt.
 
 Versionierter Export, Templates und Git-Sync fuer beide Remotes:
-[BridgeLink](bridgelink/BridgeLink.md). Anzeige und Abnahmegrenzen:
+[BridgeLink](../bridgelink/BridgeLink.md). Anzeige und Abnahmegrenzen:
 [Werkbank](TEST-CLIENT.md).
 
 ### Epic JWKS
@@ -256,7 +256,7 @@ erfolgreich (`kid=epic-key-1`, `alg=RS256`, `use=sig`). Zuvor lieferte die
 Route HTTP `401`, und Epic konnte die registrierte JWK Set URL nicht
 validieren; nach der Korrektur bestaetigte der Nutzer den Tokenabruf.
 Die Ausnahme und Deployschritte stehen im
-[BridgeLink](bridgelink/BridgeLink.md#public-epic-jwks-authentication).
+[BridgeLink](../bridgelink/BridgeLink.md#public-epic-jwks-authentication).
 Sie erlaubt keine Epic-Access-Tokens fuer andere OmniLink-API-Aufrufe;
 deren Keycloak-Authentifizierung bleibt unveraendert.
 
@@ -343,7 +343,7 @@ Die schreibfreie lokale FHIR-Validierung lieferte HTTP 200 ohne Fehler/Fatal
 `transaction-response` mit 46 Eintraegen: 45 Antworten mit HTTP 200 und eine
 Neuanlage mit HTTP 201 (`PractitionerRole`); keine Error-/Fatal-Issues.
 Eine unabhaengige Folgeabfrage der gespeicherten Ressourcen wurde nicht
-durchgefuehrt. Details und Mappingregeln: [CDA-Use-Cases](docs/bridgelink-cda-usecases.md).
+durchgefuehrt. Details und Mappingregeln: [CDA-Use-Cases](bridgelink-cda-usecases.md).
 
 ### Browser-Testclients und Keycloak
 
@@ -655,7 +655,7 @@ fasst vertrauenswuerdige Folgeseiten zusammen und meldet unvollstaendige
 Abfragen als Fehler. Die Ansicht zeigt alle Ressourcen und Felder sowie
 Impfungen mit Anzahl und Details.
 
-Weitere Details: [EchoSOS zu FHIR](docs/echosos-fhir.md).
+Weitere Details: [EchoSOS zu FHIR](echosos-fhir.md).
 Der erfolgreiche API-Test ist vom Browser-Login zu unterscheiden:
 Der EchoSOS-Keycloak-Login meldet am 2026-10-21 noch
 `Invalid parameter: redirect_uri`. Die gespeicherte Redirect-Freigabe ist
@@ -930,7 +930,7 @@ VACD-UUID-Erzeugung. Ein zusaetzlicher CDA-Inhaltshash-Abgleich erkennt
 identische erfolgreich verarbeitete Quellen aus aelteren Registereintraegen.
 Klinische Konfliktmeldungen nennen das abweichende Feld, ohne Werte offenzulegen.
 Details und Bruno-Lesepruefung:
-[CH-VACD-Ablauf](docs/ch-vacd-immunization-administration.md).
+[CH-VACD-Ablauf](ch-vacd-immunization-administration.md).
 
 `outbound_authorization` (Query-Parameter) wird unveraendert als `Authorization`-
 Header an beide Aufrufe (Patient und Bundle) weitergereicht.

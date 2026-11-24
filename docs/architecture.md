@@ -112,7 +112,7 @@ EPIC CDA
   wurden anhand gespeicherter Ressourcen geprueft.
 - Die API-Werkbank ist mit den freigegebenen Use-Cases deployt.
   Routing, Authentifizierung und Abnahmeschritte stehen in
-  [ENDPOINTS.md](../ENDPOINTS.md) und [TEST-CLIENT.md](../TEST-CLIENT.md).
+  [ENDPOINTS.md](ENDPOINTS.md) und [TEST-CLIENT.md](TEST-CLIENT.md).
 
 ## eMediplan-Verordner und GLN
 
@@ -166,30 +166,6 @@ die HAPI-Verbindung soll dafuer keine erweiterten Rechte erhalten.
 Es wurden weder eine Datenbank noch ein Importer oder Ansible-Tasks angelegt.
 Die Medikamenten-Mappingdateien unter `app/terminology/data` bleiben davon
 getrennt; sie sind kein Partnerregister.
-
-## Neuaufbau: Entscheidungsstand
-
-Der Neuaufbau ist ein Vorschlag, kein bereits ausgerollter Betriebsstand:
-Rocky Linux, Podman/systemd Quadlets, SELinux und Ansible als
-Konfigurationsquelle; bestehende gemeinsame Infrastruktur nach Pruefung nutzen.
-HAPI und Python bleiben vorgesehen. Wegen der wenigen bestehenden
-BridgeLink-Channels soll OIE direkt als Zielkandidat im Pilot geprueft werden,
-nicht zuerst ein vollstaendiger BridgeLink-Umzug.
-MPI und Produkt-/Plugin-Kompatibilitaet sind noch zu entscheiden.
-
-Fachliche Transformationen und Referenzdaten-Anreicherung bleiben in der
-Middleware; die Engine uebernimmt Transport, Routing, Orchestrierung und
-zuverlaessige Zustellung. Convert bleibt ohne Schreibzugriff, Import mit
-einem zustaendigen Writer und abgesicherter Idempotenz.
-Externe Terminologie-/Registeraufrufe brauchen kontrollierten Egress,
-Datenminimierung und explizite Fehler-/Veraltungszustaende.
-
-Vor Beauftragung sind Umfang, Kosten, Termine, Verantwortlichkeiten und
-Abnahme festzulegen; vor Produktion RPO/RTO, Isolation und Restore pruefen.
-Taegliche Dumps allein belegen kein Datenbank-RPO von einer Stunde:
-WAL/PITR oder entsprechend haeufige Sicherungen muessen getestet werden.
-Die im externen Vorschlag enthaltenen Jahresangaben 2024 sind zu klaeren.
-CloudBeaver gehoert zum aktuellen Testlab, nicht zum vorgesehenen Zielbetrieb.
 
 ## Matrix Import Bot
 

@@ -2,7 +2,7 @@
 
 Stand: 2026-11-05. Additiver, **nicht speichernder** Ausgabeweg.
 PDF/A und QR folgen spaeter. Dieser Ausgabeweg veraendert keine HAPI-Daten;
-die separate Importkorrektur/-pruefung ist in [Endpunkte](../ENDPOINTS.md) beschrieben.
+die separate Importkorrektur/-pruefung ist in [Endpunkte](ENDPOINTS.md) beschrieben.
 
 ## Aufruf
 

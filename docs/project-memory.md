@@ -2,6 +2,16 @@
 
 Stand: 2026-11-19
 
+## Verwendung
+
+Dieses Dokument ist ein chronologisches Arbeitsprotokoll und keine
+verbindliche Beschreibung des aktuellen Laufzeitstands. Für aktuelle
+Architektur und Datenflüsse siehe [Architektur](architecture.md), für
+API-Verträge [ENDPOINTS](ENDPOINTS.md) und für MDM-Verhalten
+[HAPI MDM](hapi-mdm.md). Ältere Einträge nur heranziehen, wenn sie für die
+konkrete Aufgabe relevant sind; Betriebsangaben vor einer Änderung anhand der
+aktuellen Konfiguration oder Tests prüfen.
+
 ## Tagesabschluss 2026-11-19: EchoSOS-POC und CDA-AT-Importkorrekturen
 
 - Separate `/echosos/poc-notfall-logobject`-Testseite mit zwei
@@ -97,7 +107,7 @@ Stand: 2026-11-19
   `main` auf beide Remotes (origin, post) gepusht. Fuer CH-EMED-EPR-konforme
   Ausgaben bleibt der PMLC-Pfad zustaendig.
 
-Details: [ENDPOINTS](../ENDPOINTS.md), [Backlog](backlog.md),
+Details: [ENDPOINTS](ENDPOINTS.md), [Backlog](backlog.md),
 [Roadmap](roadmap.md).
 
 ## Tagesabschluss 2026-11-05: Husky, Medikation und Importpruefung
@@ -146,7 +156,7 @@ Details: [PMLC](ch-emed-epr-pmlc.md),
 [Husky](../husky-validator/README.md),
 [Gateway-Redeploy](../bridgelink/BridgeLink.md).
 
-## Tagesabschluss 2026-11-02: Reader, Neuaufbau und Refdata
+## Tagesabschluss 2026-11-02: Reader und Refdata
 
 - Reader: `erezept-emediplan-reader.html` ist der kanonische Pfad mit Titel
   "eRezept & eMediplan Reader". `/erezept-reader.html` und `/qr-reader.html`
@@ -157,18 +167,6 @@ Details: [PMLC](ch-emed-epr-pmlc.md),
   getrennt und farblich beschriftet. Beim untersuchten PDF waren die Links
   unterschiedlich; keiner wird dadurch als gueltig bestaetigt.
   Keine eingebettete externe Rezeptseite und kein automatischer Linkaufruf.
-- Lokale PDF-Unterlagen unter `app/tests/data` erstellt:
-  `bridgelink-oie-entscheidungsgrundlage.pdf`,
-  `omnilink-neubau-migrationskonzept.pdf` (9 Seiten) und
-  `omnilink-migration-offene-fragen.pdf` (5 Seiten, F01-F32).
-  Letztere verbindet das Konzept mit dem externen Infrastrukturvorschlag.
-  Unterlagen sind lokale Deliverables, nicht Bestandteil des Git-Commits.
-- Neuaufbau: Middleware behaelt Transformation und Anreicherung, Engine
-  Transport/Orchestrierung/Zustellung. OIE wegen geringer Channel-Altlast
-  direkt als Zielkandidat pruefen. Rocky/Podman/Quadlets, SELinux, Ansible,
-  bestehende Infrastruktur und eigene TLS-Terminierung sind Vorschlaege,
-  keine abgeschlossene Umsetzung. Umfang, Jahresangaben 2024, Kosten,
-  Support, RPO/RTO und Restore-Nachweise bleiben offen.
 - Offizielles Refdata-Partner-ZIP heruntergeladen und Integritaet geprueft;
   NAT/JUR-XML noch nicht importiert. Keine Personendaten oder Downloadkeys
   in die Dokumentation/Git uebernehmen. Offengelegte Keys rotieren.
@@ -687,7 +685,7 @@ Clinical Notes, DocumentReference, Binary und ein erstes UMZH-orientiertes Diagn
 - EchoSOS-Namensräume auf `https://fhir.omnilink.ch/fhir/NamingSystem/...` migriert; identifier-basierte Reimports bleiben beim Systemwechsel idempotent
 - Stand 2026-10-21: EchoSOS-HTML nutzt den Same-Origin-Proxy `/echosos/import` zum in Bruno bestaetigten `POST https://api.omnilink.ch/v1/echosos/resolve` ohne zusaetzlichen FHIR-POST; Patient-ID aus `transaction-response`, danach lesender `$everything`-Aufruf ueber `/echosos/fhir/Patient/{id}/$everything`.
 - EchoSOS-HTML: kompakter Bereich „Input auswählen“, Keycloak-Anmeldung mit verborgen vorbelegter Client-ID `app-omnilink-cardtest`; Basic Auth und lokale Passwortspeicherung entfernt
-- Offen: Live-EchoSOS-Login meldet `Invalid parameter: redirect_uri`; gespeicherte Keycloak-Freigabe fuer `https://middleware.local.omnilink.ch/echosos-fhir-test.html` noch nicht verifiziert. Browserablauf nur mit synthetischem Token und simulierten Antworten getestet; Details in [TEST-CLIENT.md](../TEST-CLIENT.md#offener-keycloak-login-stand-2026-10-21)
+- Offen: Live-EchoSOS-Login meldet `Invalid parameter: redirect_uri`; gespeicherte Keycloak-Freigabe fuer `https://middleware.local.omnilink.ch/echosos-fhir-test.html` noch nicht verifiziert. Browserablauf nur mit synthetischem Token und simulierten Antworten getestet; Details in [TEST-CLIENT.md](TEST-CLIENT.md#offener-keycloak-login-stand-2026-10-21)
 - Schwangerschaftsstatus als Observation mit LOINC `82810-3` und SNOMED CT `77386006` abgebildet
 - CDA-Autoren dokumentbezogen aufgeloest: ID-only-Authoren werden, wenn im selben CDA benannt, auf den vorhandenen Namen zurueckgefuehrt
 - HAPI-Testbestand gezielt bereinigt: doppelte Patient-, Practitioner-, PractitionerRole-, Organization-, Observation- und CareTeam-Datensaetze entfernt

@@ -189,7 +189,7 @@ sein; die gespeicherte Konfiguration wurde nicht verifiziert. Der erfolgreiche
 API-Aufruf oben ist getrennt davon zu betrachten. Browserpruefungen mit
 simulierten Antworten bestaetigen den Clientablauf, nicht den Live-Login.
 Konfigurationsschritte und genaue URI:
-[TEST-CLIENT.md](../TEST-CLIENT.md#offener-keycloak-login-stand-2026-10-21).
+[TEST-CLIENT.md](TEST-CLIENT.md#offener-keycloak-login-stand-2026-10-21).
 
 ## Ablauf
 

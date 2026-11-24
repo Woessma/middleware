@@ -3,7 +3,8 @@
 Dieses Diagramm zoomt in die FHIR Middleware hinein und zeigt, welche internen
 Komponenten bei einem Convert- oder Import-Use-Case (CDA, HL7v2, eMediplan, UMZH, ...)
 zusammenarbeiten. Die Middleware erzeugt und validiert das Transaction-Bundle;
-BridgeLink fuehrt den Write gegen den FHIR-Server aus. Es ergaenzt [SEQUENZDIAGRAMM-BRIGHT-LINK.md](SEQUENZDIAGRAMM-BRIGHT-LINK.md),
+BridgeLink fuehrt den Write gegen den FHIR-Server aus. Es ergaenzt das
+[BridgeLink-Sequenzdiagramm](bridgelink-sequence.md),
 das die Aussensicht von Bright-link auf die Middleware beschreibt.
 
 ```mermaid

@@ -178,4 +178,4 @@ die BridgeLink-Konfiguration muss Zielsysteme und Zugangsdaten begrenzen.
 FHIR-zu-Epic-CDA und eMediplan-zu-Epic-CDA sind Ausgabe- bzw. andere
 Eingabe-Workflows; sie sind **keine** weiteren oeffentlichen CDA-Importpfade unter
 `https://api.omnilink.ch/v1/cda/convert`. Die Middleware-Routen und ihre fachlichen
-Vertraege stehen in [ENDPOINTS.md](../ENDPOINTS.md).
+Vertraege stehen in [ENDPOINTS.md](ENDPOINTS.md).

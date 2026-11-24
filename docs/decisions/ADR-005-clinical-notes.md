@@ -1,6 +1,6 @@
 # ADR-005: Clinical Notes Mapping
 
-Stand: 2026-07-29
+Stand: 2026-11-24
 
 ## Status
 
@@ -13,9 +13,10 @@ DiagnosticReport bleibt als optionale, fachlich gesteuerte Ergaenzung.
 
 ## Kontext
 
-Um klinische Notizen und narrative Inhalte als FHIR-konforme Ressourcen abzubilden,
-sollen DocumentReference und DiagnosticReport als primäre Ressourcen genutzt
-werden.
+Klinische Notizen und narrative Inhalte werden primär mit
+`DocumentReference` und bei eingebetteten Dokumenten zusätzlich mit `Binary`
+abgebildet. `DiagnosticReport` ist keine primäre Notiz-Ressource und wird nur
+bei fachlich passender Befundlogik ergänzt.
 
 ## Konsequenzen
 

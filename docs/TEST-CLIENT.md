@@ -70,7 +70,7 @@ Fuer bereits konvertierte CDA-Bundles (einschliesslich eTOC/UMZH) steht die
 separate JSON-Bundle-Validierung zur Verfuegung. Kein automatischer Import
 nach einer erfolgreichen Validierung.
 Routing und Grenzen:
-[CH-VACD](docs/ch-vacd-immunization-administration.md).
+[CH-VACD](ch-vacd-immunization-administration.md).
 
 Die beiden zusaetzlichen Husky-Aktionen pruefen gegen das stabile
 CH-VACD-6.0.0-Immunization-Administration-Profil und deklarierte Profile,
@@ -91,7 +91,7 @@ fehlende Profilregeln erscheinen ausdruecklich als Fehler.
 Aktuell ist die CDA-R2-XSD aktiv, passende offizielle EPIC-/AT-Schematrons
 sind noch nicht installiert. `xsd` ist nur eine Strukturpruefung.
 Keine Konvertierung, kein Import, kein externer klinischer Request.
-[Abdeckung und Betrieb](husky-validator/README.md).
+[Abdeckung und Betrieb](../husky-validator/README.md).
 
 ### CH-EMED-EPR-FHIR-Vorschau
 
@@ -111,7 +111,7 @@ der normale Antwortdownload bleibt der unveraenderte Gesamtbericht.
 Die vorgeschriebene PDF/A-Originaldarstellung fehlt bewusst bis zum
 naechsten Ausbau. Daher ist dies **keine freigegebene, profilkonforme
 Medikationskarte**. Keine Speicherung und kein automatischer Import.
-[Details](docs/ch-emed-epr-pmlc.md).
+[Details](ch-emed-epr-pmlc.md).
 
 ### Profiluebersicht der Validierungsantwort (2026-11-05)
 
@@ -157,7 +157,7 @@ den vorhandenen erfolgreichen Registereintrag ohne neuen Zielkontakt
 geprueft. Klinische Konflikte bleiben gesperrt und nennen das betroffene
 Feld; ein erneuter Benutzer-End-to-End-Test ist noch nicht bestaetigt.
 Bruno-GETs fuer die unabhaengige Lesepruefung:
-[VACD-Dokumentation](docs/ch-vacd-immunization-administration.md).
+[VACD-Dokumentation](ch-vacd-immunization-administration.md).
 
 ### Validierungsstichprobe vom 2026-11-04
 
@@ -224,7 +224,7 @@ Adressen unter `link.self`; diese werden bewusst nicht umgeschrieben.
   CDA-Dokumenttyp, nicht mehr pauschal CH IPS. Interne HAPI-Pruefung der
   CDA-EPIC-Stichprobe: Transaction und Document jeweils 0 Fehler.
   186 bzw. 84 Warnungen bleiben; keine vollstaendige Terminologieabnahme.
-  Details: [CDA-Korrekturen](docs/bridgelink-cda-usecases.md).
+  Details: [CDA-Korrekturen](bridgelink-cda-usecases.md).
 - Werkbank-Anpassungen sind gebaut und deployt. Die Routenanzeige wurde im
   Browser bei 1440, 808 und 390 Pixeln Breite ohne Abschneiden geprueft.
 - Dispatcher-Revision 114 verwendet OL_CORE und OL_ROUTING; JWT-Validierung
@@ -248,7 +248,7 @@ Adressen unter `link.self`; diese werden bewusst nicht umgeschrieben.
   der Importnachweis beruht auf der HAPI-Transaktionsantwort.
 
 Channel-Snapshot, Library-Importe, Rollback und Sync beider Git-Remotes:
-[BridgeLink-Dokumentation](bridgelink/BridgeLink.md).
+[BridgeLink-Dokumentation](../bridgelink/BridgeLink.md).
 
 ### Offene Punkte fuer die Fortsetzung
 

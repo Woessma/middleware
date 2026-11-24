@@ -1,6 +1,6 @@
 # ADR-004: FHIR Bundle Return
 
-Stand: 2026-08-27
+Stand: 2026-11-24
 
 ## Status
 
@@ -28,3 +28,4 @@ zur weiteren Verarbeitung an BridgeLink. BridgeLink uebernimmt danach den Write 
 - In-Run-Duplikate werden bevorzugt schon in Mappern reduziert (z. B. Procedure) und zusätzlich auf Bundle-Ebene abgesichert
 - BridgeLink bleibt für Orchestrierung und ggf. zusätzliche Validierung zuständig
 - Zusätzlich existiert ein UMZH-Sendpfad (`/cda/umzh/send`), der aus einem erzeugten Bundle einzelne Ressourcen zielgerichtet per `PUT ResourceType/{id}` an externe FHIR-Endpoints versendet
+- Zusätzlich existiert ein eigener CH-VACD-Sendepfad (`/cda/vacd/send`), der ein validiertes Dokument an ein konfiguriertes externes FHIR-Ziel versendet. Er ist kein allgemeiner BridgeLink-Importpfad.

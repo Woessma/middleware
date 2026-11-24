@@ -1,6 +1,6 @@
 # Backlog
 
-Stand: 2026-11-06
+Stand: 2026-11-18
 
 ## Medikation und Validierung: aktueller Abschluss
 
@@ -27,7 +27,7 @@ eMediplan- und CDA-Dokumente nur nach erfolgreicher Absender-Patienten-Pruefung.
 Der Backlog konzentriert sich auf offene Clinical-Note-Erweiterungen,
 UMZH-Sendemodell, API-Struktur, Terminologiepflege und Testabdeckung.
 
-## Reader, Refdata und Neuaufbau
+## Reader und Refdata
 
 - [x] Automatisierter Refdata-Partner-Refresh (2026-11-18): Middleware laedt das
       offizielle Partner-Zip via `POST /admin/api/refdata/refresh` von
@@ -41,9 +41,6 @@ UMZH-Sendemodell, API-Struktur, Terminologiepflege und Testabdeckung.
 - [x] eRezept & eMediplan Reader mit lokalen PDF-/Bildvorschauen,
       getrennten QR-/Metadaten-Ergebnissen und Original-/FHIR-JSON-Download
 - [x] Reader umbenannt; `/erezept-reader.html` und `/qr-reader.html` bleiben Aliase
-- [x] Migrationskonzept und Katalog mit 32 priorisierten offenen Fragen als
-      lokale PDF-Unterlagen erstellt (nicht im Repository versioniert)
-- [ ] Neuaufbauumfang, direkte OIE-Pilotauswahl, MPI und Verantwortlichkeiten entscheiden
 - [ ] DB-Administrator stellt `omnilink_refdata` und getrennte Importer-/Leserrollen bereit;
       aktuelle CloudBeaver-FHIR-Rolle hat keine Datenbank-Erstellungsrechte
 - [ ] Refdata-XML-Datenmodell und Streaming-Import mit GLN-Index, Datenstand,
@@ -52,10 +49,6 @@ UMZH-Sendemodell, API-Struktur, Terminologiepflege und Testabdeckung.
       Berechtigung nicht mit einer gueltigen GLN-Pruefziffer gleichsetzen
 - [ ] Aktualisierung, kontrollierte externe Abfragen, Fehler-/Veraltungsregeln
       sowie Backup/Restore festlegen und testen
-- [ ] Infrastruktur und Referenzdaten-Aktualisierung in der zustaendigen
-      Ansible-Quelle umsetzen; bisher keine Ansible-Aenderung erfolgt
-- [ ] Demo-Abnahme, Rollback, Kosten/Termine und Produktions-RPO/RTO vereinbaren
-
 ## CH VACD Immunization Administration
 
 - [x] `/cda/vacd/convert` als `Bundle.type=document` umgesetzt
