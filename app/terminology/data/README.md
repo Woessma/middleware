@@ -1,6 +1,6 @@
 # eMediplan Medication Mapping Files
 
-Stand: 2026-11-18
+Stand: 2026-11-24
 
 ## CDC CVX vaccine codes
 
@@ -14,9 +14,11 @@ Stand: 2026-11-18
 - Only curated CVX-to-SNOMED mappings are added in `app/terminology/cvx.py`. Do not infer a
   formulation-specific CVX code from a generic vaccine name.
 
-Place the eMediplan mapping workbooks in this directory so the middleware can resolve Pharmacode and ProductNumber to canonical GTIN and Swissmedic description.
+The eMediplan mapping workbooks are the initial seed for the persistent archive.
+Medication lookups read only from that archive; they do not read these workbooks
+directly.
 
-Download source: https://www.emediplan.ch/downloads/ (monthly mapping export).
+Download source: https://www.emediplan.ch/softwareanbieter (monthly mapping export).
 
 Expected filenames:
 
@@ -26,12 +28,38 @@ Expected filenames:
 Note: pharmacodes can be superseded when a product's packaging changes (e.g. Pharmacode
 809693 for "Aldactone 50 mg" was replaced by 809701 in the current Swissmedic export).
 Unresolved pharmacodes fall back to the raw code plus a Compendium search link.
-The middleware also accepts the former date-prefixed filenames as a fallback.
+The seed-file lookup also accepts the former date-prefixed filenames.
 
-You can override file paths via environment variables:
+You can configure the seed file paths and archive directory via environment variables:
 
 - EMEDIPLAN_PHARMACODE_XLSX
 - EMEDIPLAN_PRODUCTNUMBER_XLSX
+- EMEDIPLAN_MAPPING_DATA_DIR
+
+## Automated monthly refresh and archive
+
+The BridgeLink channel `Emediplan_Mapping_Refresh` triggers
+`POST /admin/api/emediplan-mappings/refresh` during the first seven days of
+each month. The middleware discovers both dated XLSX links on the eMediplan
+software-provider page, requires matching publication versions, validates
+the workbooks, and archives the untouched pair in
+`EMEDIPLAN_MAPPING_DATA_DIR/archive/YYYYMMDD/`.
+
+On the first successful refresh, the currently bundled pair is copied to
+`archive/bundled/` before the new version is activated. Medication lookups read
+only from `archive/bundled/` and the archived publications in this persistent
+directory; the files under `app/terminology/data` are not consulted at runtime.
+Each monthly archive contains both source files and a manifest with the source
+URLs, SHA-256 hashes, and row counts. `current.json` points to the active
+archive; the update is activated only after both workbooks pass validation. The
+middleware invalidates its in-process mapping cache after activation. The
+persistent directory defaults to `/var/lib/omnilink/emediplan` and is mounted
+as the `emediplan-mapping-data` Docker volume.
+
+At runtime, the active publication takes precedence, then older archived
+publications are searched for identifiers absent from newer files. If an
+identifier occurs in multiple publications, the newest data wins. The source
+workbooks remain separate and are never merged or overwritten.
 
 Optional columns that are picked up when present:
 

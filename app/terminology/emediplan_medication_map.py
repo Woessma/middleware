@@ -1,5 +1,8 @@
+import json
 import os
+import re
 from functools import lru_cache
+from pathlib import Path
 
 try:
     from openpyxl import load_workbook
@@ -98,15 +101,93 @@ def _iter_rows_from_xlsx(path):
     return rows[1:], header_index
 
 
-@lru_cache(maxsize=1)
-def _load_mapping():
+def _mapping_source_pairs():
+    data_dir = Path(
+        os.getenv("EMEDIPLAN_MAPPING_DATA_DIR", "/var/lib/omnilink/emediplan")
+    )
+    archive_dir = data_dir / "archive"
+    current_manifest = data_dir / "current.json"
+    active_version = None
+
+    if current_manifest.is_file():
+        try:
+            manifest = json.loads(current_manifest.read_text(encoding="utf-8"))
+            if not isinstance(manifest, dict):
+                raise ValueError("manifest must be an object")
+            active_version = str(manifest["version"])
+        except (
+            OSError,
+            KeyError,
+            TypeError,
+            UnicodeDecodeError,
+            ValueError,
+        ) as exc:
+            raise RuntimeError("eMediplan-Mapping current.json ist ungültig") from exc
+        if not re.fullmatch(r"\d{8}", active_version):
+            raise RuntimeError("eMediplan-Mapping-Version in current.json ist ungültig")
+
+    versions = []
+    if active_version and archive_dir.is_dir():
+        versions = sorted(
+            path.name
+            for path in archive_dir.iterdir()
+            if path.is_dir()
+            and re.fullmatch(r"\d{8}", path.name)
+            and path.name <= active_version
+        )
+    bundled_archive = archive_dir / "bundled"
+    if bundled_archive.exists():
+        bundled_pharmacode = bundled_archive / (
+            "MappingPharmacodeToGtinToSwissmedicDescription.xlsx"
+        )
+        bundled_productnumber = bundled_archive / (
+            "MappingProductNumberToSwissmedicDescription.xlsx"
+        )
+        if not bundled_pharmacode.is_file() or not bundled_productnumber.is_file():
+            raise RuntimeError("Das eMediplan-Basisarchiv ist unvollständig")
+    else:
+        bundled_pharmacode = None
+        bundled_productnumber = None
+
+    if active_version and active_version not in versions:
+        raise RuntimeError(
+            f"Aktives eMediplan-Mapping-Archiv {active_version} fehlt"
+        )
+
+    sources = []
+    if bundled_pharmacode and bundled_productnumber:
+        sources.append((str(bundled_pharmacode), str(bundled_productnumber)))
+    for version in versions:
+        version_dir = archive_dir / version
+        pharmacode_path = version_dir / (
+            f"{version}__MappingPharmacodeToGtinToSwissmedicDescription.xlsx"
+        )
+        productnumber_path = version_dir / (
+            f"{version}__MappingProductNumberToSwissmedicDescription.xlsx"
+        )
+        if (
+            not pharmacode_path.is_file()
+            or not productnumber_path.is_file()
+            or not (version_dir / "manifest.json").is_file()
+        ):
+            raise RuntimeError(
+                f"eMediplan-Mapping-Archiv {version} ist unvollständig"
+            )
+        sources.append((str(pharmacode_path), str(productnumber_path)))
+    if not sources:
+        raise RuntimeError("Kein persistentes eMediplan-Mapping-Archiv vorhanden")
+    return sources
+
+
+@lru_cache(maxsize=64)
+def _load_mapping_files(pharmacode_path, productnumber_path):
     mapping = {
         "pharmacode": {},
         "product_number": {},
         "gtin": {},
     }
 
-    parsed = _iter_rows_from_xlsx(DEFAULT_PHARMACODE_XLSX)
+    parsed = _iter_rows_from_xlsx(pharmacode_path)
 
     if parsed:
         rows, header_index = parsed
@@ -118,6 +199,7 @@ def _load_mapping():
             "Swissmedic-Nr + Packungscode",
             "SwissmedicNr+Packungscode",
             "ProductNumber",
+            "PrdNr",
         )
         description_col = _select_column(
             header_index,
@@ -193,7 +275,7 @@ def _load_mapping():
             if product_number:
                 mapping["product_number"].setdefault(product_number, row_data)
 
-    parsed = _iter_rows_from_xlsx(DEFAULT_PRODUCTNUMBER_XLSX)
+    parsed = _iter_rows_from_xlsx(productnumber_path)
 
     if parsed:
         rows, header_index = parsed
@@ -203,6 +285,7 @@ def _load_mapping():
             "Swissmedic-Nr + Packungscode",
             "SwissmedicNr+Packungscode",
             "ProductNumber",
+            "PrdNr",
         )
         description_col = _select_column(
             header_index,
@@ -276,6 +359,28 @@ def _load_mapping():
                 mapping["gtin"].setdefault(gtin, row_data)
 
     return mapping
+
+
+@lru_cache(maxsize=1)
+def _load_mapping():
+    mapping = {
+        "pharmacode": {},
+        "product_number": {},
+        "gtin": {},
+    }
+
+    # Older publications are loaded first; the newest archive overrides them.
+    for pharmacode_path, productnumber_path in _mapping_source_pairs():
+        source_mapping = _load_mapping_files(pharmacode_path, productnumber_path)
+        for identifier_type, entries in source_mapping.items():
+            mapping[identifier_type].update(entries)
+
+    return mapping
+
+
+def invalidate_medication_mapping_cache():
+    _load_mapping.cache_clear()
+    _load_mapping_files.cache_clear()
 
 
 def resolve_medication_identity(id_type, raw_id):

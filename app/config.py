@@ -40,5 +40,13 @@ REFDATA_DOWNLOAD_TIMEOUT = int(os.getenv("REFDATA_DOWNLOAD_TIMEOUT", "300"))
 # precedence over the exports bundled with the application image.
 REFDATA_DATA_DIR = os.getenv("REFDATA_DATA_DIR") or "/var/lib/omnilink/refdata"
 
+# Writable archive and active-version pointer for eMediplan mapping exports.
+EMEDIPLAN_MAPPING_DATA_DIR = (
+    os.getenv("EMEDIPLAN_MAPPING_DATA_DIR") or "/var/lib/omnilink/emediplan"
+)
+EMEDIPLAN_MAPPING_DOWNLOAD_TIMEOUT = int(
+    os.getenv("EMEDIPLAN_MAPPING_DOWNLOAD_TIMEOUT", "120")
+)
+
 EPIC_PUBLIC_KEY_PATH = os.getenv("EPIC_PUBLIC_KEY_PATH", "")
 EPIC_JWKS_KID = os.getenv("EPIC_JWKS_KID", "epic-key-1")

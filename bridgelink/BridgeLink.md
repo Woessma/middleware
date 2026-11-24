@@ -27,6 +27,31 @@ partner files current:
   parameter the destination set is empty and only the source runs. The cron
   trigger is not affected.
 
+## eMediplan mapping refresh channel (deployed 2026-11-24)
+
+[Emediplan_Mapping_Refresh.xml](Emediplan_Mapping_Refresh.xml) follows the
+same scheduler-to-middleware pattern. It is configured to run daily on days
+1–7 of each month at 05:00 UTC (06:00 CET / 07:00 CEST) and calls
+`POST http://python-middleware:8000/admin/api/emediplan-mappings/refresh`.
+The middleware discovers the current dated XLSX links from the eMediplan
+software-provider page, checks that both files share a version, validates
+them, archives the original pair and activates the new version atomically.
+The middleware also invalidates its mapping cache. CDA and eMediplan medication
+lookups read only from the persistent archive: the active publication takes
+precedence, while older archives provide fallback for identifiers missing
+from newer exports. The bundled workbooks are used only to seed
+`archive/bundled/` when that persistent baseline does not yet exist.
+
+The channel has no credentials. It only triggers the middleware; XLSX
+downloads and archive management stay in the middleware's persistent
+`emediplan-mapping-data` volume. Non-200 responses become message errors.
+The user imported and deployed this channel. A manual **Send Message** test on
+2026-11-24 returned HTTP 200 for version `20261101` with `updated:false`,
+confirming the already-active version and both validated files. The middleware
+was rebuilt and restarted the same day; its runtime loader was verified to use
+the persistent archive only. Changes to the XML still require importing and
+redeploying the channel in BridgeLink.
+
 ## Medication import gate update (2026-11-05, channel redeploy required)
 
 The local OL_ROUTING template and both channel XML copies now route

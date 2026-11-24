@@ -14,6 +14,8 @@ services:
       - REFDATA_API_KEY=${REFDATA_API_KEY:-}
       - REFDATA_PARTNERS_ZIP_URL=${REFDATA_PARTNERS_ZIP_URL:-}
       - REFDATA_DATA_DIR=/var/lib/omnilink/refdata
+      - EMEDIPLAN_MAPPING_DATA_DIR=/var/lib/omnilink/emediplan
+      - EMEDIPLAN_MAPPING_DOWNLOAD_TIMEOUT=${EMEDIPLAN_MAPPING_DOWNLOAD_TIMEOUT:-120}
       - EPIC_PUBLIC_KEY_PATH=/run/epic/epic-public.pem
       - EPIC_JWKS_KID=${EPIC_JWKS_KID:-epic-key-1}
       - BRIDGELINK_CDA_IMPORT_URL=${BRIDGELINK_CDA_IMPORT_URL:-https://api.omnilink.ch/v1/cda/import}
@@ -30,6 +32,7 @@ services:
     volumes:
       - vacd-import-state:/var/lib/omnilink/vacd
       - refdata-data:/var/lib/omnilink/refdata
+      - emediplan-mapping-data:/var/lib/omnilink/emediplan
       - type: bind
         source: ${EPIC_PUBLIC_KEY_HOST_PATH:-/home/ansibleadmin/.local/share/omnilink/epic/epic-public.pem}
         target: /run/epic/epic-public.pem
@@ -66,6 +69,7 @@ services:
 volumes:
   vacd-import-state:
   refdata-data:
+  emediplan-mapping-data:
 
 networks:
   validation:

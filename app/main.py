@@ -146,6 +146,10 @@ from services.cda_validation_service import (
 from services.pmlc_service import PmlcServiceError, PmlcSourceError, generate_pmlc
 from services.pmlc_auth_service import PmlcAuthError, authorize_pmlc
 from services.refdata_service import RefdataRefreshError, refresh_partner_files
+from services.emediplan_mapping_service import (
+    EmediplanMappingRefreshError,
+    refresh_emediplan_mappings,
+)
 from services.epic_vacd_service import build_vacd_source_bundle, is_epic_immunization_payload
 from services.vacd_validation_service import VacdValidationError, validate_vacd_husky
 from services.medication_import_validation_service import MedicationImportRejected, validate_medication_import
@@ -681,6 +685,21 @@ async def admin_refdata_refresh():
         "status": "ok",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "files": results,
+    }
+
+
+@app.post("/admin/api/emediplan-mappings/refresh")
+async def admin_emediplan_mappings_refresh():
+    """Fetches, validates, archives, and activates the latest eMediplan mappings."""
+    try:
+        result = await run_in_threadpool(refresh_emediplan_mappings)
+    except EmediplanMappingRefreshError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+
+    return {
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        **result,
     }
 
 
