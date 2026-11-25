@@ -887,10 +887,14 @@ Ablauf:
    wird, erfolgt ein `POST {ziel}/Patient` (mit `active: true`, falls nicht gesetzt, da
    der Zielserver dieses Feld verlangt). In allen Faellen wird die (gefundene oder neu
    zugewiesene) `id` verwendet. Zusaetzlich wird diese Ziel-ID best effort als
-   `identifier` (`system=urn:che:epr:ch-vacd:ehr-id`, `assigner.display=<ziel>`)
-   am lokalen HAPI-Source-Patienten hinterlegt, damit lokal sichtbar ist, dass
+   `identifier` am lokalen HAPI-Source-Patienten hinterlegt
+   (`system=https://fhir.omnilink.ch/fhir/NamingSystem/vacd-destination-patient-id`,
+   `assigner.display=<ziel>`), damit lokal sichtbar ist, dass
    und unter welcher ID der Patient im Zielsystem existiert; ein Fehlschlag
-   dieses Schrittes blockiert den Versand nicht.
+   dieses Schrittes blockiert den Versand nicht. Bewusst nicht unter
+   `urn:che:epr:ch-vacd:ehr-id` abgelegt: Dieses System verwaltet der
+   Referenzserver selbst und traegt dort seine openEHR-EHR-ID (eine
+   `urn:uuid`), nicht die FHIR-Patient-ID.
 3. Im Bundle werden `Patient.id` auf diese ID aktualisiert und ein `identifier` mit
    `system=urn:che:epr:ch-vacd:ehr-id` und dieser ID ergaenzt. Anschliessend werden
    fuer **alle** Entries `fullUrl` und interne Referenzen auf das im offiziellen

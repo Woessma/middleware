@@ -23,9 +23,10 @@ https://vaccination-demo.raly.ch/api/fhir):
    "<ResourceType>/<id>" form instead of a urn:uuid. The Patient entry's id is the
    one assigned by (or matched on) the destination server, plus an identifier with
    system "urn:che:epr:ch-vacd:ehr-id" is added. The destination-assigned id is
-   also recorded (best effort) as an identifier on the local HAPI source Patient
-   via `_persist_destination_patient_id`, so the destination assignment stays
-   visible locally; a failure of that step never blocks the send.
+   also recorded (best effort) on the local HAPI source Patient via
+   `_persist_destination_patient_id`, as an identifier with the local-only
+   system VACD_DESTINATION_PATIENT_ID_SYSTEM, so the destination assignment
+   stays visible locally; a failure of that step never blocks the send.
 The CH-VACD document must pass internal validation before step 1 and again
 after reference rewriting, immediately before POST /Bundle. Validation errors
 or an unavailable validator block the next external step.
@@ -54,6 +55,12 @@ from services.vacd_import_guard import VacdImportGuard
 logger = logging.getLogger(__name__)
 
 VACD_EHR_ID_SYSTEM = "urn:che:epr:ch-vacd:ehr-id"
+# Local-only marker for the destination-assigned FHIR Patient id. Deliberately
+# not VACD_EHR_ID_SYSTEM: the reference server manages that system itself and
+# stores its openEHR EHR id (an urn:uuid) under it, not the FHIR Patient id.
+VACD_DESTINATION_PATIENT_ID_SYSTEM = (
+    "https://fhir.omnilink.ch/fhir/NamingSystem/vacd-destination-patient-id"
+)
 VACD_DOCUMENT_PROFILE = (
     "http://fhir.ch/ig/ch-vacd/StructureDefinition/"
     "ch-vacd-document-immunization-administration"
@@ -272,7 +279,7 @@ def _persist_destination_patient_id(
         existing = next(
             (
                 item for item in identifiers
-                if item.get("system") == VACD_EHR_ID_SYSTEM
+                if item.get("system") == VACD_DESTINATION_PATIENT_ID_SYSTEM
                 and (item.get("assigner") or {}).get("display") == destination_base
             ),
             None,
@@ -283,7 +290,7 @@ def _persist_destination_patient_id(
             existing["value"] = assigned_id
         else:
             identifiers.append({
-                "system": VACD_EHR_ID_SYSTEM,
+                "system": VACD_DESTINATION_PATIENT_ID_SYSTEM,
                 "value": assigned_id,
                 "assigner": {"display": destination_base},
             })

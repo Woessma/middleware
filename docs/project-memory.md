@@ -33,10 +33,14 @@ aktuellen Konfiguration oder Tests prüfen.
   antwortet bei Duplikat-/MDM-Konflikten mit 409 und bei Lookup-Ausfaellen
   mit 502 statt 500.
 - Die vom VACD-Ziel vergebene Patient-ID wird nach Find-or-Create best
-  effort als `identifier` (`urn:che:epr:ch-vacd:ehr-id`,
+  effort als `identifier`
+  (`https://fhir.omnilink.ch/fhir/NamingSystem/vacd-destination-patient-id`,
   `assigner.display=<ziel>`) am lokalen HAPI-Source-Patienten hinterlegt
   (`_persist_destination_patient_id`); HAPI-MDM selbst verlinkt nur lokale
-  Ressourcen und ist fuer externe Ziel-IDs ungeeignet.
+  Ressourcen und ist fuer externe Ziel-IDs ungeeignet. Bewusst nicht unter
+  `urn:che:epr:ch-vacd:ehr-id`: Der raly.ch-Referenzserver verwaltet dieses
+  System selbst und speichert dort seine openEHR-EHR-ID (urn:uuid), nicht
+  die FHIR-Patient-ID.
 
 ## Tagesabschluss 2026-11-19: EchoSOS-POC und CDA-AT-Importkorrekturen
 

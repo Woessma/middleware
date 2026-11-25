@@ -14,6 +14,7 @@ from services.fhir_mdm_service import FhirMdmLookupError, FhirMdmMatchConflictEr
 from services.patient_service import PatientLookupError, PatientMatchConflictError
 from services.vacd_import_guard import VacdImportGuard
 from services.vacd_send_service import (
+    VACD_DESTINATION_PATIENT_ID_SYSTEM as DESTINATION_ID_SYSTEM,
     _persist_destination_patient_id,
     _retain_new_immunizations,
     _same_immunization,
@@ -205,14 +206,14 @@ class PersistDestinationPatientIdTests(unittest.TestCase):
             _persist_destination_patient_id("local-1", BASE, "dest-7")
         stored = put.call_args.kwargs["json"]
         self.assertIn({
-            "system": "urn:che:epr:ch-vacd:ehr-id", "value": "dest-7",
+            "system": DESTINATION_ID_SYSTEM, "value": "dest-7",
             "assigner": {"display": BASE},
         }, stored["identifier"])
         self.assertTrue(put.call_args.args[0].endswith("/Patient/local-1"))
 
     def test_skips_update_when_identifier_already_recorded_or_patient_missing(self):
         recorded = [{
-            "system": "urn:che:epr:ch-vacd:ehr-id", "value": "dest-7",
+            "system": DESTINATION_ID_SYSTEM, "value": "dest-7",
             "assigner": {"display": BASE},
         }]
         for response_mock in (self.local_patient(recorded), Mock(status_code=404)):
@@ -226,7 +227,7 @@ class PersistDestinationPatientIdTests(unittest.TestCase):
 
     def test_updates_changed_destination_id_and_tolerates_failures(self):
         stale = [{
-            "system": "urn:che:epr:ch-vacd:ehr-id", "value": "stale",
+            "system": DESTINATION_ID_SYSTEM, "value": "stale",
             "assigner": {"display": BASE},
         }]
         with (
@@ -237,7 +238,7 @@ class PersistDestinationPatientIdTests(unittest.TestCase):
         identifiers = put.call_args.kwargs["json"]["identifier"]
         self.assertEqual(
             [item["value"] for item in identifiers
-             if item.get("system") == "urn:che:epr:ch-vacd:ehr-id"],
+             if item.get("system") == DESTINATION_ID_SYSTEM],
             ["dest-8"],
         )
         with patch(
