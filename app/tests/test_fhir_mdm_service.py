@@ -6,6 +6,8 @@ from services.fhir_mdm_service import (
     FhirMdmMatchConflictError,
     MATCH_GRADE_URL,
     MDM_RECORD_STATUS_SYSTEM,
+    find_confirmed_patient_source_ids,
+    find_linked_golden_id,
     find_mdm_match,
     find_mdm_matches,
     make_mdm_same_patient_matcher,
@@ -199,9 +201,10 @@ class MdmSamePatientMatcherTests(unittest.TestCase):
 
         self.assertTrue(matcher("Patient/source-1", "Patient/golden-1"))
         self.assertTrue(matcher("Patient/source-1", "Patient/golden-1"))
+        self.assertTrue(matcher("Patient/golden-1", "Patient/source-1"))
         self.assertFalse(matcher("Patient/source-1", "Patient/other"))
         self.assertFalse(matcher("Patient/unlinked", "Patient/golden-1"))
-        self.assertEqual(linked.call_count, 2)
+        self.assertEqual(linked.call_count, 4)
 
     @patch("services.fhir_mdm_service.find_linked_golden_id")
     def test_rejects_invalid_source_references_without_lookup(self, linked):
@@ -209,7 +212,79 @@ class MdmSamePatientMatcherTests(unittest.TestCase):
 
         self.assertFalse(matcher("Observation/1", "Patient/golden-1"))
         self.assertFalse(matcher("Patient/bad id", "Patient/golden-1"))
+        self.assertFalse(matcher("Patient/source-1", "Observation/1"))
         linked.assert_not_called()
+
+    @patch("services.fhir_mdm_service.find_linked_golden_id")
+    def test_reverse_lookup_failure_is_not_treated_as_no_match(self, linked):
+        linked.side_effect = [None, FhirMdmLookupError("lookup failed")]
+        matcher = make_mdm_same_patient_matcher()
+
+        with self.assertRaises(FhirMdmLookupError):
+            matcher("Patient/golden-1", "Patient/source-1")
+
+
+class ConfirmedMdmLinkTests(unittest.TestCase):
+    @patch("services.fhir_mdm_service.requests.get")
+    def test_source_link_requires_one_unambiguous_complete_link(self, get):
+        response = get.return_value
+        response.json.return_value = {"resourceType": "Parameters"}
+        self.assertIsNone(find_linked_golden_id("Patient", "source-1"))
+        link = match_link("source-1", "golden-1")
+        for parameters in (
+            [link, link],
+            [link, match_link("source-1", "golden-2")],
+            [link, {"name": "next", "valueString": "next-page"}],
+        ):
+            with self.subTest(parameters=parameters):
+                response.json.return_value["parameter"] = parameters
+                with self.assertRaises(FhirMdmMatchConflictError):
+                    find_linked_golden_id("Patient", "source-1")
+
+    @patch("services.fhir_mdm_service.requests.get")
+    def test_rejects_malformed_or_ambiguous_link_fields(self, get):
+        link = match_link("source-1", "golden-1")
+        possible_link = match_link("source-1", "golden-1")
+        possible_link["part"][2]["valueString"] = "POSSIBLE_MATCH"
+        invalid_links = [
+            {"name": "link", "part": link["part"] + [
+                {"name": "goldenResourceId", "valueString": "Patient/golden-2"},
+            ]},
+            match_link("other-source", "golden-1"),
+            match_link("source-1", "source-1"),
+            possible_link,
+            {"name": "link", "part": None},
+            {},
+        ]
+        for invalid in invalid_links:
+            with self.subTest(invalid=invalid):
+                get.return_value.json.return_value = {
+                    "resourceType": "Parameters", "parameter": [invalid],
+                }
+                with self.assertRaises(FhirMdmLookupError):
+                    find_linked_golden_id("Patient", "source-1")
+
+    @patch("services.fhir_mdm_service.find_linked_golden_id")
+    @patch("services.fhir_mdm_service.requests.get")
+    def test_golden_links_require_unique_sources_and_verified_reverse_links(self, get, reverse):
+        get.return_value.status_code = 200
+        link = match_link("source-1", "golden-1")
+        get.return_value.json.return_value = {
+            "resourceType": "Parameters", "parameter": [link],
+        }
+        reverse.return_value = "golden-1"
+        self.assertEqual(find_confirmed_patient_source_ids("golden-1"), ["source-1"])
+        reverse.return_value = "golden-2"
+        with self.assertRaises(FhirMdmMatchConflictError):
+            find_confirmed_patient_source_ids("golden-1")
+        get.return_value.json.return_value["parameter"] = [link, link]
+        with self.assertRaises(FhirMdmMatchConflictError):
+            find_confirmed_patient_source_ids("golden-1")
+        get.return_value.json.return_value["parameter"] = [
+            link, {"name": "next", "valueString": "next-page"},
+        ]
+        with self.assertRaises(FhirMdmLookupError):
+            find_confirmed_patient_source_ids("golden-1")
 
 
 if __name__ == "__main__":

@@ -32,6 +32,9 @@ Die Middleware fragt die serverweite Operation `POST /$mdm-match` mit
 `resource` und `resourceType` ab. `GET /$mdm-query-links` löst bestätigte
 Quell-IDs (`resourceId`) auf und listet Quellen eines Golden Record
 (`goldenResourceId`). Beide Abfragen ändern keine MDM-Links.
+Linkantworten mit doppelten Links oder Pflichtfeldern, ungültigen Referenzen
+oder einer weiteren Ergebnisseite werden abgelehnt. Die Quellenliste wird
+zusätzlich über die jeweilige eindeutige Rückverknüpfung geprüft.
 
 | Ergebnis | Verhalten |
 |---|---|
@@ -54,7 +57,7 @@ MDM-Treffer sind als exakter `System|Wert`-Fallback nur zugelassen:
 Dieselbe CDA-Datei behält stabile klinische Import-Identifier, auch wenn
 sich die referenzierte Patienten-ID durch MDM ändert. Eine bestehende
 Procedure mit Referenz auf eine bestätigte Quelle kann als Gegenstück zur
-Golden-Referenz erkannt werden. Ist der Treffer nicht eindeutig, bleibt
+Golden-Referenz erkannt werden und umgekehrt. Ist der Treffer nicht eindeutig, bleibt
 es bei `409`. Der geprüfte Wiederholungsimport lieferte 53 Updates
 (`200`), keine Neuanlagen (`201`) und keine Stammdaten-Schreibvorgänge.
 Derselbe MDM-bewusste Procedure-Abgleich gilt auch für die Konvertierung

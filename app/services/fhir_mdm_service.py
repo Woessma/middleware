@@ -20,6 +20,43 @@ class FhirMdmMatchConflictError(ValueError):
     pass
 
 
+def _confirmed_link_fields(parameter: dict, resource_type: str) -> tuple[str, str]:
+    parts = parameter.get("part")
+    if not isinstance(parts, list) or not all(isinstance(part, dict) for part in parts):
+        raise FhirMdmLookupError("FHIR MDM link query returned invalid link parts")
+    fields = {}
+    for name in ("sourceResourceId", "goldenResourceId", "matchResult"):
+        values = [part.get("valueString") for part in parts if part.get("name") == name]
+        if len(values) != 1 or not isinstance(values[0], str):
+            raise FhirMdmLookupError("FHIR MDM link query returned invalid link fields")
+        fields[name] = values[0]
+    reference_pattern = rf"{re.escape(resource_type)}/[A-Za-z0-9.-]{{1,64}}"
+    if (
+        fields["matchResult"] != "MATCH"
+        or not re.fullmatch(reference_pattern, fields["sourceResourceId"])
+        or not re.fullmatch(reference_pattern, fields["goldenResourceId"])
+        or fields["sourceResourceId"] == fields["goldenResourceId"]
+    ):
+        raise FhirMdmLookupError("FHIR MDM link query returned an invalid MATCH link")
+    return fields["sourceResourceId"], fields["goldenResourceId"]
+
+
+def _link_parameters(response) -> list[dict]:
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise FhirMdmLookupError("FHIR MDM link query returned invalid JSON") from exc
+    if not isinstance(payload, dict) or payload.get("resourceType") != "Parameters":
+        raise FhirMdmLookupError("FHIR MDM link query did not return Parameters")
+    parameters = payload.get("parameter", [])
+    if not isinstance(parameters, list) or not all(
+        isinstance(p, dict) and isinstance(p.get("name"), str) and p["name"]
+        for p in parameters
+    ):
+        raise FhirMdmLookupError("FHIR MDM link query returned invalid parameters")
+    return parameters
+
+
 def find_mdm_matches(resource: dict, fhir_base: str = FHIR_BASE):
     resource_type = resource.get("resourceType")
     if resource_type not in MDM_RESOURCE_TYPES:
@@ -104,61 +141,49 @@ def find_linked_golden_id(
         timeout=60,
     )
     response.raise_for_status()
-    try:
-        payload = response.json()
-    except ValueError as exc:
-        raise FhirMdmLookupError("FHIR MDM link query returned invalid JSON") from exc
-
-    if not isinstance(payload, dict) or payload.get("resourceType") != "Parameters":
-        raise FhirMdmLookupError("FHIR MDM link query did not return Parameters")
-    parameters = payload.get("parameter")
-    if not isinstance(parameters, list) or not all(isinstance(p, dict) for p in parameters):
-        raise FhirMdmLookupError("FHIR MDM link query returned invalid parameters")
-
-    golden_ids = set()
+    parameters = _link_parameters(response)
+    golden_ids = []
     for parameter in parameters:
         if parameter.get("name") == "next":
             raise FhirMdmMatchConflictError(f"{resource_type} has too many confirmed MDM links.")
         if parameter.get("name") != "link":
             continue
-        parts = parameter.get("part")
-        if not isinstance(parts, list) or not all(isinstance(part, dict) for part in parts):
-            raise FhirMdmLookupError("FHIR MDM link query returned invalid link parts")
-        fields = {part.get("name"): part.get("valueString") for part in parts}
-        target = fields.get("goldenResourceId")
-        if (
-            fields.get("sourceResourceId") != source_reference
-            or fields.get("matchResult") != "MATCH"
-            or not isinstance(target, str)
-            or not re.fullmatch(rf"{resource_type}/[A-Za-z0-9.-]{{1,64}}", target)
-        ):
+        source, target = _confirmed_link_fields(parameter, resource_type)
+        if source != source_reference:
             raise FhirMdmLookupError("FHIR MDM link query returned an invalid MATCH link")
-        golden_ids.add(target.split("/", 1)[1])
+        golden_ids.append(target.split("/", 1)[1])
 
     if len(golden_ids) > 1:
         raise FhirMdmMatchConflictError(
             f"{resource_type} does not have a unique confirmed link to a Golden Record."
         )
-    return next(iter(golden_ids), None)
+    return golden_ids[0] if golden_ids else None
 
 
 def make_mdm_same_patient_matcher():
-    """Returns a cached matcher: a source Patient reference counts as the same
-    person as the incoming reference when its confirmed MDM golden record is
-    exactly that reference."""
+    """Match a source and its confirmed golden Patient in either direction."""
     source_to_golden = {}
 
-    def same_patient(source_reference, incoming_reference):
-        if not re.fullmatch(r"Patient/[A-Za-z0-9.-]{1,64}", source_reference):
-            return False
-        if source_reference not in source_to_golden:
+    def golden_reference(reference):
+        if reference not in source_to_golden:
             golden_id = find_linked_golden_id(
-                "Patient", source_reference.split("/", 1)[1]
+                "Patient", reference.split("/", 1)[1]
             )
-            source_to_golden[source_reference] = (
+            source_to_golden[reference] = (
                 f"Patient/{golden_id}" if golden_id else None
             )
-        return source_to_golden[source_reference] == incoming_reference
+        return source_to_golden[reference]
+
+    def same_patient(existing_reference, incoming_reference):
+        if not all(
+            re.fullmatch(r"Patient/[A-Za-z0-9.-]{1,64}", reference)
+            for reference in (existing_reference, incoming_reference)
+        ):
+            return False
+        return (
+            golden_reference(existing_reference) == incoming_reference
+            or golden_reference(incoming_reference) == existing_reference
+        )
 
     return same_patient
 
@@ -177,27 +202,20 @@ def find_confirmed_patient_source_ids(golden_id: str) -> list[str]:
     )
     if response.status_code != 200:
         raise FhirMdmLookupError("FHIR MDM link query failed")
-    payload = response.json()
-    parameters = payload.get("parameter") if isinstance(payload, dict) and payload.get("resourceType") == "Parameters" else None
-    if not isinstance(parameters, list):
-        raise FhirMdmLookupError("Invalid FHIR MDM link response")
+    parameters = _link_parameters(response)
     sources = set()
     for parameter in parameters:
-        if parameter["name"] == "next":
+        if parameter.get("name") == "next":
             raise FhirMdmLookupError("FHIR MDM source list is incomplete")
-        if parameter["name"] != "link":
+        if parameter.get("name") != "link":
             continue
-        fields = {part["name"]: part.get("valueString") for part in parameter["part"]}
-        if fields.get("goldenResourceId") != golden_reference:
+        source, target = _confirmed_link_fields(parameter, "Patient")
+        if target != golden_reference:
             raise FhirMdmLookupError("FHIR MDM returned a link for another Golden Patient")
-        if fields.get("matchResult") != "MATCH":
-            continue
-        source = fields.get("sourceResourceId")
-        if not isinstance(source, str) or not re.fullmatch(r"Patient/[A-Za-z0-9.-]{1,64}", source):
-            raise FhirMdmLookupError("Invalid FHIR MDM source patient")
         source_id = source.split("/", 1)[1]
-        if source_id != golden_id:
-            sources.add(source_id)
+        if source_id in sources:
+            raise FhirMdmMatchConflictError("Patient has duplicate confirmed MDM links")
+        sources.add(source_id)
 
     for source_id in sources:
         if find_linked_golden_id("Patient", source_id) != golden_id:

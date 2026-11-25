@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from fhir.bundle import build_bundle_entry
+from services.fhir_mdm_service import make_mdm_same_patient_matcher
 
 
 class BundleEntryTests(unittest.TestCase):
@@ -70,6 +71,35 @@ class BundleEntryTests(unittest.TestCase):
         entries.append({"resource": {**equivalent, "id": "also-equivalent"}})
         with self.assertRaisesRegex(ValueError, "refusing to overwrite"):
             build_bundle_entry(dict(resource), same_procedure_patient=linked)
+
+    @patch("services.fhir_mdm_service.find_linked_golden_id")
+    @patch("fhir.bundle.requests.get")
+    def test_procedure_matches_golden_candidate_for_source_patient(self, mock_get, linked):
+        resource = {
+            "resourceType": "Procedure",
+            "identifier": [{"system": "urn:test", "value": "same-procedure"}],
+            "subject": {"reference": "Patient/source"},
+            "performer": [{"actor": {"display": "Author A"}}],
+        }
+        source = {**resource, "id": "different", "performer": [
+            {"actor": {"display": "Author B"}}
+        ]}
+        golden = {**resource, "id": "equivalent", "subject": {
+            "reference": "Patient/golden"
+        }}
+        entries = [{"resource": source}, {"resource": golden}]
+        mock_get.return_value.json.return_value = {"entry": entries}
+        linked.side_effect = lambda _type, patient_id: (
+            "golden" if patient_id == "source" else None
+        )
+
+        matcher = make_mdm_same_patient_matcher()
+        entry = build_bundle_entry(dict(resource), same_procedure_patient=matcher)
+        self.assertEqual(entry["request"], {"method": "PUT", "url": "Procedure/equivalent"})
+
+        entries.append({"resource": {**golden, "id": "also-equivalent"}})
+        with self.assertRaisesRegex(ValueError, "refusing to overwrite"):
+            build_bundle_entry(dict(resource), same_procedure_patient=matcher)
 
     @patch("fhir.bundle.requests.get")
     def test_shared_identifier_selects_matching_clinical_resource(self, mock_get):
