@@ -1,6 +1,6 @@
 # BridgeLink - Project Memory
 
-Stand: 2026-11-19
+Stand: 2026-11-25
 
 ## Verwendung
 
@@ -11,6 +11,18 @@ API-Verträge [ENDPOINTS](ENDPOINTS.md) und für MDM-Verhalten
 [HAPI MDM](hapi-mdm.md). Ältere Einträge nur heranziehen, wenn sie für die
 konkrete Aufgabe relevant sind; Betriebsangaben vor einer Änderung anhand der
 aktuellen Konfiguration oder Tests prüfen.
+
+## Tagesabschluss 2026-11-25: eMediplan-Mapping-Excels aus dem Repository entfernt
+
+- Die beiden Mapping-Workbooks wurden aus `app/terminology/data/` (und damit
+  aus dem Docker-Image) entfernt. Der Startbestand liegt verifiziert als
+  `archive/bundled/` (inkl. Manifest, SHA-256 geprueft) im persistenten
+  Volume `emediplan-mapping-data` (`/var/lib/omnilink/emediplan`).
+- Laufzeit-Lookups lesen ausschliesslich aus dem persistenten Archiv; bei
+  frischen Deployments fuellt der monatliche Refresh das Archiv, Seed-Dateien
+  sind optional (`EMEDIPLAN_PHARMACODE_XLSX`/`EMEDIPLAN_PRODUCTNUMBER_XLSX`).
+- Der Refresh-Test erzeugt die Seed-Workbooks jetzt selbst, statt die
+  Repo-Dateien vorauszusetzen.
 
 ## Tagesabschluss 2026-11-19: EchoSOS-POC und CDA-AT-Importkorrekturen
 

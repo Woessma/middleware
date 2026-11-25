@@ -99,23 +99,39 @@ class EmediplanMappingRefreshTests(unittest.TestCase):
         def download(url, _timeout):
             return files["product_number" if "ProductNumber" in url else "pharmacode"]
 
-        with tempfile.TemporaryDirectory() as temp_dir, patch(
-            "services.emediplan_mapping_service._get_index_html",
-            return_value=_page(),
-        ), patch(
-            "services.emediplan_mapping_service._download_workbook",
-            side_effect=download,
-        ), patch(
-            "services.emediplan_mapping_service.invalidate_medication_mapping_cache"
-        ) as invalidate:
-            first = refresh_emediplan_mappings(data_dir=temp_dir)
-            second = refresh_emediplan_mappings(data_dir=temp_dir)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            seed_dir = Path(temp_dir, "seed")
+            seed_dir.mkdir()
+            seed_pharmacode = seed_dir / "pharmacode.xlsx"
+            seed_productnumber = seed_dir / "productnumber.xlsx"
+            seed_pharmacode.write_bytes(files["pharmacode"])
+            seed_productnumber.write_bytes(files["product_number"])
+            data_dir = Path(temp_dir, "data")
+            data_dir.mkdir()
 
-            archive = Path(temp_dir, "archive", "20261201")
+            with patch(
+                "services.emediplan_mapping_service._get_index_html",
+                return_value=_page(),
+            ), patch(
+                "services.emediplan_mapping_service._download_workbook",
+                side_effect=download,
+            ), patch(
+                "services.emediplan_mapping_service.DEFAULT_PHARMACODE_XLSX",
+                str(seed_pharmacode),
+            ), patch(
+                "services.emediplan_mapping_service.DEFAULT_PRODUCTNUMBER_XLSX",
+                str(seed_productnumber),
+            ), patch(
+                "services.emediplan_mapping_service.invalidate_medication_mapping_cache"
+            ) as invalidate:
+                first = refresh_emediplan_mappings(data_dir=data_dir)
+                second = refresh_emediplan_mappings(data_dir=data_dir)
+
+            archive = Path(data_dir, "archive", "20261201")
             self.assertTrue(
                 (archive / "20261201__MappingPharmacodeToGtinToSwissmedicDescription.xlsx").is_file()
             )
-            baseline = Path(temp_dir, "archive", "bundled")
+            baseline = Path(data_dir, "archive", "bundled")
             self.assertTrue(
                 (baseline / "MappingPharmacodeToGtinToSwissmedicDescription.xlsx").is_file()
             )
@@ -124,7 +140,7 @@ class EmediplanMappingRefreshTests(unittest.TestCase):
             )
             self.assertIn("url", archive_manifest["files"]["pharmacode"])
             current = json.loads(
-                Path(temp_dir, "current.json").read_text(encoding="utf-8")
+                Path(data_dir, "current.json").read_text(encoding="utf-8")
             )
             self.assertEqual(current["version"], "20261201")
             self.assertTrue(first["updated"])

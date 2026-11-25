@@ -14,13 +14,17 @@ Stand: 2026-11-24
 - Only curated CVX-to-SNOMED mappings are added in `app/terminology/cvx.py`. Do not infer a
   formulation-specific CVX code from a generic vaccine name.
 
-The eMediplan mapping workbooks are the initial seed for the persistent archive.
-Medication lookups read only from that archive; they do not read these workbooks
-directly.
+The eMediplan mapping workbooks are no longer bundled in this directory: the
+original pair was secured as `archive/bundled/` (with manifest) in the
+persistent `emediplan-mapping-data` volume, and the repository copies were
+removed. Medication lookups read only from that persistent archive.
 
 Download source: https://www.emediplan.ch/softwareanbieter (monthly mapping export).
 
-Expected filenames:
+On a fresh deployment (empty volume) the monthly refresh populates the archive;
+no seed files are required. Optionally, seed workbooks can be provided in this
+directory (or via the env vars below) before the first refresh, using these
+filenames:
 
 - MappingPharmacodeToGtinToSwissmedicDescription.xlsx
 - MappingProductNumberToSwissmedicDescription.xlsx
@@ -45,10 +49,11 @@ software-provider page, requires matching publication versions, validates
 the workbooks, and archives the untouched pair in
 `EMEDIPLAN_MAPPING_DATA_DIR/archive/YYYYMMDD/`.
 
-On the first successful refresh, the currently bundled pair is copied to
-`archive/bundled/` before the new version is activated. Medication lookups read
-only from `archive/bundled/` and the archived publications in this persistent
-directory; the files under `app/terminology/data` are not consulted at runtime.
+If seed workbooks are present (see above), they are copied to `archive/bundled/`
+on the first successful refresh before the new version is activated; without
+seed files this step is skipped. Medication lookups read
+only from `archive/bundled/` (when present) and the archived publications in
+this persistent directory; `app/terminology/data` is not consulted at runtime.
 Each monthly archive contains both source files and a manifest with the source
 URLs, SHA-256 hashes, and row counts. `current.json` points to the active
 archive; the update is activated only after both workbooks pass validation. The

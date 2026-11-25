@@ -164,7 +164,8 @@ Die dort gepruefte Rolle hat weder `CREATEDB` noch Superuser-Rechte.
 Ein DB-Administrator muss die neue Datenbank und Rollen bereitstellen;
 die HAPI-Verbindung soll dafuer keine erweiterten Rechte erhalten.
 Es wurden weder eine Datenbank noch ein Importer oder Ansible-Tasks angelegt.
-Die Medikamenten-Mappingdateien unter `app/terminology/data` bleiben davon
+Die Medikamenten-Mappingdateien (persistentes Volume
+`emediplan-mapping-data`, siehe `app/terminology/data/README.md`) bleiben davon
 getrennt; sie sind kein Partnerregister.
 
 ## Matrix Import Bot
