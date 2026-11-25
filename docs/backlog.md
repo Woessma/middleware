@@ -1,6 +1,19 @@
 # Backlog
 
-Stand: 2026-11-18
+Stand: 2026-11-25
+
+## MDM-Identifier-Übernahme
+
+- [ ] Gezielt Patient-/MDM-Änderungen transaktional erfassen; Capture-,
+      Sperr- und Fehlerpfade sowie Wiederanlauf isoliert prüfen.
+- [ ] HAPI-REST-/MDM- und BridgeLink-Lesezugriffe gegen ausstehende oder
+      fehlgeschlagene Projektionen schützen; keinen veralteten Stand freigeben.
+- [ ] EPIC-Namensräume ausdrücklich konfigurieren und technische CDA-Quellen
+      idempotent über eindeutige bestätigte Golden-Zuordnungen anbinden.
+- [ ] Herkunft und Updates, Unlink, Merge und Löschung korrekt behandeln;
+      Bestandsabgleich, Lasttests und kontrolliertes Deployment vorbereiten.
+
+Die Identifier-Übernahme ist noch nicht produktionsreif oder deployt.
 
 ## Medikation und Validierung: aktueller Abschluss
 

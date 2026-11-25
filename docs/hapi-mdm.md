@@ -1,6 +1,6 @@
 # HAPI FHIR: Master Data Management (MDM)
 
-Stand: 2026-11-20 · HAPI FHIR 8.12.0 · Regelversion `ch-golden-v1`
+Stand: 2026-11-25 · HAPI FHIR 8.12.0 · Regelversion `ch-golden-v1`
 
 ## Betrieb
 
@@ -35,6 +35,8 @@ Quell-IDs (`resourceId`) auf und listet Quellen eines Golden Record
 Linkantworten mit doppelten Links oder Pflichtfeldern, ungültigen Referenzen
 oder einer weiteren Ergebnisseite werden abgelehnt. Die Quellenliste wird
 zusätzlich über die jeweilige eindeutige Rückverknüpfung geprüft.
+Die zusätzliche Ablehnung unvollständiger oder fehlerhaft paginierter
+`$mdm-match`-Antworten ist im Repository implementiert, aber noch nicht deployt.
 
 | Ergebnis | Verhalten |
 |---|---|
@@ -63,6 +65,28 @@ es bei `409`. Der geprüfte Wiederholungsimport lieferte 53 Updates
 Derselbe MDM-bewusste Procedure-Abgleich gilt auch für die Konvertierung
 im externen VACD-Versand (`/cda/vacd/send`); Konflikte antworten dort
 ebenfalls mit `409` statt `500`.
+
+Ein Baustein für eine spätere technische CDA-Quelle leitet einen stabilen
+Marker aus genau einem EPIC-System/Wert-Paar ab; fehlende oder mehrdeutige
+Kennungen erfordern Prüfung. Die zugelassenen EPIC-Systeme müssen explizit
+festgelegt werden. Der Marker ist pseudonym, nicht anonym. **Dieser Baustein
+ist noch nicht an den Import oder an HAPI angeschlossen.**
+
+### Geplante Identifier-Übernahme
+
+HAPI übernimmt zusätzliche Source-Identifier derzeit nicht automatisch auf
+den Golden Patient. Die geplante Synchronisierung soll nur bestätigte Quellen
+einbeziehen und Herkunft sowie Änderungen, Unlink, Merge und Löschung
+berücksichtigen. Auch bestehende Patienten sollen einbezogen werden. Convert
+und Prepare bleiben schreibfrei; die technische CDA-Quelle gehört in einen
+späteren Schreibpfad.
+
+Isolierte Experimente untersuchen eine transaktionale PostgreSQL-Outbox,
+Wiederanlauf und eine gezieltere Patient-/MDM-Sperrstrategie. Ein vollständiger
+Capture- und Lesevertrag für direkte HAPI-REST-/MDM-Zugriffe und BridgeLink
+fehlt noch; die bisherigen Tests sind keine Produktionsfreigabe. Insbesondere
+sind ausstehende oder fehlgeschlagene Projektionen nicht als aktuell
+auszugeben. **Die Identifier-Übernahme ist weder fertig noch deployt.**
 
 ### EchoSOS: Import und schreibfreie Notfallansicht
 

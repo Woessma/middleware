@@ -162,6 +162,23 @@ class FhirMdmServiceTests(unittest.TestCase):
         with self.assertRaises(FhirMdmLookupError):
             find_mdm_match({"resourceType": "Patient"})
 
+    @patch("services.fhir_mdm_service.requests.post")
+    def test_incomplete_or_malformed_match_results_fail_closed(self, post):
+        response = post.return_value
+        bundle = match_bundle(golden_patient("golden-1"))
+        for invalid_links in (
+            [{"relation": "next", "url": "http://example.test/next"}],
+            [{}],
+            None,
+        ):
+            with self.subTest(links=invalid_links):
+                response.json.return_value = {**bundle, "link": invalid_links}
+                with self.assertRaises(FhirMdmLookupError):
+                    find_mdm_match({"resourceType": "Patient"})
+        response.json.return_value = {"resourceType": "Bundle", "entry": ""}
+        with self.assertRaises(FhirMdmLookupError):
+            find_mdm_match({"resourceType": "Patient"})
+
     @patch("services.fhir_mdm_service.find_mdm_match")
     def test_reconcile_removes_matched_entries_and_rewrites_references(self, find_match):
         find_match.return_value = {"resourceType": "Patient", "id": "golden-1"}

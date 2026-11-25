@@ -1,6 +1,17 @@
 # Roadmap
 
-Stand: 2026-11-18
+Stand: 2026-11-25
+
+## In Untersuchung: HAPI-MDM-Identifier-Übernahme
+
+- Bestätigte Source-Identifier mit Herkunft am Golden Patient führen; CDA- und
+  VACD-Schreibpfade sowie bestehende Patienten berücksichtigen.
+- Isolierte Outbox-/Sperrexperimente fortführen; Wiederanlauf und Schutz aller
+  relevanten Leser bei ausstehendem oder fehlgeschlagenem Stand nachweisen.
+- Technische CDA-Quelle anhand eines eindeutigen EPIC-Schlüssels pro
+  Namensraum anbinden; fehlende oder mehrdeutige Schlüssel blockieren.
+- Kein Deployment vor vollständiger Prüfung von Lifecycle, Bestandsabgleich,
+  Betrieb und Migration. Convert und Prepare bleiben schreibfrei.
 
 ## Aktuelle Ergaenzung: Automatisierter Refdata-Partner-Refresh
 

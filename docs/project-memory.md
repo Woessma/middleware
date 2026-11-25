@@ -12,6 +12,21 @@ API-Verträge [ENDPOINTS](ENDPOINTS.md) und für MDM-Verhalten
 konkrete Aufgabe relevant sind; Betriebsangaben vor einer Änderung anhand der
 aktuellen Konfiguration oder Tests prüfen.
 
+## Tagesabschluss 2026-11-25: MDM-Identifier-Übernahme in Untersuchung
+
+- Der MDM-bewusste CDA-/VACD-Procedure-Abgleich wurde korrigiert und deployt;
+  ein Wiederholungsversand lieferte HTTP 200.
+- Eine zusätzliche fail-closed Prüfung der `$mdm-match`-Pagination und ein
+  pseudonymer EPIC-Marker für eine spätere technische CDA-Quelle liegen im
+  Repository vor, sind aber noch nicht deployt. Der Marker ist nicht an den
+  Import oder HAPI angeschlossen.
+- Synthetische HAPI-/PostgreSQL-Prototypen untersuchen Outbox, atomaren
+  Golden-Update/Ack und gezieltere Capture-/Sperrpfade. Der letzte Ansatz
+  wurde unterbrochen; sein vollständiger Testumfang und Leseschutz sind offen.
+- Die Identifier-Synchronisierung ist nicht produktionsreif oder deployt.
+  Entscheidungen und offene Aufgaben stehen in [HAPI MDM](hapi-mdm.md),
+  [Backlog](backlog.md) und [Roadmap](roadmap.md).
+
 ## Tagesabschluss 2026-11-25: Mapping-Excels entfernt, VACD-Send MDM-Fix
 
 - Die beiden Mapping-Workbooks wurden aus `app/terminology/data/` (und damit

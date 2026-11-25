@@ -86,7 +86,16 @@ def find_mdm_matches(resource: dict, fhir_base: str = FHIR_BASE):
     if not isinstance(bundle, dict) or bundle.get("resourceType") != "Bundle":
         raise FhirMdmLookupError("FHIR MDM match did not return a Bundle")
 
-    entries = bundle.get("entry") or []
+    links = bundle.get("link", [])
+    if not isinstance(links, list) or not all(
+        isinstance(link, dict) and isinstance(link.get("relation"), str) and link["relation"]
+        for link in links
+    ):
+        raise FhirMdmLookupError("FHIR MDM match returned invalid pagination")
+    if any(link["relation"] == "next" for link in links):
+        raise FhirMdmLookupError("FHIR MDM match results are incomplete")
+
+    entries = bundle.get("entry", [])
     if not isinstance(entries, list):
         raise FhirMdmLookupError("FHIR MDM match returned invalid entries")
 
