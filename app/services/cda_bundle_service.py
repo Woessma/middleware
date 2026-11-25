@@ -92,7 +92,11 @@ from services.fhir_duplicate_service import (
     FhirResourceMatchConflictError,
     find_existing_resource_by_identifier,
 )
-from services.fhir_mdm_service import find_linked_golden_id, find_mdm_match
+from services.fhir_mdm_service import (
+    find_linked_golden_id,
+    find_mdm_match,
+    make_mdm_same_patient_matcher,
+)
 
 from fhir.bundle import (
     build_bundle_entry,
@@ -720,6 +724,11 @@ def cda_to_fhir_bundle(
         "organization_id": organization_id,
     }
     section_resource_references = []
+    # MDM-aware comparison so a Procedure already stored under an MDM-linked
+    # source/golden Patient is recognized instead of reported as ambiguous.
+    same_procedure_patient = (
+        make_mdm_same_patient_matcher() if resolve_existing else None
+    )
 
     for section in sections:
 
@@ -761,6 +770,7 @@ def cda_to_fhir_bundle(
                 resource_entry = build_bundle_entry(
                     resource,
                     check_existing=resolve_existing,
+                    same_procedure_patient=same_procedure_patient,
                 )
 
                 bundle_entries.append(

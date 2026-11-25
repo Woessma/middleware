@@ -12,7 +12,7 @@ API-Verträge [ENDPOINTS](ENDPOINTS.md) und für MDM-Verhalten
 konkrete Aufgabe relevant sind; Betriebsangaben vor einer Änderung anhand der
 aktuellen Konfiguration oder Tests prüfen.
 
-## Tagesabschluss 2026-11-25: eMediplan-Mapping-Excels aus dem Repository entfernt
+## Tagesabschluss 2026-11-25: Mapping-Excels entfernt, VACD-Send MDM-Fix
 
 - Die beiden Mapping-Workbooks wurden aus `app/terminology/data/` (und damit
   aus dem Docker-Image) entfernt. Der Startbestand liegt verifiziert als
@@ -23,6 +23,20 @@ aktuellen Konfiguration oder Tests prüfen.
   sind optional (`EMEDIPLAN_PHARMACODE_XLSX`/`EMEDIPLAN_PRODUCTNUMBER_XLSX`).
 - Der Refresh-Test erzeugt die Seed-Workbooks jetzt selbst, statt die
   Repo-Dateien vorauszusetzen.
+- VACD-Send MDM-Fix: `vaccination-demo`-Versand scheiterte mit HTTP 500
+  "Ambiguous Procedure import identifier", weil dieselbe Impf-Procedure
+  unter Source- (Patient/2104) und Golden-Record (Patient/2610) existierte
+  und der Konvertierungspfad von `/cda/vacd/send` den MDM-Abgleich nicht
+  nutzte. Neuer wiederverwendbarer Matcher
+  `make_mdm_same_patient_matcher()` (fhir_mdm_service) wird jetzt auch in
+  `cda_to_fhir_bundle` fuer Section-Ressourcen durchgereicht; `/cda/vacd/send`
+  antwortet bei Duplikat-/MDM-Konflikten mit 409 und bei Lookup-Ausfaellen
+  mit 502 statt 500.
+- Die vom VACD-Ziel vergebene Patient-ID wird nach Find-or-Create best
+  effort als `identifier` (`urn:che:epr:ch-vacd:ehr-id`,
+  `assigner.display=<ziel>`) am lokalen HAPI-Source-Patienten hinterlegt
+  (`_persist_destination_patient_id`); HAPI-MDM selbst verlinkt nur lokale
+  Ressourcen und ist fuer externe Ziel-IDs ungeeignet.
 
 ## Tagesabschluss 2026-11-19: EchoSOS-POC und CDA-AT-Importkorrekturen
 

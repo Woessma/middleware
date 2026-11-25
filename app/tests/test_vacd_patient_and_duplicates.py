@@ -9,9 +9,12 @@ import requests
 from fastapi.testclient import TestClient
 
 from main import app
+from services.fhir_duplicate_service import FhirResourceMatchConflictError
+from services.fhir_mdm_service import FhirMdmLookupError, FhirMdmMatchConflictError
 from services.patient_service import PatientLookupError, PatientMatchConflictError
 from services.vacd_import_guard import VacdImportGuard
 from services.vacd_send_service import (
+    _persist_destination_patient_id,
     _retain_new_immunizations,
     _same_immunization,
     _search_resources,
@@ -183,6 +186,65 @@ class VacdPatientTests(unittest.TestCase):
                 "resourceType": "Bundle", "type": "searchset",
                 "link": [{"relation": "next", "url": BASE + "/Patient?page=2"}],
             }, "Patient")
+
+
+class PersistDestinationPatientIdTests(unittest.TestCase):
+    def local_patient(self, identifiers=None):
+        return Mock(status_code=200, json=lambda: {
+            "resourceType": "Patient", "id": "local-1",
+            "identifier": identifiers if identifiers is not None else [
+                {"system": "urn:oid:1.2.3", "value": "synthetic"},
+            ],
+        })
+
+    def test_appends_destination_identifier_to_local_patient(self):
+        with (
+            patch("services.vacd_send_service.requests.get", return_value=self.local_patient()),
+            patch("services.vacd_send_service.requests.put", return_value=Mock(status_code=200)) as put,
+        ):
+            _persist_destination_patient_id("local-1", BASE, "dest-7")
+        stored = put.call_args.kwargs["json"]
+        self.assertIn({
+            "system": "urn:che:epr:ch-vacd:ehr-id", "value": "dest-7",
+            "assigner": {"display": BASE},
+        }, stored["identifier"])
+        self.assertTrue(put.call_args.args[0].endswith("/Patient/local-1"))
+
+    def test_skips_update_when_identifier_already_recorded_or_patient_missing(self):
+        recorded = [{
+            "system": "urn:che:epr:ch-vacd:ehr-id", "value": "dest-7",
+            "assigner": {"display": BASE},
+        }]
+        for response_mock in (self.local_patient(recorded), Mock(status_code=404)):
+            with (
+                self.subTest(status=response_mock.status_code),
+                patch("services.vacd_send_service.requests.get", return_value=response_mock),
+                patch("services.vacd_send_service.requests.put") as put,
+            ):
+                _persist_destination_patient_id("local-1", BASE, "dest-7")
+                put.assert_not_called()
+
+    def test_updates_changed_destination_id_and_tolerates_failures(self):
+        stale = [{
+            "system": "urn:che:epr:ch-vacd:ehr-id", "value": "stale",
+            "assigner": {"display": BASE},
+        }]
+        with (
+            patch("services.vacd_send_service.requests.get", return_value=self.local_patient(stale)),
+            patch("services.vacd_send_service.requests.put", return_value=Mock(status_code=200)) as put,
+        ):
+            _persist_destination_patient_id("local-1", BASE, "dest-8")
+        identifiers = put.call_args.kwargs["json"]["identifier"]
+        self.assertEqual(
+            [item["value"] for item in identifiers
+             if item.get("system") == "urn:che:epr:ch-vacd:ehr-id"],
+            ["dest-8"],
+        )
+        with patch(
+            "services.vacd_send_service.requests.get",
+            side_effect=requests.ConnectionError("synthetic"),
+        ):
+            _persist_destination_patient_id("local-1", BASE, "dest-8")  # must not raise
 
 
 class VacdDuplicateTests(unittest.TestCase):
@@ -469,6 +531,11 @@ class VacdDuplicateTests(unittest.TestCase):
         for error, status in (
             (PatientMatchConflictError("Synthetic ambiguity"), 409),
             (PatientLookupError("Synthetic lookup failure"), 502),
+            (FhirResourceMatchConflictError(
+                "Ambiguous Procedure import identifier; refusing to overwrite"
+            ), 409),
+            (FhirMdmMatchConflictError("Synthetic MDM conflict"), 409),
+            (FhirMdmLookupError("Synthetic MDM lookup failure"), 502),
         ):
             with (
                 patch("main.cda_to_fhir_bundle", return_value=document()),

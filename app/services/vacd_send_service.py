@@ -22,7 +22,10 @@ https://vaccination-demo.raly.ch/api/fhir):
    "reference" pointing at another bundle entry is rewritten to the relative
    "<ResourceType>/<id>" form instead of a urn:uuid. The Patient entry's id is the
    one assigned by (or matched on) the destination server, plus an identifier with
-   system "urn:che:epr:ch-vacd:ehr-id" is added.
+   system "urn:che:epr:ch-vacd:ehr-id" is added. The destination-assigned id is
+   also recorded (best effort) as an identifier on the local HAPI source Patient
+   via `_persist_destination_patient_id`, so the destination assignment stays
+   visible locally; a failure of that step never blocks the send.
 The CH-VACD document must pass internal validation before step 1 and again
 after reference rewriting, immediately before POST /Bundle. Validation errors
 or an unavailable validator block the next external step.
@@ -35,6 +38,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import logging
 import uuid
 from typing import Callable, Optional
 from urllib.parse import quote
@@ -46,6 +50,8 @@ from fhir.narrative import build_list_narrative
 from services.fhir_validation_service import FhirValidationError, validate_fhir_bundle
 from services.patient_service import PatientLookupError, PatientMatchConflictError
 from services.vacd_import_guard import VacdImportGuard
+
+logger = logging.getLogger(__name__)
 
 VACD_EHR_ID_SYSTEM = "urn:che:epr:ch-vacd:ehr-id"
 VACD_DOCUMENT_PROFILE = (
@@ -238,6 +244,67 @@ def _check_patient_identity(source: dict, candidate: dict) -> None:
             raise PatientMatchConflictError("Patient match has conflicting identifiers")
     if source.get("birthDate") and candidate.get("birthDate") and source["birthDate"] != candidate["birthDate"]:
         raise PatientMatchConflictError("Patient identifier match has conflicting birth date")
+
+
+def _persist_destination_patient_id(
+    local_patient_id: str, destination_base: str, assigned_id: str,
+    timeout_seconds: int = 30,
+) -> None:
+    """Best effort: records the destination-assigned Patient id as an
+    identifier on the local HAPI source Patient, so it is visible locally that
+    (and under which id) the patient exists on that destination."""
+    url = f"{FHIR_BASE.rstrip('/')}/Patient/{local_patient_id}"
+    try:
+        response = requests.get(
+            url, headers={"Accept": "application/fhir+json"},
+            timeout=timeout_seconds,
+        )
+        if response.status_code in {404, 410}:
+            return  # Bundle patient was never stored locally.
+        response.raise_for_status()
+        local_patient = response.json()
+        if (
+            not isinstance(local_patient, dict)
+            or local_patient.get("resourceType") != "Patient"
+        ):
+            return
+        identifiers = local_patient.setdefault("identifier", [])
+        existing = next(
+            (
+                item for item in identifiers
+                if item.get("system") == VACD_EHR_ID_SYSTEM
+                and (item.get("assigner") or {}).get("display") == destination_base
+            ),
+            None,
+        )
+        if existing is not None and existing.get("value") == assigned_id:
+            return
+        if existing is not None:
+            existing["value"] = assigned_id
+        else:
+            identifiers.append({
+                "system": VACD_EHR_ID_SYSTEM,
+                "value": assigned_id,
+                "assigner": {"display": destination_base},
+            })
+        update = requests.put(
+            url, json=local_patient,
+            headers={
+                "Content-Type": "application/fhir+json",
+                "Accept": "application/fhir+json",
+            },
+            timeout=timeout_seconds,
+        )
+        update.raise_for_status()
+        logger.info(
+            "Recorded destination Patient id %s (%s) on local Patient/%s",
+            assigned_id, destination_base, local_patient_id,
+        )
+    except (requests.RequestException, ValueError):
+        logger.warning(
+            "Could not record destination Patient id on local Patient/%s",
+            local_patient_id,
+        )
 
 
 def create_or_find_vacd_patient(
@@ -515,6 +582,11 @@ def _send_vacd_bundle(
     if not assigned_id:
         raise ValueError("Destination server did not return a Patient id")
     guard.clear()
+
+    if old_patient_id:
+        _persist_destination_patient_id(
+            old_patient_id, _base(destination_base_url), assigned_id,
+        )
 
     patient_resource["id"] = assigned_id
     identifiers = patient_resource.setdefault("identifier", [])

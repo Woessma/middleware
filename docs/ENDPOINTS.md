@@ -866,6 +866,10 @@ Referenzserver (z. B. `https://vaccination-demo.raly.ch/api/fhir`, Default via
 Ablauf:
 
 1. CDA wird wie bei `/cda/vacd/convert` zu einem CH-VACD-Document-Bundle konvertiert.
+   Beim Abgleich gegen bereits importierte Ressourcen im eigenen HAPI werden
+   Procedure-Kandidaten unter MDM-verlinkten Patienten (Source-/Golden-Record,
+   `$mdm-query-links`) als derselbe Patient akzeptiert; verbleibende
+   Mehrdeutigkeiten blockieren mit HTTP 409, MDM-/Lookup-Ausfaelle mit HTTP 502.
    Vor jedem Zielkontakt wird das Dokument intern gegen die deklarierten
    CH-VACD-/CH-Core-Profile validiert. `error`/`fatal` blockiert mit HTTP 422
    und OperationOutcome; Validator-Ausfall oder ungueltige Antwort mit HTTP
@@ -882,7 +886,11 @@ Ablauf:
    Nur wenn kein Treffer gefunden
    wird, erfolgt ein `POST {ziel}/Patient` (mit `active: true`, falls nicht gesetzt, da
    der Zielserver dieses Feld verlangt). In allen Faellen wird die (gefundene oder neu
-   zugewiesene) `id` verwendet.
+   zugewiesene) `id` verwendet. Zusaetzlich wird diese Ziel-ID best effort als
+   `identifier` (`system=urn:che:epr:ch-vacd:ehr-id`, `assigner.display=<ziel>`)
+   am lokalen HAPI-Source-Patienten hinterlegt, damit lokal sichtbar ist, dass
+   und unter welcher ID der Patient im Zielsystem existiert; ein Fehlschlag
+   dieses Schrittes blockiert den Versand nicht.
 3. Im Bundle werden `Patient.id` auf diese ID aktualisiert und ein `identifier` mit
    `system=urn:che:epr:ch-vacd:ehr-id` und dieser ID ergaenzt. Anschliessend werden
    fuer **alle** Entries `fullUrl` und interne Referenzen auf das im offiziellen

@@ -8,6 +8,7 @@ from services.fhir_mdm_service import (
     MDM_RECORD_STATUS_SYSTEM,
     find_mdm_match,
     find_mdm_matches,
+    make_mdm_same_patient_matcher,
     reconcile_mdm_resources,
 )
 
@@ -186,6 +187,29 @@ class FhirMdmServiceTests(unittest.TestCase):
             observation_entry["resource"]["subject"]["reference"],
             "Patient/golden-1",
         )
+
+
+class MdmSamePatientMatcherTests(unittest.TestCase):
+    @patch("services.fhir_mdm_service.find_linked_golden_id")
+    def test_matches_only_the_linked_golden_record_and_caches_lookups(self, linked):
+        linked.side_effect = lambda _type, source_id: (
+            "golden-1" if source_id == "source-1" else None
+        )
+        matcher = make_mdm_same_patient_matcher()
+
+        self.assertTrue(matcher("Patient/source-1", "Patient/golden-1"))
+        self.assertTrue(matcher("Patient/source-1", "Patient/golden-1"))
+        self.assertFalse(matcher("Patient/source-1", "Patient/other"))
+        self.assertFalse(matcher("Patient/unlinked", "Patient/golden-1"))
+        self.assertEqual(linked.call_count, 2)
+
+    @patch("services.fhir_mdm_service.find_linked_golden_id")
+    def test_rejects_invalid_source_references_without_lookup(self, linked):
+        matcher = make_mdm_same_patient_matcher()
+
+        self.assertFalse(matcher("Observation/1", "Patient/golden-1"))
+        self.assertFalse(matcher("Patient/bad id", "Patient/golden-1"))
+        linked.assert_not_called()
 
 
 if __name__ == "__main__":

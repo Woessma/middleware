@@ -96,6 +96,7 @@ from services.fhir_mdm_service import (
     MDM_RESOURCE_TYPES,
     find_linked_golden_id,
     find_confirmed_patient_source_ids,
+    make_mdm_same_patient_matcher,
     reconcile_mdm_resources,
 )
 from services.emediplan_qr_service import extract_emediplan_payload_from_file, resolve_emediplan_payload
@@ -363,15 +364,7 @@ def _reconcile_mdm_import_bundle(bundle):
 
 
 def _resolve_existing_bundle_resources(bundle, *, match_procedure_patients=False):
-    source_to_golden = {}
-
-    def same_procedure_patient(source, target):
-        if not re.fullmatch(r"Patient/[A-Za-z0-9.-]{1,64}", source):
-            return False
-        if source not in source_to_golden:
-            golden_id = find_linked_golden_id("Patient", source.split("/", 1)[1])
-            source_to_golden[source] = f"Patient/{golden_id}" if golden_id else None
-        return source_to_golden[source] == target
+    same_procedure_patient = make_mdm_same_patient_matcher()
 
     reference_map = {}
     for entry in bundle.get("entry", []):
@@ -2571,6 +2564,12 @@ async def cda_vacd_send(
     except PatientMatchConflictError as ex:
         logger.warning("VACD send blocked: %s", ex)
         return _validation_outcome_response(409, "conflict", str(ex))
+    except (FhirMdmMatchConflictError, FhirResourceMatchConflictError) as ex:
+        logger.warning("VACD send blocked by duplicate/MDM conflict: %s", ex)
+        return _validation_outcome_response(409, "conflict", str(ex))
+    except (FhirMdmLookupError, FhirDuplicateLookupError) as ex:
+        logger.error("FHIR lookup failed during VACD send: %s", type(ex).__name__)
+        return _validation_outcome_response(502, "exception", "FHIR lookup unavailable; send blocked")
     except (PatientLookupError, requests.RequestException) as ex:
         logger.error("VACD destination lookup or write failed: %s", type(ex).__name__)
         return _validation_outcome_response(502, "exception", "VACD destination lookup or write failed; send blocked")

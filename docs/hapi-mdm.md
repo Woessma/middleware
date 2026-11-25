@@ -57,6 +57,9 @@ Procedure mit Referenz auf eine bestätigte Quelle kann als Gegenstück zur
 Golden-Referenz erkannt werden. Ist der Treffer nicht eindeutig, bleibt
 es bei `409`. Der geprüfte Wiederholungsimport lieferte 53 Updates
 (`200`), keine Neuanlagen (`201`) und keine Stammdaten-Schreibvorgänge.
+Derselbe MDM-bewusste Procedure-Abgleich gilt auch für die Konvertierung
+im externen VACD-Versand (`/cda/vacd/send`); Konflikte antworten dort
+ebenfalls mit `409` statt `500`.
 
 ### EchoSOS: Import und schreibfreie Notfallansicht
 

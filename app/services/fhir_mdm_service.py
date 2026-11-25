@@ -142,6 +142,27 @@ def find_linked_golden_id(
     return next(iter(golden_ids), None)
 
 
+def make_mdm_same_patient_matcher():
+    """Returns a cached matcher: a source Patient reference counts as the same
+    person as the incoming reference when its confirmed MDM golden record is
+    exactly that reference."""
+    source_to_golden = {}
+
+    def same_patient(source_reference, incoming_reference):
+        if not re.fullmatch(r"Patient/[A-Za-z0-9.-]{1,64}", source_reference):
+            return False
+        if source_reference not in source_to_golden:
+            golden_id = find_linked_golden_id(
+                "Patient", source_reference.split("/", 1)[1]
+            )
+            source_to_golden[source_reference] = (
+                f"Patient/{golden_id}" if golden_id else None
+            )
+        return source_to_golden[source_reference] == incoming_reference
+
+    return same_patient
+
+
 def find_confirmed_patient_source_ids(golden_id: str) -> list[str]:
     golden_reference = f"Patient/{golden_id}"
     response = requests.get(
