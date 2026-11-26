@@ -97,6 +97,7 @@ from services.fhir_mdm_service import (
     find_mdm_match,
     make_mdm_same_patient_matcher,
 )
+from services.cda_technical_identity import attach_cda_technical_source_identifier
 
 from fhir.bundle import (
     build_bundle_entry,
@@ -594,6 +595,8 @@ def cda_to_fhir_bundle(
         resolve_patient_id(patient) if resolve_existing else None
     )
     existing_patient = prepare_import and existing_patient_id is not None
+    if prepare_import and not existing_patient:
+        attach_cda_technical_source_identifier(patient)
 
     if existing_patient_id is None:
         # Noch nicht in HAPI: ID lokal vergeben, die Anlage

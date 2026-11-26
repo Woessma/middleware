@@ -1,19 +1,26 @@
 # Backlog
 
-Stand: 2026-11-25
+Stand: 2026-11-26
 
 ## MDM-Identifier-Übernahme
 
-- [ ] Gezielt Patient-/MDM-Änderungen transaktional erfassen; Capture-,
-      Sperr- und Fehlerpfade sowie Wiederanlauf isoliert prüfen.
-- [ ] HAPI-REST-/MDM- und BridgeLink-Lesezugriffe gegen ausstehende oder
-      fehlgeschlagene Projektionen schützen; keinen veralteten Stand freigeben.
+- [x] V001-Capture/Outbox, V002-Projektor, Worker und ausgewählte native
+      Merge-/Unlink-/Rollback-Pfade isoliert implementieren und prüfen.
+      Letzter vollständiger Harness: 72 Tests, keine Fehler oder Skips.
+- [ ] Vollständige konsistente Leserfreigabe für HAPI-REST-/MDM und
+      Middleware/BridgeLink umsetzen. Paging/Cache, Include/Revinclude,
+      History, asynchrone Exporte und bestehende Binary-Downloads erhalten
+      und absichern; Vorabchecks nicht mit positiver Veröffentlichung verwechseln.
 - [ ] EPIC-Namensräume ausdrücklich konfigurieren und technische CDA-Quellen
       idempotent über eindeutige bestätigte Golden-Zuordnungen anbinden.
-- [ ] Herkunft und Updates, Unlink, Merge und Löschung korrekt behandeln;
-      Bestandsabgleich, Lasttests und kontrolliertes Deployment vorbereiten.
+- [ ] Merge-Parallelität, Abbruch während Merge und History-Rewrite prüfen;
+      bestehende Golden-Kennungen explizit klassifizieren und Operator-Recovery
+      für erschöpfte/unaufgelöste Jobs bereitstellen.
+- [ ] Bestandsabgleich, Lasttests, echte Restore-/Rollback-Probe und
+      kontrolliertes Labor-Deployment vorbereiten.
 
 Die Identifier-Übernahme ist noch nicht produktionsreif oder deployt.
+Wiedereinstieg: [Tagesabschluss 2026-11-26](project-memory.md#tagesabschluss-2026-11-26-mdm-arbeitsstand-und-wiedereinstieg).
 
 ## Medikation und Validierung: aktueller Abschluss
 

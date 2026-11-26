@@ -1,8 +1,10 @@
 import unittest
 
 from services.cda_technical_identity import (
+    CDA_TECHNICAL_EPIC_IDENTIFIER_SYSTEMS,
     CDA_TECHNICAL_SOURCE_SYSTEM,
     CdaTechnicalSourceConflict,
+    attach_cda_technical_source_identifier,
     cda_technical_source_identifier,
 )
 
@@ -55,6 +57,51 @@ class CdaTechnicalIdentityTests(unittest.TestCase):
             with self.subTest(resource=resource, systems=systems):
                 with self.assertRaises(ValueError):
                     cda_technical_source_identifier(resource, systems)
+
+    def test_luks_test_source_gets_an_idempotent_pseudonymous_marker(self):
+        system = next(iter(CDA_TECHNICAL_EPIC_IDENTIFIER_SYSTEMS))
+        source = {"system": system, "value": "synthetic-luks-test-patient"}
+        resource = patient(source)
+
+        attach_cda_technical_source_identifier(resource)
+        first = next(
+            item for item in resource["identifier"]
+            if item.get("system") == CDA_TECHNICAL_SOURCE_SYSTEM
+        )
+        attach_cda_technical_source_identifier(resource)
+
+        self.assertEqual(
+            [
+                item for item in resource["identifier"]
+                if item.get("system") == CDA_TECHNICAL_SOURCE_SYSTEM
+            ],
+            [first],
+        )
+        self.assertNotIn(source["value"], first["value"])
+
+    def test_attachment_skips_other_sources_and_rejects_untrusted_markers(self):
+        other = patient({"system": "urn:synthetic:other", "value": "source"})
+        attach_cda_technical_source_identifier(other)
+        self.assertEqual(len(other["identifier"]), 1)
+
+        system = next(iter(CDA_TECHNICAL_EPIC_IDENTIFIER_SYSTEMS))
+        ambiguous = patient(
+            {"system": system, "value": "first"},
+            {"system": system, "value": "second"},
+        )
+        with self.assertRaises(CdaTechnicalSourceConflict):
+            attach_cda_technical_source_identifier(ambiguous)
+
+        forged = patient({
+            "system": CDA_TECHNICAL_SOURCE_SYSTEM,
+            "value": "unverified",
+        })
+        with self.assertRaises(CdaTechnicalSourceConflict):
+            attach_cda_technical_source_identifier(forged)
+
+        malformed = patient({"system": [], "value": "invalid"})
+        with self.assertRaises(ValueError):
+            attach_cda_technical_source_identifier(malformed)
 
 
 if __name__ == "__main__":

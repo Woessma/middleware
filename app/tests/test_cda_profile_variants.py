@@ -10,6 +10,11 @@ from parser.cda.encounter_parser import parse_encounters
 from parser.cda.organization_parser import parse_organization
 from services import cda_bundle_service
 from services.fhir_duplicate_service import FhirResourceMatchConflictError
+from services.cda_technical_identity import (
+    CDA_TECHNICAL_EPIC_IDENTIFIER_SYSTEMS,
+    CDA_TECHNICAL_SOURCE_SYSTEM,
+    cda_technical_source_identifier,
+)
 
 
 class CdaVariantImportTests(unittest.TestCase):
@@ -95,6 +100,34 @@ class CdaVariantImportTests(unittest.TestCase):
         self.assertEqual(role["organization"]["reference"], "Organization/golden-organization")
         procedure = next(e["resource"] for e in canonical["entry"] if e["resource"]["resourceType"] == "Procedure")
         self.assertEqual(procedure["subject"]["reference"], "Patient/golden-patient")
+
+    def test_technical_source_marker_is_only_added_to_new_import_patient(self):
+        source = self.epic_path.read_bytes()
+        with patch.object(cda_bundle_service, "_resolve_cda_import_entity", return_value=None):
+            prepared = cda_bundle_service.cda_to_fhir_bundle(
+                source, resolve_existing=False, prepare_import=True,
+            )
+            converted = cda_bundle_service.cda_to_fhir_bundle(
+                source, resolve_existing=False,
+            )
+
+        prepared_patient = next(
+            entry["resource"] for entry in prepared["entry"]
+            if entry["resource"]["resourceType"] == "Patient"
+        )
+        converted_patient = next(
+            entry["resource"] for entry in converted["entry"]
+            if entry["resource"]["resourceType"] == "Patient"
+        )
+        expected_marker = cda_technical_source_identifier(
+            prepared_patient, CDA_TECHNICAL_EPIC_IDENTIFIER_SYSTEMS
+        )
+
+        self.assertIn(expected_marker, prepared_patient["identifier"])
+        self.assertFalse(any(
+            identifier.get("system") == CDA_TECHNICAL_SOURCE_SYSTEM
+            for identifier in converted_patient["identifier"]
+        ))
 
     def test_cda_provider_fallback_only_uses_approved_identifier_and_blocks_ambiguity(self):
         system = cda_bundle_service.CDA_PROVIDER_IDENTIFIER_SYSTEMS["Practitioner"]

@@ -1,6 +1,6 @@
 # BridgeLink - Project Memory
 
-Stand: 2026-11-25
+Stand: 2026-11-26
 
 ## Verwendung
 
@@ -11,6 +11,85 @@ API-Verträge [ENDPOINTS](ENDPOINTS.md) und für MDM-Verhalten
 [HAPI MDM](hapi-mdm.md). Ältere Einträge nur heranziehen, wenn sie für die
 konkrete Aufgabe relevant sind; Betriebsangaben vor einer Änderung anhand der
 aktuellen Konfiguration oder Tests prüfen.
+
+## Tagesabschluss 2026-11-26: MDM-Arbeitsstand und Wiedereinstieg
+
+### Gesicherter Entwicklungsstand
+
+- Separates Modul [hapi-mdm-extension](../hapi-mdm-extension/README.md):
+  HAPI 8.12.0, Java 17, gepinntes Docker-Testimage und PostgreSQL 16.
+  Es wird nicht automatisch mit dem Python-Middleware-Image deployt.
+- V001 erfasst Patient-/History-/Tag-/Provenance-/MDM-Link-Änderungen
+  transaktional und stellt Bootstrap, persistente Jobs, Lease und Fence bereit.
+  V002 koppelt versionierte Golden-Updates, immutable Receipt und exaktes Ack.
+  Beide Migrationen unverändert erhalten; keine davon meldet `READY`.
+- Separat aktivierbarer Worker mit begrenzten Retries und Receipt-Recovery;
+  standardmässig aus. Harter Worker-Abbruch und Wiederanlauf geprüft.
+- Policy `protect-manual`: explizit manuelle Golden-Kennungen erhalten,
+  Quellkennungen bleiben quellengebunden. Native Merges vereinigen die
+  Provenienz gemeinsamer Kennungen; NO_MATCH entfernt nur den gelösten Beitrag.
+- Native Duplikat-Link-Löschung mit `REQUIRES_NEW` verursachte einen
+  nachgewiesenen Teil-Commit bei Merge-Fehlern. Ein enger Adapter hält diese
+  Löschung nur innerhalb des geschützten Patient-Merges in dessen Transaktion.
+  Execution-/Commit-Rollback, frischer Retry und verlorene Merge-Antwort geprüft.
+- REST-Vorabchecks für Patient-Leser, System-History und Exportstart/-status.
+  Source-Schreib-Bundles und bestehende Source-Conditional-Creates funktionieren;
+  eingebettete Reads und Conditional-Creates mit vorhandenen Goldens bleiben
+  geschützt. Deferred Antwort-Callbacks prüfen den Status in einer Transaktion.
+- CDA-Marker nur für neue Source-Patienten aus der freigegebenen LUKS_TEST-
+  Kennungsdomäne bei `/cda/prepare`; `/cda/convert`, fremde Quellen und bereits
+  zugeordnete Patienten unverändert. Mehrdeutigkeit bleibt HTTP 409.
+
+### Letzte Verifikation am 2026-11-26
+
+- Vollständiger isolierter Harness: **72 Tests, keine Fehler, keine Skips**:
+  27 V001-/HTTP-Integration, 23 Unit, 21 Projektor-/Recovery-/Merge-Integration
+  und ein automatisches Worker-Szenario.
+- Reproduzierbar mit
+  `sudo -A bash hapi-mdm-extension/src/test/run-outbox-integration.sh`.
+  Ohne Codeänderung muss dieser bereits erfolgreiche Lauf nicht wiederholt
+  werden. Der frühere gezielte Python-Lauf bestand mit 35 Tests; er wurde
+  beim heutigen Tagesabschluss nicht erneut ausgeführt.
+- Nur synthetische Daten, private Docker-Netze und keine Test-Hostports.
+  Testcontainer/-netze/-Buildvolumes und temporäre Sourcearchive aufgeräumt;
+  lediglich der Maven-Cache `omni-hapi-mdm-test-m2` bleibt bestehen.
+- Laufender Labor-HAPI und dessen Datenbank/Compose blieben unverändert;
+  letzter Readiness-Check der Labor-Metadaten lieferte HTTP 200.
+  **Kein Deployment, kein Bestandsabgleich im Labor, keine Leserfreigabe.**
+
+### Wiedereinstieg am 2026-11-27
+
+1. Zuerst [HAPI MDM](hapi-mdm.md) und die
+   [Modul-Dokumentation](../hapi-mdm-extension/README.md) lesen;
+   danach Git-Status und tatsächliche Laufzeitkonfiguration prüfen.
+2. Nächster Entwicklungsblock ist die **vollständige konsistente Lesergrenze**.
+   Nutzerentscheidung: Paging, Cache, History und Exporte erhalten, keine
+   vorübergehende Abschaltung dieser Funktionen. Die vorhandenen Vorabchecks
+   beweisen nur fail-closed Verhalten bei gesperrtem Status, keine konsistente
+   positive Veröffentlichung. Nicht einfach `READY` einschalten.
+3. Echte Paging-/Cache-/Include-/Revinclude-Pfade und historische Versionen
+   prüfen; asynchrone Exportgenerierung, vorhandene Exportdateien und direkte
+   Binary-Downloads an einen konsistenten Veröffentlichungsstand binden.
+   Exportstart/-Polling allein schützen alte Download-URLs nicht.
+4. Mehrere Middleware-/BridgeLink-Abfragen müssen ebenfalls eine konsistente
+   Sicht behalten. Einstiegspunkte: `fhir_mdm_service.py`, `echosos_service.py`
+   und `pmlc_service.py`. Native Batch-/Transaction-Antworten können HTTP 200
+   mit einzelnen `503`-OperationOutcomes enthalten; vorherige Writes können
+   dabei bereits committen. Nicht nur den äusseren HTTP-Status auswerten.
+5. Danach noch Merge-Parallelität, harter Abbruch während eines Merges,
+   History-Rewrite, explizite Klassifikation vorhandener Golden-Kennungen,
+   Operator-Recovery sowie Last-/Inventarprüfung und echte Restore-/Rollback-
+   Probe abschliessen. Erst anschliessend das Labor-Deployment vorbereiten.
+
+Technische Leitplanken: interne MDM-Schreibvorbereitungen nicht durch einen
+globalisierten Read-Guard blockieren; Event-IDs sind keine Commit-Reihenfolge
+und kein Ack-Wasserstand. Eine einzelne HTTP-weite JPA-Transaktion ist wegen
+asynchroner Suchaufgaben kein bereits bewiesener Snapshot-Ansatz. Noch kein
+positives Reader-/Generationenprotokoll und keine V003 implementiert.
+
+Git-Synchronisation erfolgt über `main` zu **origin und post**, ohne Force-Push.
+Lokale Backups, nicht freigegebene Bild-/PDF-Dateien und der separate Entwurf
+unter `bridgelink/aktuell/` gehören nicht zu diesem MDM-Sicherungsstand.
 
 ## Tagesabschluss 2026-11-25: MDM-Identifier-Übernahme in Untersuchung
 

@@ -99,6 +99,7 @@ from services.fhir_mdm_service import (
     make_mdm_same_patient_matcher,
     reconcile_mdm_resources,
 )
+from services.cda_technical_identity import CdaTechnicalSourceConflict
 from services.emediplan_qr_service import extract_emediplan_payload_from_file, resolve_emediplan_payload
 from services.echosos_service import (
     import_echosos,
@@ -2667,6 +2668,8 @@ async def cda_prepare(
             detail=f"XML Parse Error: {str(exc)}",
         ) from exc
     except (FhirMdmMatchConflictError, FhirResourceMatchConflictError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except CdaTechnicalSourceConflict as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except (FhirMdmLookupError, FhirDuplicateLookupError, PatientLookupError, requests.RequestException) as exc:
         logger.exception("FHIR lookup failed during CDA preparation")

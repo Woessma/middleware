@@ -11,6 +11,7 @@ from main import app
 from mappers.medication_mapper import map_medication_section
 from parser.cda.section_parser import extract_sections
 from services.fhir_duplicate_service import FhirResourceMatchConflictError
+from services.cda_technical_identity import CdaTechnicalSourceConflict
 from services.medication_import_validation_service import MedicationImportRejected, validate_medication_import
 
 
@@ -189,6 +190,26 @@ class MedicationImportValidationTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 409)
         self.assertIn("Ambiguous Procedure", response.json()["detail"])
+        validate.assert_not_called()
+
+    def test_cda_prepare_reports_ambiguous_technical_source_as_conflict(self):
+        client = TestClient(app)
+        conflict = CdaTechnicalSourceConflict(
+            "A unique EPIC patient identifier is required; review required"
+        )
+        with (
+            patch("main._read_cda_xml_content", return_value=b"<ClinicalDocument/>"),
+            patch("main.cda_to_fhir_bundle", side_effect=conflict),
+            patch("main._validate_bundle") as validate,
+        ):
+            response = client.post(
+                "/cda/prepare",
+                content=b"<ClinicalDocument/>",
+                headers={"Authorization": "Bearer synthetic"},
+            )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("review required", response.json()["detail"])
         validate.assert_not_called()
 
     def test_contained_unknown_profile_and_invalid_registry_responses_block(self):
