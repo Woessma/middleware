@@ -67,7 +67,8 @@ wait_for_hapi() {
 
 start_hapi() {
     local -a extra=()
-    if [[ "$1" == guarded || "$1" == worker ]]; then
+    local cached_search_results_millis=0
+    if [[ "$1" == guarded || "$1" == worker || "$1" == reader ]]; then
         extra=(
             -v "$extension:/app/extra-classes:ro"
             -e HAPI_FHIR_CUSTOM_BEAN_PACKAGES=ch.omnilink.fhir.mdm.extension,ch.omnilink.fhir.mdm.fixture
@@ -75,6 +76,9 @@ start_hapi() {
             -e OMNILINK_MDM_PROJECTION_ENABLED=true
             -e OMNILINK_MDM_PROJECTOR_TEST_FIXTURE=true
         )
+    fi
+    if [[ "$1" == reader ]]; then
+        cached_search_results_millis=60000
     fi
     if [[ "$1" == worker ]]; then
         extra+=(-e OMNILINK_MDM_PROJECTION_WORKER_ENABLED=true)
@@ -86,7 +90,7 @@ start_hapi() {
         -e SPRING_DATASOURCE_DRIVERCLASSNAME=org.postgresql.Driver \
         -e SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgresDialect \
         -e HAPI_FHIR_MDM_ENABLED=true -e HAPI_FHIR_BULK_EXPORT_ENABLED=true \
-        -e HAPI_FHIR_REUSE_CACHED_SEARCH_RESULTS_MILLIS=0 \
+        -e "HAPI_FHIR_REUSE_CACHED_SEARCH_RESULTS_MILLIS=$cached_search_results_millis" \
         "${extra[@]}" "$image" >/dev/null
     created_hapi=true
     wait_for_hapi
@@ -101,7 +105,7 @@ docker run --rm --network bridge -v "$module:/source:ro" -v "$build:/work" \
     -v "$extension:/extension" -v "$cache:/root/.m2" -w /work \
     maven:3.9-eclipse-temurin-17 sh -c '
         cp -R /source/. /work/ &&
-        mvn --batch-mode --no-transfer-progress -DskipTests package &&
+        mvn clean --batch-mode --no-transfer-progress -DskipTests package &&
         cp target/hapi-mdm-projection-extension-0.1.0-SNAPSHOT.jar \
             target/hapi-mdm-projection-extension-0.1.0-SNAPSHOT-tests.jar /extension/'
 
@@ -167,6 +171,18 @@ docker run --rm --network "$network" -v "$build:/work" -v "$cache:/root/.m2" -w 
     -e MDM_OUTBOX_TEST_FHIR_BASE=http://outbox-hapi:8080/fhir \
     maven:3.9-eclipse-temurin-17 \
     mvn -o --batch-mode --no-transfer-progress -Dtest=PatientIdentifierProjectorIT test
+docker stop "$hapi" >/dev/null
+docker rm -v "$hapi" >/dev/null
+created_hapi=false
+docker cp "$module/src/main/resources/db/migration/V003__consistent_patient_projection_readers.sql" \
+    "$database:/tmp/readers.sql"
+docker exec "$database" psql -X -v ON_ERROR_STOP=1 -U outbox_test -d mdm_outbox_test -f /tmp/readers.sql
+start_hapi reader
+docker run --rm --network "$network" -v "$build:/work" -v "$cache:/root/.m2" -w /work \
+    -e MDM_OUTBOX_TEST_URL=jdbc:postgresql://outbox-db:5432/mdm_outbox_test \
+    -e MDM_OUTBOX_TEST_FHIR_BASE=http://outbox-hapi:8080/fhir \
+    maven:3.9-eclipse-temurin-17 \
+    mvn -o --batch-mode --no-transfer-progress -Dtest=PatientProjectionReaderV003IT test
 docker stop "$hapi" >/dev/null
 docker rm -v "$hapi" >/dev/null
 created_hapi=false

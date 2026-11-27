@@ -1,6 +1,6 @@
 # BridgeLink - Project Memory
 
-Stand: 2026-11-26
+Stand: 2026-11-27
 
 ## Verwendung
 
@@ -11,6 +11,80 @@ API-Verträge [ENDPOINTS](ENDPOINTS.md) und für MDM-Verhalten
 [HAPI MDM](hapi-mdm.md). Ältere Einträge nur heranziehen, wenn sie für die
 konkrete Aufgabe relevant sind; Betriebsangaben vor einer Änderung anhand der
 aktuellen Konfiguration oder Tests prüfen.
+
+## Tagesabschluss 2026-11-27: V003-Leserprotokoll
+
+- V003 ergänzt PostgreSQL-Reader-/Writer-Advisory-Locks, eine publizierte
+  Generation, HAPI-Suchinvalidierung und eine Legacy-Sperrliste für alte
+  Batch2-Exportjobs und Binaries. `READY` wird erst nach vollständigem Drain
+  und passender Generation veröffentlicht.
+- Der erste Lauf gegen echtes HAPI 8.12 zeigte den tatsächlichen Batch2-Vertrag:
+  `bt2_job_instance.id`, `report_vc` (Text) und `report` (PostgreSQL-OID).
+  V003 und die Tests lesen beide Report-Speicherformen; Tabellenform und
+  Migration wurden an HAPI angepasst.
+- Java-Hooks in
+  [PatientProjectionReadInterceptor](../hapi-mdm-extension/src/main/java/ch/omnilink/fhir/mdm/extension/PatientProjectionReadInterceptor.java)
+  und
+  [ProjectionReadinessGate](../hapi-mdm-extension/src/main/java/ch/omnilink/fhir/mdm/extension/ProjectionReadinessGate.java)
+  binden HAPI-Leser, Folgepages, Exportgenerationen und Binary-Zugriffe an
+  diesen Status. Die Spring-Konfiguration injiziert den HAPI-Jobkoordinator.
+  Bedingt vorhandene Conditional-Creates bleiben für Source-Schreibvorgänge
+  möglich.
+- [ProjectionReadLockFilter](../hapi-mdm-extension/src/main/java/ch/omnilink/fhir/mdm/extension/ProjectionReadLockFilter.java)
+  hält für ausgewählte FHIR-HTTP-Leser einen eigenen PostgreSQL-Transaction-
+  Advisory-Shared-Lock vom Request-Eingang bis nach der Antwort. Ein echter
+  HAPI-Test pausiert einen Patient-Read nach dem Storage-Zugriff, sieht den
+  Lock weiter in `pg_locks` und weist nach, dass ein konkurrierender Writer
+  warten muss. Der Test belegt den HTTP-Patientpfad, nicht sämtliche internen
+  HAPI-Leser oder asynchronen Exportworker.
+- [OutboxMigrationIT](../hapi-mdm-extension/src/test/java/ch/omnilink/fhir/mdm/extension/OutboxMigrationIT.java)
+  prüft V003-Generation, Lock-Warteverhalten, Suchinvalidierung,
+  Legacy-Exportzuordnung aus Text- und OID-Reports sowie Veröffentlichung.
+  [PatientProjectionReaderV003IT](../hapi-mdm-extension/src/test/java/ch/omnilink/fhir/mdm/extension/PatientProjectionReaderV003IT.java)
+  führt echte HAPI-HTTP-Leseproben mit V003 und `READY` aus. Der Harness wurde
+  auf einen `mvn clean`-Paketbau umgestellt, damit keine kopierten `target/`-
+  Klassen veraltete Änderungen verdecken.
+- Vollständiger Lauf von
+  `bash hapi-mdm-extension/src/test/run-outbox-integration.sh`: **77 Tests,
+  0 Fehler, 0 Skips**. Darin enthalten sind 17 Migrationstests, 11 HAPI-HTTP-
+  Tests, 11 Identifier-Policy-, 3 Reconciler- und 9 Worker-Unit-Tests,
+  21 Projektor-/Recovery-/Merge-Integrationstests, vier V003-`READY`-HTTP-Tests
+  und ein automatisches Worker-Crash-Recovery-Szenario. Nur synthetische Daten,
+  privates Docker-Netz, keine Hostports; Container, Netzwerk und Buildvolumes
+  wurden bereinigt.
+- Ein erster vollständiger Wiederholungslauf hatte einen intermittierenden
+  Merge-Testfehler (erwartet zwei bestätigte Quelllinks, beobachtet wurde
+  einer); danach scheiterte auch der abschliessende Drain. Ein zweiter
+  vollständiger Lauf bestand mit 77/77. Das ist kein verlässlich behobener
+  Merge-Race-Nachweis; die Merge-Parallelitätsprobe bleibt ein offener Gate.
+- Die V003-HTTP-Tests decken Patient-Read, Count/Empty Search, History,
+  Folgepages, Ablehnung alter Export-/Binary-URLs und einen erfolgreichen
+  Bulk-Export mit Polling und Binary-Inhaltsdownload ab; HAPIs echtes
+  Bulk-Export-Reportformat wurde dabei bestätigt. Der zusätzliche Lock-Test
+  zeigt, dass der HTTP-Patient-Read einen konkurrierenden Writer bis zum
+  Requestende blockiert. Offen bleiben Generationwechsel während eines
+  asynchronen Exports und weitere interne HAPI-Leser-/Writer-Rennen.
+- **Kein V003 wurde auf dem Labor installiert.** Kein Labor-Backup,
+  Compose-Umbau oder Deployment wurde ausgeführt; keine Leserfreigabe.
+  Deployment bleibt gesperrt, bis die genannten Akzeptanztests sowie
+  Backup-/Restore-/Rollback- und Betriebsproben abgeschlossen sind.
+
+### Montag, 2026-11-30: Restplan und Zeitschätzung
+
+Realistische Grobschätzung ab Montag: **3–5 fokussierte Arbeitstage** bis zu
+einer belastbaren Labor-Deployment-Kandidatur, sofern die offenen Proben keine
+neuen Fehler aufdecken. Ein passendes Wartungs-/Restore-Fenster kann die
+Kalenderzeit verlängern; dies ist keine Freigabe oder feste Zusage.
+
+1. Export-Generationswechsel während laufender Jobs, wiederverwendeter
+   Suchcache und weitere interne HAPI-Leser-/Writer-Rennen prüfen.
+2. Middleware-/BridgeLink-Mehrfachabfragen einschliesslich einzelner
+   `OperationOutcome`-Fehler in HTTP-200-Bundles gegen Teilresultate absichern.
+3. Merge-Parallelität, harten Abbruch und History-Rewrite testen; Alt-
+   Identifier inventarisieren/klassifizieren und Operator-Recovery festlegen.
+4. Erst danach Labor-Backup, Restore und Rollback praktisch abnehmen und die
+   Deployment-Checkliste vervollständigen. Bis dahin kein Labor-Deploy und
+   keine Leserfreigabe.
 
 ## Tagesabschluss 2026-11-26: MDM-Arbeitsstand und Wiedereinstieg
 
@@ -86,6 +160,40 @@ globalisierten Read-Guard blockieren; Event-IDs sind keine Commit-Reihenfolge
 und kein Ack-Wasserstand. Eine einzelne HTTP-weite JPA-Transaktion ist wegen
 asynchroner Suchaufgaben kein bereits bewiesener Snapshot-Ansatz. Noch kein
 positives Reader-/Generationenprotokoll und keine V003 implementiert.
+
+### Ergaenzende HAPI-8.12-Leserpfadbefunde
+
+- `STORAGE_PRECHECK_FOR_CACHED_SEARCH` laeuft vor der Cache-Kandidatenauswahl
+  und liefert nur ein globales Boolean, nicht die UUID des Kandidaten.
+  `ISearchCacheSvc.findCandidatesForReuse()` liefert danach einen konkreten
+`Search`; `STORAGE_PRESEARCH_REGISTERED` sieht die UUID einer neuen Suche.
+Der Interceptor umgeht Patient-Cache-Wiederverwendung und die V003-Trigger
+invalidieren gespeicherte HAPI-Suchen bei neuen Projektionsevents. Ein
+isolierter SQL-Test bestaetigt die Invalidierung und die Generation-/Lock-
+Koordination; ein erfolgreicher HAPI-Lauf mit V003, Folgepages und einem
+tatsaechlich wiederverwendeten Cache ist noch offen.
+- `BulkExportJobParameters` erbt `BaseBatchJobParameters.userData`, womit ein
+nicht vom Client vorgegebenes Generationstag serialisierbar ist. Der
+Interceptor bindet dort die Reader-Generation; `false` wird nicht als
+Abbruchsignal verwendet, sondern ein veralteter Export wirft einen Fehler.
+Polling prueft Job-ID und Generation. Diese Hooks kompilieren, aber ein
+erfolgreicher HAPI-Export mit Polling, Abbruch und Generationwechsel ist
+noch nicht isoliert verifiziert.
+- Der Batch-Export setzt vor dem Speichern der Binary-Ressource optional
+  `Binary.securityContext.identifier` aus den Exportparametern. Dagegen traegt
+  `BulkExportBinaryFileId` selbst nur Binary-ID und Ressourcentyp; die
+Basisklasse fuegt keine Job-ID hinzu. V003 archiviert deshalb beim Upgrade
+vorhandene Export-Job-IDs und Binary-IDs aus `bt2_job_instance.report`;
+ein SQL-Test bestaetigt die Extraktion aus einem synthetischen Report. Das
+reale HAPI-8.12-Reportformat sowie Binary-Metadaten-, Inhaltsdownload- und
+alte Direkt-URL-Pfade muessen noch mit echten isolierten HAPI-Exporten
+bestaetigt werden.
+- V003 implementiert advisory Reader-/Writer-Locks, eine Generation,
+Suchinvalidierung und `READY` erst nach vollstaendigem Drain. Der isolierte
+Migrationstest deckt die SQL-Sperre, Invalidierung, Legacy-Zuordnung und
+Veroeffentlichung ab; ein HAPI-HTTP-Lauf mit V003 fehlt weiterhin. Deshalb
+weiterhin kein Deployment, keine Produktionsfreigabe und keine
+Leserfreigabe am Labor.
 
 Git-Synchronisation erfolgt über `main` zu **origin und post**, ohne Force-Push.
 Lokale Backups, nicht freigegebene Bild-/PDF-Dateien und der separate Entwurf

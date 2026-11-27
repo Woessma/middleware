@@ -1,12 +1,15 @@
 package ch.omnilink.fhir.mdm.extension;
 
 import ca.uhn.fhir.jpa.dao.tx.HapiTransactionService;
+import ca.uhn.fhir.batch2.api.IJobCoordinator;
 import ca.uhn.fhir.interceptor.api.IInterceptorService;
 import ca.uhn.fhir.jpa.model.dao.JpaPid;
 import ca.uhn.fhir.mdm.api.IMdmControllerSvc;
 import ca.uhn.fhir.mdm.api.IGoldenResourceMergerSvc;
 import ca.uhn.fhir.mdm.svc.IBulkExportMdmEidMatchOnlyResourceExpander;
 import ca.uhn.fhir.mdm.svc.IBulkExportMdmFullResourceExpander;
+import javax.sql.DataSource;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -84,8 +87,17 @@ public class MdmProjectionExtensionConfiguration {
 
     @Bean
     PatientProjectionReadInterceptor patientProjectionReadInterceptor(
-            ProjectionReadinessGate readinessGate, HapiTransactionService transactions) {
-        return new PatientProjectionReadInterceptor(readinessGate, transactions);
+            ProjectionReadinessGate readinessGate, HapiTransactionService transactions, IJobCoordinator jobs) {
+        return new PatientProjectionReadInterceptor(readinessGate, transactions, jobs);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "omnilink.mdm.projection.enabled", havingValue = "true")
+    FilterRegistrationBean<ProjectionReadLockFilter> projectionReadLockFilter(DataSource dataSource) {
+        var registration = new FilterRegistrationBean<>(new ProjectionReadLockFilter(dataSource));
+        registration.setName("patientProjectionReadLockFilter");
+        registration.addUrlPatterns("/fhir", "/fhir/*");
+        return registration;
     }
 
     @Bean

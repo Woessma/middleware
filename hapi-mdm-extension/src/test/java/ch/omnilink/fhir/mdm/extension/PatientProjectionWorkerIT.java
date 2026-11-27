@@ -61,7 +61,7 @@ class PatientProjectionWorkerIT {
             assertEquals(200, written.statusCode(), written.body());
             awaitGolden(goldenPid, value);
             awaitSql(db, "SELECT count(*)=0 FROM omni_projection_job WHERE state<>'acknowledged'", 90000);
-            assertEquals("BLOCKED_READER_NOT_PUBLISHED", scalar(db, "SELECT omni_patient_projection_read_status()"));
+            assertEquals("READY", scalar(db, "SELECT omni_patient_projection_read_status()"));
             var state = send(control + "/worker", "GET", null);
             assertEquals(200, state.statusCode(), state.body());
             assertTrue(json.readTree(state.body()).hasNonNull("lastCompletionObservedAt"));

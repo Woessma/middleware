@@ -5,20 +5,26 @@ does not include or deploy it. Its Dockerfile uses the exact HAPI image digest
 currently running on `001-l-hlt01` and places the extension JAR in the
 `/app/extra-classes` directory read by HAPI's `PropertiesLauncher`.
 
-The extension contains a fail-closed read boundary, a capture migration and an
-opt-in, bounded laboratory identifier projector:
+The extension contains a fail-closed read boundary, capture/projector migrations
+and an opt-in, bounded laboratory identifier projector:
 
 - Patient resources leaving HAPI storage are checked through a HAPI read-only
   status transaction, joining an active transaction where present. Deferred
   conditional-create view callbacks can run after the original transaction;
   they also receive a transactional status check.
+- A servlet filter takes the V003 shared advisory lock in a dedicated database
+  transaction for Patient, Binary, Group, system-history, export and MDM read
+  HTTP routes. It holds that lock until the full HTTP request finishes, including
+  serialization and Binary delivery. Write requests and native batch/transaction
+  bundles do not take this request lock. Before V003 exists the filter passes
+  through; the existing readiness checks still fail closed.
 - Patient REST read/search/history/meta and system-history requests check before handling,
   so empty searches, `_summary=count` and `_count=0` cannot bypass the
   known-blocked status merely by returning no Patient resources.
 - System, Patient and Group `$export` entry points and `$export-poll-status`
   check before handling. GET/POST polling is blocked while unpublished;
   DELETE is left to native cancellation handling. Blocked starts enqueue no
-  `BULK_EXPORT` job. This does not guard old export-file/Binary URLs.
+  `BULK_EXPORT` job.
 - Native batch/transaction write-entry subrequests inherit the enclosing
   BATCH/TRANSACTION operation. Their actual HTTP write method identifies source
   write preparation; embedded GETs retain their own read operation and guard.
@@ -30,19 +36,56 @@ opt-in, bounded laboratory identifier projector:
   service is not wrapped to avoid intercepting internal MDM processing.
 - Both HAPI MDM bulk-export expanders check readiness before `expandGroup` or
   `expandPatient`. This guards those expansion entry points, not the entire
-  asynchronous export pipeline or downloads of previously generated files.
+  asynchronous export pipeline.
+- V003 adds a PostgreSQL reader lock/generation protocol, invalidates cached
+  HAPI searches on captured projection events, binds new exports and Binaries
+  to a generation, and records pre-existing export job/Binary IDs for rejection.
+  SQL-level tests and `READY`-state HAPI tests cover publication, ordinary
+  Patient reads, count/empty searches, history, follow-up pages, and rejection
+  of legacy export/Binary URLs. A successful export/poll cycle and Binary
+  content download also pass in the isolated HAPI fixture. A paused real
+  Patient read verifies that its request-level shared lock remains visible
+  after storage access and makes a competing writer wait. Generation changes
+  during asynchronous exports and other stale-reader/writer races remain
+  unvalidated.
 - In isolated HAPI, two Patients with the same synthetic EID were accepted
   under `BLOCKED_TEST` and produced two `mpi_link` rows. This covers one basic
   asynchronous MDM path, not retries or every MDM operation.
 
-Both migrations provide `omni_patient_projection_read_status()`. Neither
-reports `READY`. No migration runs automatically when the JAR is loaded.
-The early REST check is deliberately only a fail-closed precheck, not a
-coherent publication/read snapshot. It must not be used to justify returning
-`READY` in a future migration without a complete reader protocol.
+All migrations provide `omni_patient_projection_read_status()`. V001 and V002
+never report `READY`; V003 can report it only after a fully drained projection
+and matching published/current generations. No migration runs automatically
+when the JAR is loaded. V003 is still an unapproved laboratory protocol: the
+HTTP lock proof covers selected synchronous routes, not every HAPI-internal
+reader or the asynchronous export worker. Search-cache reuse and
+generation-changes during exports also need race tests.
+
+## Reader publication (V003; not deployment-approved)
+
+Apply V003 only after V001/V002, with HAPI and all writers stopped, a verified
+backup, and no unresolved or unacknowledged projection work. It checks the
+HAPI search-cache and Batch2 table shapes, snapshots legacy export job/Binary
+IDs from existing Batch2 reports, and initializes a generation at zero.
+Captured events take an exclusive transaction advisory lock, increment the
+generation once per source transaction, and invalidate stored HAPI searches.
+Readers take the shared lock; the final projector acknowledgement publishes
+the generation only after all work is drained.
+
+`OutboxMigrationIT` exercises PostgreSQL lock contention, search invalidation,
+generation publication and legacy-ID extraction from synthetic text and
+large-object Batch2 reports. `PatientProjectionReaderV003IT` installs V003 in
+the isolated HAPI 8.12 database and tests `READY` reads, count/empty searches,
+history, follow-up pages, rejection of legacy job/Binary URLs, and a successful
+export/poll/download cycle using HAPI's actual report JSON. It also pauses a
+Patient request after storage access, observes the shared lock on the request's
+dedicated database transaction, and confirms a competing writer times out on
+that lock. It does not validate generation changes during asynchronous export,
+all other read routes, or stale-reader/writer races. Do not apply V003 to the
+laboratory until these remaining gates and operational recovery exercises are
+complete.
 
 For the development handover and the next work block, see
-[2026-11-26 handover](../docs/project-memory.md#tagesabschluss-2026-11-26-mdm-arbeitsstand-und-wiedereinstieg).
+[2026-11-27 handover](../docs/project-memory.md#tagesabschluss-2026-11-27-v003-leserprotokoll).
 This is a saved development state, not a deployment approval.
 
 ## Capture migration
@@ -243,9 +286,10 @@ These settings are not applied to the running laboratory configuration here.
   `IDLE` means no eligible job was found, not that no leases/pending jobs exist.
   A historical receipt observation does not establish current projection
   freshness.
-- Reader publication remains disabled even after automatic drain. Full scans,
-  coarse table locks, one job per tick and the fixed lease are laboratory
-  bounds, not throughput, availability or total-job-duration approval.
+- Without V003, reader publication remains disabled even after automatic drain.
+  V003 publication is not yet a deployment approval. Full scans, coarse table
+  locks, one job per tick and the fixed lease are laboratory bounds, not
+  throughput, availability or total-job-duration approval.
 
 For operator diagnostics, use the migration schema and metadata-only queries:
 
@@ -268,19 +312,20 @@ Run from this module with Docker available:
 bash src/test/run-outbox-integration.sh
 ```
 
-The script builds the current JAR, boots the pinned HAPI image and PostgreSQL 16
-in a private internal Docker network without host ports, and creates only
-synthetic data. It installs V001 against nonempty HAPI storage, verifies
-job/lease persistence across an **orderly** PostgreSQL restart, then enables
-the current JAR's guard and runs V001 integration and reconciler tests. It
+The script clean-builds the current JAR, boots the pinned HAPI image and
+PostgreSQL 16 in a private internal Docker network without host ports, and
+creates only synthetic data. It installs V001 against nonempty HAPI storage,
+verifies job/lease persistence across an **orderly** PostgreSQL restart, then
+enables the current JAR's guard and runs V001 integration and reconciler tests. It
 stops HAPI, applies V002, restarts HAPI and runs actual projector integration
 tests with automatic dispatch disabled. It then enables the worker only in
 the private fixture, kills that HAPI container while completion is blocked,
 verifies its persistent lease without acknowledgement, and restarts it.
-Automatic reclaim/projection and bounded retry exhaustion are then tested.
-The PostgreSQL
-tests use disposable schemas cloned from the actual HAPI-created input tables;
-the HTTP tests use actual HAPI writes and asynchronous MDM link creation.
+After the manual projector suite drains all jobs, it also applies V003 to the
+isolated HAPI database and runs `READY`-state read acceptance before the worker
+crash/recovery stage. The PostgreSQL migration tests use disposable schemas
+cloned from actual HAPI-created input tables; HTTP tests use actual HAPI writes
+and asynchronous MDM link creation.
 Bulk export is enabled only in the isolated fixture to exercise its real
 REST entry points, not merely absent-operation responses.
 The tests require the database name `mdm_outbox_test` and fixed synthetic
@@ -297,15 +342,20 @@ Only the reusable Maven dependency cache `omni-hapi-mdm-test-m2` remains.
 Maven dependency downloads use a separate build container with network access;
 the HAPI/database tests have no external network access.
 
-The latest complete run passed 72 tests without failures or skips: 27 V001
-integration tests, 23 reconciler/manual-policy/worker unit tests, 21 V002
-projector/recovery/merge tests and one automatic-worker integration scenario.
+The latest complete run passed 76 tests without failures or skips: 51 migration,
+HAPI, policy, reconciler and worker tests, 21 projector/recovery/merge tests,
+three `READY`-state V003 HAPI tests, and one automatic-worker integration
+scenario. Generation changes during export, stale-reader/writer races, and
+full HAPI storage-transaction lock coverage remain outside the test coverage;
+see the V003 gates above.
 
 For an already prepared isolated fixture, the underlying Maven command is
 `mvn -Dtest=GoldenIdentifierReconcilerTest,GoldenManualIdentifierPolicyTest,PatientProjectionWorkerTest,OutboxMigrationIT,OutboxHapiIT test`
 before V002 and `mvn -Dtest=PatientIdentifierProjectorIT test` after V002, with
 `MDM_OUTBOX_TEST_URL` and `MDM_OUTBOX_TEST_FHIR_BASE` set. These `*IT` tests are
 explicit opt-in; a normal Maven build does not prove database/HTTP integration.
+`PatientProjectionReaderV003IT` requires V003 to be installed after the projector
+queue is drained and the HAPI server to be started with the extension.
 `PatientProjectionWorkerIT` additionally requires the harness's interrupted
 worker setup and `MDM_WORKER_RESTART_EVENT_ID`; do not run it in parallel with
 manual projector tests or against a shared fixture.

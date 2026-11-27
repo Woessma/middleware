@@ -8,6 +8,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
@@ -40,8 +41,11 @@ class OutboxMigrationIT {
     }
 
     static String migration() throws Exception {
-        try (var source = OutboxMigrationIT.class.getResourceAsStream(
-                "/db/migration/V001__patient_projection_outbox.sql")) {
+        return migration("V001__patient_projection_outbox.sql");
+    }
+
+    private static String migration(String name) throws Exception {
+        try (var source = OutboxMigrationIT.class.getResourceAsStream("/db/migration/" + name)) {
             return new String(Objects.requireNonNull(source).readAllBytes(), StandardCharsets.UTF_8);
         }
     }
@@ -70,6 +74,58 @@ class OutboxMigrationIT {
 
     private void install() throws Exception {
         execute(connection, migration());
+    }
+
+    private void installReaderProtocol() throws Exception {
+        execute(connection, migration("V002__patient_identifier_projector.sql"));
+        acknowledgeNextJob();
+        execute(connection, """
+                INSERT INTO bt2_job_instance(id, definition_id, report_vc)
+                VALUES ('legacy-export', 'BULK_EXPORT',
+                    '{"resourceType2BinaryIds":{"Patient":["legacy-binary"]}}')
+                """);
+        execute(connection, """
+                INSERT INTO bt2_job_instance(id, definition_id, report)
+                VALUES ('legacy-export-large', 'BULK_EXPORT',
+                    lo_from_bytea(0, convert_to(
+                        '{"resourceTypeToBinaryIds":{"Patient":["legacy-large-binary"]}}', 'UTF8')))
+                """);
+        execute(connection, migration("V003__consistent_patient_projection_readers.sql"));
+        execute(connection, """
+                SELECT lo_unlink(report) FROM bt2_job_instance WHERE id = 'legacy-export-large'
+                """);
+    }
+
+    private void acknowledgeNextJob() throws Exception {
+        UUID worker = UUID.randomUUID();
+        connection.setAutoCommit(false);
+        try {
+            execute(connection, "SELECT omni_projection_lock_inputs()");
+            long eventId;
+            long fence;
+            try (var statement = connection.prepareStatement(
+                            "SELECT event_id, fence FROM omni_projection_claim(?::uuid, 300000)")) {
+                statement.setString(1, worker.toString());
+                try (var rows = statement.executeQuery()) {
+                    assertTrue(rows.next(), "Expected an outbox job to acknowledge");
+                    eventId = rows.getLong(1);
+                    fence = rows.getLong(2);
+                }
+            }
+            try (var statement = connection.prepareStatement(
+                            "SELECT omni_projection_complete(?, ?::uuid, ?, 0, 0)")) {
+                statement.setLong(1, eventId);
+                statement.setString(2, worker.toString());
+                statement.setLong(3, fence);
+                statement.execute();
+            }
+            connection.commit();
+        } finally {
+            if (!connection.getAutoCommit()) {
+                connection.rollback();
+                connection.setAutoCommit(true);
+            }
+        }
     }
 
     private Connection another() throws SQLException {
@@ -360,5 +416,61 @@ class OutboxMigrationIT {
             }
             executor.shutdownNow();
         }
+    }
+
+    @Test
+    void readerPublicationSerializesWritersAndInvalidatesSearches() throws Exception {
+        execute(connection, """
+                CREATE TABLE hfj_search(search_uuid text PRIMARY KEY, search_deleted boolean NOT NULL);
+                CREATE TABLE bt2_job_instance(
+                    id text PRIMARY KEY, definition_id text NOT NULL, report oid, report_vc text)
+                """);
+        install();
+        installReaderProtocol();
+        assertEquals("READY", value("SELECT omni_patient_projection_read_status()"));
+        assertEquals("true", value("SELECT omni_projection_is_legacy_export_job('legacy-export')"));
+        assertEquals("true", value("SELECT omni_projection_is_legacy_export_binary('legacy-binary')"));
+        assertEquals("true", value("SELECT omni_projection_is_legacy_export_job('legacy-export-large')"));
+        assertEquals("true", value("SELECT omni_projection_is_legacy_export_binary('legacy-large-binary')"));
+        assertEquals("false", value("SELECT omni_projection_is_legacy_export_binary('new-binary')"));
+
+        execute(connection, "INSERT INTO hfj_search VALUES ('fresh-search', false)");
+        var executor = Executors.newSingleThreadExecutor();
+        try (Connection reader = another()) {
+            reader.setAutoCommit(false);
+            assertEquals("0", scalar(reader, "SELECT omni_projection_acquire_reader_lock()"));
+            CountDownLatch started = new CountDownLatch(1);
+            var writer = executor.submit(() -> {
+                try (Connection db = another()) {
+                    execute(db, "SET application_name='projection-reader-writer-test'");
+                    started.countDown();
+                    execute(db, "UPDATE hfj_resource SET res_ver=res_ver+1 WHERE res_id=" + patient);
+                }
+                return true;
+            });
+            assertTrue(started.await(2, TimeUnit.SECONDS));
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+            while (!"true".equals(value("""
+                    SELECT EXISTS(
+                        SELECT FROM pg_stat_activity
+                        WHERE application_name='projection-reader-writer-test' AND wait_event_type='Lock'
+                    )
+                    """))) {
+                assertTrue(System.nanoTime() < deadline, "Writer did not wait for the reader advisory lock");
+                Thread.sleep(20);
+            }
+            assertFalse(writer.isDone(), "Input writer must wait for the reader transaction");
+            reader.commit();
+            assertTrue(writer.get(5, TimeUnit.SECONDS));
+        } finally {
+            executor.shutdownNow();
+        }
+
+        assertEquals("true", value("SELECT search_deleted FROM hfj_search WHERE search_uuid='fresh-search'"));
+        assertEquals("BLOCKED_PROJECTION_PENDING", value("SELECT omni_patient_projection_read_status()"));
+        assertEquals("1", value("SELECT generation FROM omni_projection_reader_generation"));
+        acknowledgeNextJob();
+        assertEquals("READY", value("SELECT omni_patient_projection_read_status()"));
+        assertEquals("1", value("SELECT published_generation FROM omni_projection_reader_generation"));
     }
 }

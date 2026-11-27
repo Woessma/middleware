@@ -1,6 +1,27 @@
 # HAPI FHIR: Master Data Management (MDM)
 
-Stand: 2026-11-26 · HAPI FHIR 8.12.0 · Regelversion `ch-golden-v1`
+Stand: 2026-11-27 · HAPI FHIR 8.12.0 · Regelversion `ch-golden-v1`
+
+## Aktueller Deploy-Status
+
+V003 und die HTTP-Lesergrenze sind im isolierten HAPI-8.12-Harness geprüft;
+der vollständige Lauf bestand mit 77 Tests ohne Fehler oder Skips. Der
+HTTP-Patient-Read hält den PostgreSQL-Shared-Lock bis zum Antwortende und
+blockiert damit einen konkurrierenden Writer. Das belegt noch nicht alle
+internen HAPI-Leser oder asynchronen Export-Rennen.
+
+**Nicht deployt:** V003 wurde weder im Labor installiert noch dort ein
+Bestandsabgleich, Backup, Compose-Umbau oder Rollback ausgeführt. Die
+Leserfreigabe bleibt gesperrt. Ab Montag, 2026-11-30, sind realistisch etwa
+3–5 fokussierte Arbeitstage für die offenen Engineering- und Betriebsproben
+einzuplanen; ein verfügbares Wartungs-/Restore-Fenster kann die Kalenderzeit
+verlängern. Das ist eine Grobschätzung, keine Deployment-Zusage.
+
+Nächste Blöcke: Export-Generationswechsel und weitere HAPI-Leser-/Writer-
+Rennen prüfen; Middleware-/BridgeLink-Mehrfachabfragen gegen partielle
+OperationOutcomes absichern; danach Merge-/Abbruch-/History-Proben,
+Alt-Identifier-Inventar sowie Labor-Backup, Restore und Rollback abnehmen.
+Freigabe erst nach erfolgreicher Prüfung dieser Gates.
 
 ## Betrieb
 
@@ -88,13 +109,15 @@ berücksichtigen. Auch bestehende Patienten sollen einbezogen werden. Convert
 und Prepare bleiben schreibfrei; die technische CDA-Quelle gehört in einen
 späteren Schreibpfad.
 
-Isolierte Experimente untersuchen eine transaktionale PostgreSQL-Outbox,
-Wiederanlauf und eine gezieltere Patient-/MDM-Sperrstrategie. Ein vollständiger
-Capture- und Lesevertrag für direkte HAPI-REST-/MDM-Zugriffe und BridgeLink
-fehlt noch; die bisherigen Tests sind keine Produktionsfreigabe. Das separate
-Modul `hapi-mdm-extension/` enthält einen fail-closed Guard für Patient-Reads
-und die MDM-Controller-Leseoperationen. In einem isolierten HAPI-8.12-Container
-mit synthetischer PostgreSQL-Datenbank wurde geprüft: Patient-POST bleibt bei
+Das separate Modul `hapi-mdm-extension/` enthält eine transaktionale
+PostgreSQL-Outbox, Wiederanlauf, eine gezielte Patient-/MDM-Sperrstrategie
+und den versionierten V003-Leser-/Generationenvertrag. Der isolierte Harness
+prüft ausgewählte direkte HAPI-REST-/MDM-Zugriffe; Middleware-/BridgeLink-
+Mehrfachabfragen und weitere Rennen bleiben offen. Die Tests sind keine
+Produktionsfreigabe. Das Modul enthält ausserdem einen fail-closed Guard für
+Patient-Reads und die MDM-Controller-Leseoperationen. In einem isolierten
+HAPI-8.12-Container mit synthetischer PostgreSQL-Datenbank wurde geprüft:
+Patient-POST bleibt bei
 `BLOCKED_TEST` erfolgreich (`201`), Patient-GET und -Suche sowie die echte
 `$mdm-query-links`-Route antworten mit `503`. Der Controller-Proxy umgeht
 interne Aufrufe des globalen `IMdmLinkQuerySvc`. Zwei synthetische Patienten
@@ -136,7 +159,8 @@ bleibt die Lesesicht mit `BLOCKED_READER_NOT_PUBLISHED` gesperrt.
 Die echten HAPI-Prüfungen zeigen Identifier-Ergänzung/-Änderung, NO_MATCH,
 Löschung, No-op-Konvergenz, Receipt-Replay nach verlorener Antwort und
 gemeinsamen Rollback von Golden-Update und Ack bei Abschluss-/Commitfehlern.
-Der aktuelle vollständige Lauf bestand mit 72 Tests ohne Fehler oder Skips:
+Zum damaligen V002-Stand bestand der vollständige Lauf mit 72 Tests ohne
+Fehler oder Skips:
 27 V001-Integrationstests, 23 Reconciler-/Manual-Policy-/Worker-Unit-Tests,
 21 V002-Projektor-/Recovery-/Merge-Prüfungen und ein automatisches Worker-Szenario.
 Konkurrierende Source-/Link-Schreiber warten auf den Snapshot. Ein wartender
@@ -229,20 +253,23 @@ keine vorhandenen Goldens oder Golden-Redirects am Guard vorbeischleusen.
 Nachgelagerte native Antwort-Callbacks erhalten ebenfalls eine transaktionale
 Statuspruefung statt eines Fehlers wegen fehlender Transaktion.
 
-Dieser Vorabcheck ist keine konsistente Leserfreigabe über Suche, Cache,
-Paging oder asynchrone Exporte hinweg. Insbesondere sind bestehende
-Exportdateien/direkte Binary-Downloads und die Zusammensetzung mehrerer
-Middleware-Abfragen noch nicht abgesichert. Es gibt weiterhin kein `READY`.
+Die Vorabchecks und V003-Proben belegen noch keine vollständige konsistente
+Leserfreigabe über alle Such-, Cache-, Paging- und asynchronen Exportpfade.
+V003 prüft ausgewählte HAPI-HTTP-Leser, Exportgenerationen und alte
+Export-/Binary-URLs im isolierten Harness; Generationwechsel während eines
+laufenden Exports, weitere interne HAPI-Leser und zusammengesetzte
+Middleware-Abfragen bleiben offen. Im Labor gibt es weiterhin kein `READY`.
 
 Insbesondere sind ausstehende oder fehlgeschlagene Projektionen nicht als
 aktuell auszugeben. Operative Freigabe und Behandlung erschöpfter/
 unaufgelöster Jobs, tatsächlich ausgeführter Labor-Bestandsabgleich,
-vollständige Leserabdeckung samt
-Veröffentlichungsgrenze, Merge-Parallelitätsabnahme sowie Restore-/Deployment-Rollback
-fehlen weiterhin. **Die Identifier-Übernahme ist weder fertig noch deployt.**
+vollständige Leserabdeckung samt Veröffentlichungsgrenze,
+Merge-Parallelitätsabnahme sowie Restore-/Deployment-Rollback fehlen
+weiterhin. **Die Identifier-Übernahme ist nicht im Labor deployt oder zum
+produktiven Lesen freigegeben.**
 
 Arbeitsstand und nächste Schritte für den 2026-11-27:
-[Tagesabschluss und Wiedereinstieg](project-memory.md#tagesabschluss-2026-11-26-mdm-arbeitsstand-und-wiedereinstieg).
+[Tagesabschluss und Wiedereinstieg](project-memory.md#tagesabschluss-2026-11-27-v003-leserprotokoll).
 
 ### EchoSOS: Import und schreibfreie Notfallansicht
 
